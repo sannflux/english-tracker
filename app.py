@@ -15,6 +15,10 @@ if 'file_sha' not in st.session_state:
     st.session_state.file_sha = None
 if 'prev_level' not in st.session_state:
     st.session_state.prev_level = 0
+if 'saved_token' not in st.session_state:
+    st.session_state.saved_token = ""
+if 'saved_repo' not in st.session_state:
+    st.session_state.saved_repo = ""
 
 # --- SECRETS FALLBACK ---
 try:
@@ -25,10 +29,15 @@ except Exception:
     DEFAULT_REPO = "sannflux/english-tracker"
 
 # --- GITHUB HELPER FUNCTIONS ---
+# FEATURE 3: Experimental Caching for the GitHub Connection Client
+@st.cache_resource(show_spinner=False)
+def get_gh_client(token):
+    return Github(token)
+
 @st.cache_data(ttl=300, show_spinner=False)
 def load_data_from_github(_token, repo_name, file_path):
     try:
-        g = Github(_token)
+        g = get_gh_client(_token)
         repo = g.get_repo(repo_name)
         contents = repo.get_contents(file_path)
         decoded_string = contents.decoded_content.decode('utf-8')
@@ -64,7 +73,7 @@ def load_data_from_github(_token, repo_name, file_path):
 
 def save_to_github(token, repo_name, file_path, df, current_sha):
     try:
-        g = Github(token)
+        g = get_gh_client(token)
         repo = g.get_repo(repo_name)
         df_save = df.copy()
         df_save['Date'] = pd.to_datetime(df_save['Date']).dt.strftime("%A, %d %B %Y")
@@ -95,8 +104,21 @@ def get_streak(df):
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
-    gh_token = st.text_input("GitHub Token", type="password", value=DEFAULT_TOKEN)
-    gh_repo = st.text_input("Repo", value=DEFAULT_REPO)
+    
+    # FEATURE 2: Auto-Token Storage (Session Persistence)
+    init_token = st.session_state.saved_token if st.session_state.saved_token else DEFAULT_TOKEN
+    init_repo = st.session_state.saved_repo if st.session_state.saved_repo else DEFAULT_REPO
+    
+    gh_token = st.text_input("GitHub Token", type="password", value=init_token)
+    gh_repo = st.text_input("Repo", value=init_repo)
+    
+    remember_creds = st.checkbox("Remember Credentials", value=bool(st.session_state.saved_token))
+    if remember_creds:
+        st.session_state.saved_token = gh_token
+        st.session_state.saved_repo = gh_repo
+    else:
+        st.session_state.saved_token = ""
+        st.session_state.saved_repo = ""
     
     if st.button("🔄 Force Sync", use_container_width=True):
         load_data_from_github.clear()
@@ -121,19 +143,13 @@ if st.session_state.df is not None:
     level = int(total_hrs // 50) + 1
     xp_progress = (total_hrs % 50) / 50
     
-    # FIX: Personal "Journey Week" Calculation
+    # Personal "Journey Week" Calculation
     if not df.empty and df['Date'].notna().any():
-        # Find the absolute first day of study
         start_date = df['Date'].min()
-        
-        # Calculate days since start for each row, then group into 7-day weeks (Week 1, 2, 3...)
         df['Days_Since_Start'] = (df['Date'] - start_date).dt.days
         df['Study_Week'] = (df['Days_Since_Start'] // 7) + 1
-        
-        # Create zero-padded label for perfect sorting (e.g., "Week 01", "Week 12")
         df['Week_Label'] = "Week " + df['Study_Week'].astype(str).str.zfill(2)
         
-        # Calculate what the current week is based on TODAY
         now = datetime.now()
         days_since_start_now = (now - start_date).days
         current_study_week = (max(0, days_since_start_now) // 7) + 1
@@ -161,19 +177,27 @@ if st.session_state.df is not None:
     col_in, col_viz = st.columns([1, 2])
     with col_in:
         st.subheader("➕ Add Session")
-        with st.form("new_entry", clear_on_submit=True):
+        with st.form("new_entry", clear_on_submit=False):
             d = st.date_input("Date", datetime.now())
             s = st.selectbox("Skill", ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary", "Listening dan writing"])
-            t = st.number_input("Minutes", 1, 300, 30)
+            t = st.number_input("Minutes", 1, 600, 30)
             n = st.text_input("Notes")
-            if st.form_submit_button("Push to GitHub"):
-                new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
-                st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-                new_sha = save_to_github(gh_token, gh_repo, "data.csv", st.session_state.df, st.session_state.file_sha)
-                if new_sha:
-                    st.session_state.file_sha = new_sha
-                    st.success("Synced!")
-                    st.rerun()
+            submitted = st.form_submit_button("Push to GitHub")
+            
+            # FEATURE 1: Smart Form Validation
+            if submitted:
+                if t > 500:
+                    st.error("⚠️ Minutes too high! Check your input.")
+                elif not n.strip():
+                    st.error("⚠️ Notes cannot be empty! Write down what you studied.")
+                else:
+                    new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
+                    st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+                    new_sha = save_to_github(gh_token, gh_repo, "data.csv", st.session_state.df, st.session_state.file_sha)
+                    if new_sha:
+                        st.session_state.file_sha = new_sha
+                        st.success("Synced!")
+                        st.rerun()
 
     with col_viz:
         st.subheader("📊 Analysis")
@@ -219,5 +243,17 @@ if st.session_state.df is not None:
                 st.session_state.df = edited_save
                 st.success("Updated!")
                 st.rerun()
+                
+    # FEATURE 11: Session Export
+    st.divider()
+    csv_export = display_df[['Date', 'Skill', 'Time Spent', 'Notes']].to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Study Report (CSV)",
+        data=csv_export,
+        file_name=f"English_Study_Report_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+
 else:
     st.info("👈 Enter Token and click Force Sync to start.")
