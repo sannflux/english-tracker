@@ -11,10 +11,12 @@ import numpy as np
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
 
 # Initialize Session States
-for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color']:
+for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward']:
     if key not in st.session_state:
         st.session_state[key] = None if key not in ['prev_level'] else 0
         if key == 'accent_color': st.session_state[key] = "#00CC96"
+        if key == 'zen_mode': st.session_state[key] = False
+        if key == 'milestone_reward': st.session_state[key] = "Treat myself to coffee"
         if key in ['saved_token', 'saved_repo']: st.session_state[key] = ""
 
 # --- GITHUB HELPER FUNCTIONS ---
@@ -30,25 +32,19 @@ def load_data_from_github(_token, repo_name, file_path):
         contents = repo.get_contents(file_path)
         decoded_string = contents.decoded_content.decode('utf-8')
         df = pd.read_csv(io.StringIO(decoded_string))
-        
         df.columns = df.columns.str.strip()
         df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
-        
         if 'Date' in df.columns:
             df['Date'] = df['Date'].ffill() 
             df['Date'] = df['Date'].apply(lambda x: str(x).split(',')[-1].strip() if ',' in str(x) else x)
             df['Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce', dayfirst=True)
             df['Date'] = df['Date'].ffill().bfill()
-
         if 'Skill' in df.columns:
             df['Skill'] = df['Skill'].astype(str).str.strip().ffill().fillna("Reading")
-
         if 'Time Spent' in df.columns:
             df['Time Spent'] = pd.to_numeric(df['Time Spent'], errors='coerce').fillna(0)
-            
         if 'Notes' not in df.columns: df['Notes'] = ""
         df['Notes'] = df['Notes'].fillna("")
-            
         return df, contents.sha, "success"
     except Exception as e:
         return None, None, str(e)
@@ -67,7 +63,7 @@ def save_to_github(token, repo_name, file_path, df, current_sha):
         st.error(f"Save Error: {e}")
         return None
 
-# --- LOGIC UTILITIES ---
+# --- UI UTILITIES ---
 def get_streak(df):
     if df is None or df.empty: return 0
     dates = sorted(df['Date'].dt.date.dropna().unique(), reverse=True)
@@ -83,16 +79,10 @@ def get_streak(df):
     return streak
 
 def add_visual_tags(note):
-    tags = ""
-    note_l = note.lower()
-    mapping = {'podcast':"🎧 ", 'listening':"🎧 ", 'audio':"🎧 ", 'bbc':"🎧 ", 
-               'book':"📖 ", 'read':"📖 ", 'article':"📖 ", 'video':"📺 ", 
-               'youtube':"📺 ", 'movie':"📺 ", 'write':"✍️ ", 'essay':"✍️ "}
+    mapping = {'podcast':"🎧 ", 'listening':"🎧 ", 'bbc':"🎧 ", 'book':"📖 ", 'read':"📖 ", 'video':"📺 ", 'youtube':"📺 ", 'write':"✍️ "}
     for word, emoji in mapping.items():
-        if word in note_l: 
-            tags += emoji
-            break # One emoji per note is cleaner
-    return f"{tags}{note}"
+        if word in str(note).lower(): return f"{emoji}{note}"
+    return note
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -111,7 +101,18 @@ with st.sidebar:
         else: st.error(status)
                 
     st.divider()
-    # FEATURE 3: Theme Selector
+    # FEATURE 7: Zen Mode Toggle
+    st.session_state.zen_mode = st.toggle("🧘 Zen Mode (Focus)", value=st.session_state.zen_mode)
+    
+    # FEATURE 3: Study Routine Templates
+    st.header("📋 Routines")
+    if st.button("☀️ Morning Sprint (15m Reading)"):
+        new_r = pd.DataFrame({"Date":[pd.to_datetime(datetime.now().date())], "Skill":["Reading"], "Time Spent":[15], "Notes":["Morning Routine"]})
+        st.session_state.df = pd.concat([st.session_state.df, new_r], ignore_index=True)
+        save_to_github(gh_token, gh_repo, "data.csv", st.session_state.df, st.session_state.file_sha)
+        st.rerun()
+
+    st.divider()
     st.header("🎨 Styling")
     theme = st.selectbox("Accent Theme", ["Emerald City", "Ocean Deep", "Sunset Orange", "Royal Purple"])
     theme_map = {"Emerald City": "#00CC96", "Ocean Deep": "#0099FF", "Sunset Orange": "#FF5733", "Royal Purple": "#8E44AD"}
@@ -123,142 +124,113 @@ with st.sidebar:
 if st.session_state.df is not None:
     df = st.session_state.df.copy()
     now = datetime.now()
+    all_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
     
-    # 1. CORE CALCULATIONS & JOURNEY DATES
+    # CALCULATIONS
     start_date = df['Date'].min()
     df['Study_Week'] = ((df['Date'] - start_date).dt.days // 7) + 1
     df['Week_Label'] = "Week " + df['Study_Week'].astype(str).str.zfill(2)
-    
     total_hrs = df['Time Spent'].sum() / 60
     level = int(total_hrs // 50) + 1
     xp_progress = (total_hrs % 50) / 50
     streak = get_streak(df)
 
-    # FEATURE 2: Metrics with Deltas (vs Last Week)
+    # FEATURE 2: Weekly Pacer
     curr_week_label = "Week " + str(((now - start_date).days // 7) + 1).zfill(2)
-    prev_week_label = "Week " + str(((now - start_date).days // 7)).zfill(2)
-    
-    this_week_hrs = df[df['Week_Label'] == curr_week_label]['Time Spent'].sum() / 60
-    last_week_hrs = df[df['Week_Label'] == prev_week_label]['Time Spent'].sum() / 60
-    delta_hrs = this_week_hrs - last_week_hrs
+    this_week_min = df[df['Week_Label'] == curr_week_label]['Time Spent'].sum()
+    remaining_min = max(0, (weekly_goal * 60) - this_week_min)
+    days_left = 7 - now.weekday()
+    pace = remaining_min / days_left if days_left > 0 else remaining_min
 
-    # FEATURE 6: Motivational Coach
+    # FEATURE 5: Burnout Predictor
+    daily_sum = df.groupby(df['Date'].dt.date)['Time Spent'].sum()
+    burnout = (daily_sum.tail(4) > 180).all()
+
+    # HEADER & REWARD
     st.title("🇬🇧 English Pro Elite")
-    coach_placeholder = st.empty()
-    if streak > 5: coach_placeholder.info(f"🔥 **Coach:** You've studied {streak} days in a row! You are becoming unstoppable.")
-    elif this_week_hrs >= weekly_goal: coach_placeholder.success(f"🎯 **Coach:** Weekly goal achieved! You're in the elite 1% of learners.")
-    else: coach_placeholder.warning("🚀 **Coach:** Every minute counts. Log a quick session to build momentum!")
+    # FEATURE 8: Milestone Reward
+    with st.expander(f"🎁 Next Level Reward: {st.session_state.milestone_reward}", expanded=False):
+        st.session_state.milestone_reward = st.text_input("Edit Reward", value=st.session_state.milestone_reward)
+
+    if burnout: st.warning("⚠️ **Burnout Warning:** You've studied heavily for 4 days. Consider a 'Lite' 15m day to protect your health!")
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Current Level", f"Lvl {level}")
     m2.metric("Total Study", f"{total_hrs:.1f}h")
-    m3.metric("Daily Streak", f"{streak} Days", delta="Keep it up!" if streak > 0 else "Start today!")
-    m4.metric("This Week", f"{this_week_hrs:.1f}h", delta=f"{delta_hrs:+.1f}h vs last week")
+    m3.metric("Daily Streak", f"{streak} Days")
+    m4.metric("Weekly Pacer", f"{remaining_min/60:.1f}h left", f"{pace:.0f}m / day needed", delta_color="inverse")
     st.progress(xp_progress, text=f"XP Progress to Level {level+1}")
 
-    # FEATURE 5: Skill-Specific XP Bars
-    with st.expander("📊 Detailed Skill Mastery", expanded=False):
-        skill_cols = st.columns(3)
-        all_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
-        for i, sk in enumerate(all_skills):
-            sk_hrs = df[df['Skill'] == sk]['Time Spent'].sum() / 60
-            sk_lvl = int(sk_hrs // 10) + 1
-            sk_xp = (sk_hrs % 10) / 10
-            skill_cols[i % 3].write(f"**{sk}** (Lvl {sk_lvl})")
-            skill_cols[i % 3].progress(sk_xp)
+    if not st.session_state.zen_mode:
+        st.divider()
+        tab_dash, tab_insights, tab_trophy, tab_history = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History"])
 
-    st.divider()
+        with tab_dash:
+            c1, c2 = st.columns([2, 1])
+            with c1:
+                # Cumulative Mountain
+                df_sorted = df.sort_values('Date')
+                df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
+                st.plotly_chart(px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="The Learning Mountain", color_discrete_sequence=[st.session_state.accent_color]), use_container_width=True)
+            with c2:
+                # FEATURE 1: Target Skill Balancer
+                radar_data = df.groupby('Skill')['Time Spent'].sum().reindex(all_skills).fillna(0)
+                fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
+                fig_radar.add_trace(go.Scatterpolar(r=[total_hrs/6]*6, theta=all_skills, fill='none', name='Ideal Balance', line=dict(dash='dash', color='gray')))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, title="Skill Diet Balancer")
+                st.plotly_chart(fig_radar, use_container_width=True)
 
-    # 2. ANALYSIS TABS
-    tab_dashboard, tab_trophy, tab_history = st.tabs(["📈 Advanced Analytics", "🏆 Trophy Room", "📝 History Explorer"])
+        with tab_insights:
+            i1, i2 = st.columns(2)
+            with i1:
+                # FEATURE 4: On This Day
+                target_past = (now - timedelta(days=30)).date()
+                past_data = df[df['Date'].dt.date == target_past]
+                st.subheader("🕰️ Time Machine (30 Days Ago)")
+                if not past_data.empty:
+                    st.info(f"On {target_past}, you studied **{past_data['Time Spent'].sum()}m**. Notes: *{past_data['Notes'].iloc[0]}*")
+                else: st.write("No data for this day last month. Start logging to build history!")
+            with i2:
+                # FEATURE 6: Skill Pairing Heatmap
+                df['Date_Only'] = df['Date'].dt.date
+                pivot = df.groupby(['Date_Only', 'Skill']).size().unstack(fill_value=0)
+                corr = pivot.corr().fillna(0)
+                st.plotly_chart(px.imshow(corr, text_auto=True, title="Skill Pairing (What do you study together?)", color_continuous_scale="Purples"), use_container_width=True)
 
-    with tab_dashboard:
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            # FEATURE 8: Cumulative Mountain Chart
-            df_sorted = df.sort_values('Date')
-            df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
-            fig_mtn = px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="The Learning Mountain (Total Hours)", color_discrete_sequence=[st.session_state.accent_color])
-            st.plotly_chart(fig_mtn, use_container_width=True)
+        with tab_trophy:
+            badges = [("First Step", "Logged 1st session", total_hrs > 0), ("Novice", "10 total hours", total_hrs >= 10), ("Master", "Level 10", level >= 10)]
+            cols = st.columns(3)
+            for i, (name, desc, unlocked) in enumerate(badges):
+                if unlocked: cols[i].success(f"🌟 **{name}**\n\n{desc}")
+                else: cols[i].info(f"🔒 **{name}**\n\n{desc}")
+
+        with tab_history:
+            # FEATURE 9: Interactive Deletion
+            display_df = df.copy().sort_values("Date", ascending=False)
+            display_df['Delete'] = False
+            display_df['Date'] = display_df['Date'].dt.date
             
-            # FEATURE 9: Best Day Analysis
-            df['Day_Name'] = df['Date'].dt.day_name()
-            day_avg = df.groupby('Day_Name')['Time Spent'].mean().reindex(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']).fillna(0)
-            fig_day = px.bar(x=day_avg.index, y=day_avg.values, title="Average Session Length by Day", color_discrete_sequence=[st.session_state.accent_color])
-            st.plotly_chart(fig_day, use_container_width=True)
-
-        with c2:
-            # FEATURE 7: Skill Balance Radar
-            radar_data = df.groupby('Skill')['Time Spent'].sum().reindex(all_skills).fillna(0)
-            fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
-            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, title="Skill Balance Radar")
-            st.plotly_chart(fig_radar, use_container_width=True)
+            edited_hist = st.data_editor(display_df[['Delete', 'Date', 'Skill', 'Time Spent', 'Notes']], use_container_width=True)
             
-            # Skill Mix Pie
-            fig_pie = px.pie(df, values='Time Spent', names='Skill', hole=0.5, title="Practice Mix")
-            st.plotly_chart(fig_pie, use_container_width=True)
+            if st.button("🗑️ Delete Selected / Save Changes", type="primary"):
+                filtered_save = edited_hist[edited_hist['Delete'] == False].drop(columns=['Delete'])
+                filtered_save['Date'] = pd.to_datetime(filtered_save['Date'])
+                new_sha = save_to_github(gh_token, gh_repo, "data.csv", filtered_save, st.session_state.file_sha)
+                if new_sha: st.rerun()
 
-    with tab_trophy:
-        # FEATURE 4: Trophy Room Milestones
-        st.subheader("🏅 Your Achievements")
-        badges = [
-            ("First Step", "Logged 1st session", total_hrs > 0),
-            ("Novice", "Reached 10 total hours", total_hrs >= 10),
-            ("Habit Builder", "Achieved 3-day streak", streak >= 3),
-            ("Polymath", "Practiced all 6 skills", df['Skill'].nunique() >= 6),
-            ("Deep Work", "Logged a 2hr+ session", (df['Time Spent'] >= 120).any()),
-            ("Consistent", "Reached 25 total hours", total_hrs >= 25),
-            ("Master", "Reached Level 10", level >= 10),
-            ("Centurion", "Reached 100 total hours", total_hrs >= 100)
-        ]
-        cols = st.columns(4)
-        for i, (name, desc, unlocked) in enumerate(badges):
-            if unlocked: cols[i % 4].success(f"🌟 **{name}**\n\n{desc}")
-            else: cols[i % 4].info(f"🔒 **{name}**\n\n{desc}")
-
-    with tab_history:
-        # FEATURE 1: Filtering & History
-        st.subheader("🔍 Filter & Edit")
-        f1, f2 = st.columns(2)
-        with f1: date_range = st.date_input("Date Range", [df['Date'].min(), now])
-        with f2: skill_filter = st.multiselect("Filter Skills", all_skills, default=all_skills)
-        
-        filtered_df = df[(df['Date'].dt.date >= date_range[0]) & 
-                         (df['Date'].dt.date <= (date_range[1] if len(date_range)>1 else date_range[0])) &
-                         (df['Skill'].isin(skill_filter))]
-        
-        display_df = filtered_df.copy().sort_values("Date", ascending=False)
-        display_df['Notes'] = display_df['Notes'].apply(add_visual_tags)
-        display_df['Date'] = display_df['Date'].dt.date
-
-        edited = st.data_editor(display_df[['Date', 'Skill', 'Time Spent', 'Notes']], use_container_width=True, num_rows="dynamic")
-        
-        if st.button("💾 Commit History Changes", type="primary"):
-            save_df = edited.copy()
-            save_df['Date'] = pd.to_datetime(save_df['Date'])
-            save_df['Notes'] = save_df['Notes'].str.replace('🎧 ','').str.replace('📖 ','').str.replace('📺 ','').str.replace('✍️ ','')
-            new_sha = save_to_github(gh_token, gh_repo, "data.csv", save_df, st.session_state.file_sha)
-            if new_sha: st.rerun()
-
-    # FEATURE 10: Social Share Generator
+    # LOG SESSION
     st.divider()
-    share_text = f"🇬🇧 My English Study Progress:\n📊 Level: {level}\n🔥 Streak: {streak} Days\n⏱️ Total: {total_hrs:.1f} Hours\n🎯 This Week: {this_week_hrs:.1f} Hours\n#EnglishLearning #LearningTracker"
-    st.code(share_text, language="markdown")
-    st.button("📋 Copy Stats to Clipboard (Simulated)", on_click=lambda: st.toast("Stats copied to clipboard!"))
-
-    # Log New Session (Original functionality preserved)
-    st.divider()
-    with st.expander("➕ Log New Session", expanded=False):
-        with st.form("new_entry"):
-            d = st.date_input("Date", now)
-            s = st.selectbox("Skill", all_skills)
-            t = st.number_input("Minutes", 1, 600, 30)
+    with st.expander("➕ Log New Session", expanded=True):
+        with st.form("new_entry", clear_on_submit=True):
+            col_d, col_s, col_t = st.columns(3)
+            d = col_d.date_input("Date", now)
+            s = col_s.selectbox("Skill", all_skills)
+            t = col_t.number_input("Minutes", 1, 600, 30)
             n = st.text_input("Notes")
-            if st.form_submit_button("Log Entry"):
+            if st.form_submit_button("Log Entry", use_container_width=True):
                 new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 save_to_github(gh_token, gh_repo, "data.csv", st.session_state.df, st.session_state.file_sha)
                 st.rerun()
-
 else:
-    st.info("👈 Connect your GitHub Token and Repo in the sidebar to begin.")
+    st.info("👈 Connect your GitHub Token in the sidebar to begin.")
