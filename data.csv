@@ -1,718 +1,719 @@
-﻿Date,Skill,Time Spent
-"Wednesday, 03 September 2025",Listening dan writing ,25
-,Listening ,23
-,Speaking ,25
-"Friday, 05 September 2025",Listening dan writing ,19
-,Listening ,83
-,Reading ,25
-,Grammar ,
-"Saturday, 06 September 2025",Listening dan writing ,75
-,Listening ,60
-,Listening ,123
-"Sunday, 07 September 2025",Listening ,55
-,Pronunciation ,75
-"Monday, 08 September 2025",Listening ,20
-,Pronunciation ,16
-"Thursday, 11 September 2025",Listening dan writing ,25
-"Friday, 12 September 2025",Listening ,19
-"Saturday, 13 September 2025",Listening ,37
-"Sunday, 14 September 2025",Grammar ,25
-,Listening ,112
-,Pronunciation ,30
-,Speaking ,5
-"Monday, 15 September 2025",Listening ,45
-"Tuesday, 16 September 2025",Listening ,29
-,Write,5
-,Speaking ,4
-,Reading,4
-"Wednesday, 17 September 2025",Listening ,24
-,Write,3
-"Thursday, 18 September 2025",Listening ,38
-,Grammar ,12
-,Write,5
-,Speaking ,1
-,Pronunciation ,4
-"Friday, 19 September 2025",Listening ,54
-,Write,25
-,Pronunciation ,22
-,Grammar ,9
-"Saturday, 20 September 2025",Write,90
-,Reading,27
-,Grammar ,28
-,Listening ,84
-"Sunday, 21 September 2025",Reading,21
-,Listening ,31
-,Grammar ,91
-,Write,117
-"Monday, 22 September 2025",Write,150
-,Grammar ,54
-"Tuesday, 23 September 2025",Grammar ,124
-,Write,50
-"Tuesday, 23 September 2025",Write,160
-,Reading,5
-,Grammar ,39
-,Speaking,10
-,Listening ,13
-,Pronunciation ,10
-"Thursday, 25 September 2025",Write,10
-,Grammar ,10
-,Speaking ,27
-,Pronunciation ,4
-,Listening ,17
-"Friday, 26 September 2025",Speaking ,10
-,Grammar ,23
-"Saturday, 27 September 2025",Speaking ,13
-,Grammar ,144
-,Listening ,34
-,Write,5
-,Reading,4
-"Sunday, 28 September 2025",Grammar ,198
-,Speaking ,12
-,Pronunciation ,15
-,Reading,5
-,Listening ,9
-"Monday, 29 September 2025",Grammar,26
-,Speaking ,3
-,Reading,3
-,Listening ,15
-,Write,19
-"Tuesday, 30 September 2025",Grammar,13
-,Speaking ,2
-"Wednesday, 01 October 2025",Grammar,5
-,Speaking ,2
-,Listening ,8
-"Thursday, 02 October 2025",Grammar,13
-,Speaking ,2
-,Writing ,3
-"Friday, 03 October 2025",Reading,13
-,Writing ,2
-"Saturday, 04 October 2025",Listening ,13
-,Writing ,2
-"Sunday, 05 October 2025",Reading,13
-,Writing ,2
-"Monday, 06 October 2025",Grammar,13
-,Writing ,2
-"Tuesday, 07 October 2025",Listening ,13
-,Speaking ,2
-"Wednesday, 08 October 2025",Reading,13
-,Writing ,2
-"Thursday, 09 October 2025",Grammar,13
-,Writing ,2
-"Friday, 10 October 2025",Listening ,13
-,Speaking ,2
-"Saturday, 11 October 2025",Reading,13
-,Writing ,2
-"Sunday, 12 October 2025",Grammar,13
-,Writing ,2
-"Monday, 13 October 2025",Listening ,13
-,Speaking ,2
-"Tuesday, 14 October 2025",Reading,13
-,Writing ,2
-"Wednesday, 15 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,10
-"Thursday, 16 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,10
-"Friday, 17 October 2025",Listening ,10
-,Reading,10
-,Speaking ,10
-"Saturday, 18 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,10
-"Sunday, 19 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,10
-"Monday, 20 October 2025",Listening ,10
-,Reading,10
-,Speaking ,10
-"Tuesday, 21 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,10
-"Wednesday, 22 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,5
-,Vocabulary ,5
-"Thursday, 23 October 2025",Listening ,10
-,Reading,10
-,Speaking ,10
-"Friday, 24 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,5
-,Vocabulary ,5
-"Saturday, 25 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,5
-,Vocabulary ,5
-"Sunday, 26 October 2025",Listening ,10
-,Reading,10
-,Speaking ,5
-,Vocabulary ,5
-"Monday, 27 October 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Tuesday, 28 October 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Wednesday, 29 October 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Thursday, 30 October 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Friday, 31 October 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Saturday, 01 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Sunday, 02 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Monday, 03 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Tuesday, 04 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Wednesday, 05 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Thursday, 06 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Friday, 07 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Saturday, 08 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Sunday, 09 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Monday, 10 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Tuesday, 11 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Wednesday, 12 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Thursday, 13 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Friday, 14 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Saturday, 15 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Sunday, 16 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Monday, 17 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Tuesday, 18 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Wednesday, 19 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Thursday, 20 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Friday, 21 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Sunday, 23 November 2025 ",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Monday, 24 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Wednesday, 26 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Thursday, 27 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Friday, 28 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Saturday, 29 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Sunday, 30 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Monday, 01 December 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Tuesday, 02 December 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Wednesday, 03 December 2025",Speaking ,12
-,Grammar ,12
-,Reading ,24
-,Listening ,24
-,Vocabulary ,12
-"Thursday, 04 December 2025",Speaking ,18
-,Grammar ,30
-,Reading ,30
-,Vocabulary ,12
-"Friday, 05 December 2025",Reading ,30
-,Speaking ,18
-,Grammar ,30
-,Vocabulary ,20
-"Saturday, 06 December 2025",Reading ,30
-,Speaking ,18
-,Grammar ,30
-,Vocabulary ,30
-"Sunday, 07 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 08 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Tuesday, 09 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Wednesday, 10 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Thursday, 11 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Friday, 12 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 13 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Sunday, 14 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 15 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Tuesday, 16 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Wednesday, 17 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Thursday, 18 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 20 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 20 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-,Writing ,20
-"Sunday, 21 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 22 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Tuesday, 23 December 2025",Reading ,60
-,Listening ,60
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-,Writing ,30
-"Wednesday, 24 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Thursday, 25 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Friday, 26 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 27 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Sunday, 28 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 29 December 2025",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Tuesday, 30 December 2025",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Wednesday, 31 December 2025",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Thursday, 01 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Friday, 02 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Saturday, 03 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Sunday, 04 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Monday, 05 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Tuesday, 06 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Wednesday, 07 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Thursday, 08 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Friday, 09 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 10 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Sunday, 11 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Monday, 12 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Tuesday, 13 January 2026",Listening ,40
-,Speaking ,20
-,Reading ,40
-,Writing ,20
-"Wednesday, 14 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Thursday, 15 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Friday, 16 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 17 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Sunday, 18 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Monday, 19 January 2026",Listening ,60
-"Tuesday, 20 January 2026",Listening ,5
-,Writing ,8
-"Wednesday, 21 January 2026",Listening ,10
-,Writing ,10
-"Thursday, 22 January 2026",Listening ,10
-,Writing ,10
-"Friday, 23 January 2026",Listening ,10
-,Writing ,9
-"Saturday, 24 January 2026",Writing ,7
-,Listening ,6
-"Sunday, 25 January 2026",Listening ,7
-,Writing ,7
-"Monday, 26 January 2026",Writing ,11
-,Writing ,7
-"Tuesday, 27 January 2026",Listening ,5
-"Wednesday, 28 January 2026",Listening ,4
-"Thursday, 29 January 2026",Writing ,3
-,Listening ,5
-"Friday, 30 January 2026",Listening ,7
-"Saturday, 31 January 2026",Listening ,4
-"Sunday, 01 February 2026",Listening ,6
-"Monday, 02 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Tuesday, 03 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Wednesday, 04 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Thursday, 05 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Friday, 06 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 07 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Sunday, 08 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Monday, 09 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Tuesday, 10 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Wednesday, 11 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Thursday, 12 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Friday, 13 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 14 February 2026",Listening ,20
-"Sunday, 15 February 2026",Speaking ,20
-"Monday, 16 February 2026",Writing ,5
-,Speaking ,5
-"Tuesday, 17 February 2026",Writing ,5
-,Speaking ,5
-"Wednesday, 18 February 2026",Writing ,5
-,Speaking ,5
-"Thursday, 19 February 2026",Writing ,5
-,Speaking ,5
-,Writing ,5
-,Speaking ,5
-,Listening ,12
-"Friday, 20 February 2026",Writing ,5
-"Saturday, 21 February 2026",Writing ,5
-"Sunday, 22 February 2026",Writing ,5
-"Monday, 23 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Tuesday, 24 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Wednesday, 25 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Thursday, 26 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,9
-"Friday, 27 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Saturday, 28 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Sunday, 01 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Monday, 02 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review ,5
-"Tuesday, 03 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review ,5
-"Wednesday, 04 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review & Anki,15
-"Thursday, 05 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review & Anki,10
-"Friday, 06 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Saturday, 07 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Sunday, 08 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Monday, 09 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Tuesday, 10 March 2026",Reading ,7
-"Wednesday, 11 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
+Date,Skill,Time Spent,Notes,Week_Num
+2025-09-03,Reading,25.0,,36
+2025-09-03,Reading,23.0,,36
+2025-09-03,Reading,25.0,,36
+2025-09-05,Reading,19.0,,36
+2025-09-05,Reading,83.0,,36
+2025-09-05,Reading,25.0,,36
+2025-09-05,Reading,0.0,,36
+2025-09-06,Reading,75.0,,36
+2025-09-06,Reading,60.0,,36
+2025-09-06,Reading,123.0,,36
+2025-09-07,Reading,55.0,,36
+2025-09-07,Reading,75.0,,36
+2025-09-08,Reading,20.0,,37
+2025-09-08,Reading,16.0,,37
+2025-09-11,Reading,25.0,,37
+2025-09-12,Reading,19.0,,37
+2025-09-13,Reading,37.0,,37
+2025-09-14,Reading,25.0,,37
+2025-09-14,Reading,112.0,,37
+2025-09-14,Reading,30.0,,37
+2025-09-14,Reading,5.0,,37
+2025-09-15,Reading,45.0,,38
+2025-09-16,Reading,29.0,,38
+2025-09-16,Reading,5.0,,38
+2025-09-16,Reading,4.0,,38
+2025-09-16,Reading,4.0,,38
+2025-09-17,Reading,24.0,,38
+2025-09-17,Reading,3.0,,38
+2025-09-18,Reading,38.0,,38
+2025-09-18,Reading,12.0,,38
+2025-09-18,Reading,5.0,,38
+2025-09-18,Reading,1.0,,38
+2025-09-18,Reading,4.0,,38
+2025-09-19,Reading,54.0,,38
+2025-09-19,Reading,25.0,,38
+2025-09-19,Reading,22.0,,38
+2025-09-19,Reading,9.0,,38
+2025-09-20,Reading,90.0,,38
+2025-09-20,Reading,27.0,,38
+2025-09-20,Reading,28.0,,38
+2025-09-20,Reading,84.0,,38
+2025-09-21,Reading,21.0,,38
+2025-09-21,Reading,31.0,,38
+2025-09-21,Reading,91.0,,38
+2025-09-21,Reading,117.0,,38
+2025-09-22,Reading,150.0,,39
+2025-09-22,Reading,54.0,,39
+2025-09-23,Reading,124.0,,39
+2025-09-23,Reading,50.0,,39
+2025-09-23,Reading,160.0,,39
+2025-09-23,Reading,5.0,,39
+2025-09-23,Reading,39.0,,39
+2025-09-23,Speaking,10.0,,39
+2025-09-23,Reading,13.0,,39
+2025-09-23,Reading,10.0,,39
+2025-09-25,Reading,10.0,,39
+2025-09-25,Reading,10.0,,39
+2025-09-25,Reading,27.0,,39
+2025-09-25,Reading,4.0,,39
+2025-09-25,Reading,17.0,,39
+2025-09-26,Reading,10.0,,39
+2025-09-26,Reading,23.0,,39
+2025-09-27,Reading,13.0,,39
+2025-09-27,Reading,144.0,,39
+2025-09-27,Reading,34.0,,39
+2025-09-27,Reading,5.0,,39
+2025-09-27,Reading,4.0,,39
+2025-09-28,Reading,198.0,,39
+2025-09-28,Reading,12.0,,39
+2025-09-28,Reading,15.0,,39
+2025-09-28,Reading,5.0,,39
+2025-09-28,Reading,9.0,,39
+2025-09-29,Grammar,26.0,,40
+2025-09-29,Reading,3.0,,40
+2025-09-29,Reading,3.0,,40
+2025-09-29,Reading,15.0,,40
+2025-09-29,Reading,19.0,,40
+2025-09-30,Grammar,13.0,,40
+2025-09-30,Reading,2.0,,40
+2025-10-01,Grammar,5.0,,40
+2025-10-01,Reading,2.0,,40
+2025-10-01,Reading,8.0,,40
+2025-10-02,Grammar,13.0,,40
+2025-10-02,Reading,2.0,,40
+2025-10-02,Reading,3.0,,40
+2025-10-03,Reading,13.0,,40
+2025-10-03,Reading,2.0,,40
+2025-10-04,Reading,13.0,,40
+2025-10-04,Reading,2.0,,40
+2025-10-05,Reading,13.0,,40
+2025-10-05,Reading,2.0,,40
+2025-10-06,Grammar,13.0,,41
+2025-10-06,Reading,2.0,,41
+2025-10-07,Reading,13.0,,41
+2025-10-07,Reading,2.0,,41
+2025-10-08,Reading,13.0,,41
+2025-10-08,Reading,2.0,,41
+2025-10-09,Grammar,13.0,,41
+2025-10-09,Reading,2.0,,41
+2025-10-10,Reading,13.0,,41
+2025-10-10,Reading,2.0,,41
+2025-10-11,Reading,13.0,,41
+2025-10-11,Reading,2.0,,41
+2025-10-12,Grammar,13.0,,41
+2025-10-12,Reading,2.0,,41
+2025-10-13,Reading,13.0,,42
+2025-10-13,Reading,2.0,,42
+2025-10-14,Reading,13.0,,42
+2025-10-14,Reading,2.0,,42
+2025-10-15,Reading,10.0,,42
+2025-10-15,Reading,10.0,,42
+2025-10-15,Reading,10.0,,42
+2025-10-16,Grammar,10.0,,42
+2025-10-16,Reading,10.0,,42
+2025-10-16,Reading,10.0,,42
+2025-10-17,Reading,10.0,,42
+2025-10-17,Reading,10.0,,42
+2025-10-17,Reading,10.0,,42
+2025-10-18,Reading,10.0,,42
+2025-10-18,Reading,10.0,,42
+2025-10-18,Reading,10.0,,42
+2025-10-19,Grammar,10.0,,42
+2025-10-19,Reading,10.0,,42
+2025-10-19,Reading,10.0,,42
+2025-10-20,Reading,10.0,,43
+2025-10-20,Reading,10.0,,43
+2025-10-20,Reading,10.0,,43
+2025-10-21,Reading,10.0,,43
+2025-10-21,Reading,10.0,,43
+2025-10-21,Reading,10.0,,43
+2025-10-22,Grammar,10.0,,43
+2025-10-22,Reading,10.0,,43
+2025-10-22,Reading,5.0,,43
+2025-10-22,Reading,5.0,,43
+2025-10-23,Reading,10.0,,43
+2025-10-23,Reading,10.0,,43
+2025-10-23,Reading,10.0,,43
+2025-10-24,Reading,10.0,,43
+2025-10-24,Reading,10.0,,43
+2025-10-24,Reading,5.0,,43
+2025-10-24,Reading,5.0,,43
+2025-10-25,Grammar,10.0,,43
+2025-10-25,Reading,10.0,,43
+2025-10-25,Reading,5.0,,43
+2025-10-25,Reading,5.0,,43
+2025-10-26,Reading,10.0,,43
+2025-10-26,Reading,10.0,,43
+2025-10-26,Reading,5.0,,43
+2025-10-26,Reading,5.0,,43
+2025-10-27,Reading,6.0,,44
+2025-10-27,Reading,6.0,,44
+2025-10-27,Grammar,6.0,,44
+2025-10-27,Reading,6.0,,44
+2025-10-27,Reading,6.0,,44
+2025-10-28,Reading,6.0,,44
+2025-10-28,Reading,6.0,,44
+2025-10-28,Reading,6.0,,44
+2025-10-28,Reading,6.0,,44
+2025-10-28,Reading,6.0,,44
+2025-10-29,Reading,6.0,,44
+2025-10-29,Reading,6.0,,44
+2025-10-29,Grammar,6.0,,44
+2025-10-29,Reading,6.0,,44
+2025-10-29,Reading,6.0,,44
+2025-10-30,Reading,6.0,,44
+2025-10-30,Reading,6.0,,44
+2025-10-30,Reading,6.0,,44
+2025-10-30,Reading,6.0,,44
+2025-10-30,Reading,6.0,,44
+2025-10-31,Reading,6.0,,44
+2025-10-31,Reading,6.0,,44
+2025-10-31,Grammar,6.0,,44
+2025-10-31,Reading,6.0,,44
+2025-10-31,Reading,6.0,,44
+2025-11-01,Reading,6.0,,44
+2025-11-01,Reading,6.0,,44
+2025-11-01,Reading,6.0,,44
+2025-11-01,Reading,6.0,,44
+2025-11-01,Reading,6.0,,44
+2025-11-02,Reading,6.0,,44
+2025-11-02,Reading,6.0,,44
+2025-11-02,Grammar,6.0,,44
+2025-11-02,Reading,6.0,,44
+2025-11-02,Reading,6.0,,44
+2025-11-03,Reading,6.0,,45
+2025-11-03,Reading,6.0,,45
+2025-11-03,Grammar,6.0,,45
+2025-11-03,Reading,6.0,,45
+2025-11-03,Reading,6.0,,45
+2025-11-04,Reading,6.0,,45
+2025-11-04,Reading,6.0,,45
+2025-11-04,Reading,6.0,,45
+2025-11-04,Reading,6.0,,45
+2025-11-04,Reading,6.0,,45
+2025-11-05,Reading,6.0,,45
+2025-11-05,Reading,6.0,,45
+2025-11-05,Grammar,6.0,,45
+2025-11-05,Reading,6.0,,45
+2025-11-05,Reading,6.0,,45
+2025-11-06,Reading,6.0,,45
+2025-11-06,Reading,6.0,,45
+2025-11-06,Reading,6.0,,45
+2025-11-06,Reading,6.0,,45
+2025-11-06,Reading,6.0,,45
+2025-11-07,Reading,6.0,,45
+2025-11-07,Reading,6.0,,45
+2025-11-07,Grammar,6.0,,45
+2025-11-07,Reading,6.0,,45
+2025-11-07,Reading,6.0,,45
+2025-11-08,Reading,6.0,,45
+2025-11-08,Reading,6.0,,45
+2025-11-08,Reading,6.0,,45
+2025-11-08,Reading,6.0,,45
+2025-11-08,Reading,6.0,,45
+2025-11-09,Reading,6.0,,45
+2025-11-09,Reading,6.0,,45
+2025-11-09,Grammar,6.0,,45
+2025-11-09,Reading,6.0,,45
+2025-11-09,Reading,6.0,,45
+2025-11-10,Reading,6.0,,46
+2025-11-10,Reading,6.0,,46
+2025-11-10,Grammar,6.0,,46
+2025-11-10,Reading,6.0,,46
+2025-11-10,Reading,6.0,,46
+2025-11-11,Reading,6.0,,46
+2025-11-11,Reading,6.0,,46
+2025-11-11,Reading,6.0,,46
+2025-11-11,Reading,6.0,,46
+2025-11-11,Reading,6.0,,46
+2025-11-12,Reading,6.0,,46
+2025-11-12,Reading,6.0,,46
+2025-11-12,Grammar,6.0,,46
+2025-11-12,Reading,6.0,,46
+2025-11-12,Reading,6.0,,46
+2025-11-13,Reading,12.0,,46
+2025-11-13,Reading,12.0,,46
+2025-11-13,Reading,12.0,,46
+2025-11-13,Reading,12.0,,46
+2025-11-13,Reading,12.0,,46
+2025-11-14,Reading,12.0,,46
+2025-11-14,Reading,12.0,,46
+2025-11-14,Reading,12.0,,46
+2025-11-14,Reading,12.0,,46
+2025-11-14,Reading,12.0,,46
+2025-11-15,Reading,12.0,,46
+2025-11-15,Reading,12.0,,46
+2025-11-15,Reading,12.0,,46
+2025-11-15,Reading,12.0,,46
+2025-11-15,Reading,12.0,,46
+2025-11-16,Reading,12.0,,46
+2025-11-16,Reading,12.0,,46
+2025-11-16,Reading,12.0,,46
+2025-11-16,Reading,12.0,,46
+2025-11-16,Reading,12.0,,46
+2025-11-17,Reading,12.0,,47
+2025-11-17,Reading,12.0,,47
+2025-11-17,Reading,12.0,,47
+2025-11-17,Reading,12.0,,47
+2025-11-17,Reading,12.0,,47
+2025-11-18,Reading,12.0,,47
+2025-11-18,Reading,12.0,,47
+2025-11-18,Reading,12.0,,47
+2025-11-18,Reading,12.0,,47
+2025-11-18,Reading,12.0,,47
+2025-11-19,Reading,12.0,,47
+2025-11-19,Reading,12.0,,47
+2025-11-19,Reading,12.0,,47
+2025-11-19,Reading,12.0,,47
+2025-11-19,Reading,12.0,,47
+2025-11-20,Reading,12.0,,47
+2025-11-20,Reading,12.0,,47
+2025-11-20,Reading,12.0,,47
+2025-11-20,Reading,12.0,,47
+2025-11-20,Reading,12.0,,47
+2025-11-21,Reading,12.0,,47
+2025-11-21,Reading,12.0,,47
+2025-11-21,Reading,12.0,,47
+2025-11-21,Reading,12.0,,47
+2025-11-21,Reading,12.0,,47
+2025-11-23,Reading,12.0,,47
+2025-11-23,Reading,12.0,,47
+2025-11-23,Reading,12.0,,47
+2025-11-23,Reading,12.0,,47
+2025-11-23,Reading,12.0,,47
+2025-11-24,Reading,12.0,,48
+2025-11-24,Reading,12.0,,48
+2025-11-24,Reading,12.0,,48
+2025-11-24,Reading,12.0,,48
+2025-11-24,Reading,12.0,,48
+2025-11-26,Reading,12.0,,48
+2025-11-26,Reading,12.0,,48
+2025-11-26,Reading,12.0,,48
+2025-11-26,Reading,12.0,,48
+2025-11-26,Reading,12.0,,48
+2025-11-27,Reading,12.0,,48
+2025-11-27,Reading,12.0,,48
+2025-11-27,Reading,12.0,,48
+2025-11-27,Reading,12.0,,48
+2025-11-27,Reading,12.0,,48
+2025-11-28,Reading,12.0,,48
+2025-11-28,Reading,12.0,,48
+2025-11-28,Reading,12.0,,48
+2025-11-28,Reading,12.0,,48
+2025-11-28,Reading,12.0,,48
+2025-11-29,Reading,12.0,,48
+2025-11-29,Reading,12.0,,48
+2025-11-29,Reading,12.0,,48
+2025-11-29,Reading,12.0,,48
+2025-11-29,Reading,12.0,,48
+2025-11-30,Reading,12.0,,48
+2025-11-30,Reading,12.0,,48
+2025-11-30,Reading,12.0,,48
+2025-11-30,Reading,12.0,,48
+2025-11-30,Reading,12.0,,48
+2025-12-01,Reading,12.0,,49
+2025-12-01,Reading,12.0,,49
+2025-12-01,Reading,12.0,,49
+2025-12-01,Reading,12.0,,49
+2025-12-01,Reading,12.0,,49
+2025-12-02,Reading,12.0,,49
+2025-12-02,Reading,12.0,,49
+2025-12-02,Reading,12.0,,49
+2025-12-02,Reading,12.0,,49
+2025-12-02,Reading,12.0,,49
+2025-12-03,Reading,12.0,,49
+2025-12-03,Reading,12.0,,49
+2025-12-03,Reading,24.0,,49
+2025-12-03,Reading,24.0,,49
+2025-12-03,Reading,12.0,,49
+2025-12-04,Reading,18.0,,49
+2025-12-04,Reading,30.0,,49
+2025-12-04,Reading,30.0,,49
+2025-12-04,Reading,12.0,,49
+2025-12-05,Reading,30.0,,49
+2025-12-05,Reading,18.0,,49
+2025-12-05,Reading,30.0,,49
+2025-12-05,Reading,20.0,,49
+2025-12-06,Reading,30.0,,49
+2025-12-06,Reading,18.0,,49
+2025-12-06,Reading,30.0,,49
+2025-12-06,Reading,30.0,,49
+2025-12-07,Reading,30.0,,49
+2025-12-07,Reading,30.0,,49
+2025-12-07,Reading,30.0,,49
+2025-12-07,Reading,30.0,,49
+2025-12-08,Reading,30.0,,50
+2025-12-08,Reading,30.0,,50
+2025-12-08,Reading,30.0,,50
+2025-12-08,Reading,30.0,,50
+2025-12-09,Reading,30.0,,50
+2025-12-09,Reading,30.0,,50
+2025-12-09,Reading,30.0,,50
+2025-12-09,Reading,30.0,,50
+2025-12-10,Reading,30.0,,50
+2025-12-10,Reading,30.0,,50
+2025-12-10,Reading,30.0,,50
+2025-12-10,Reading,30.0,,50
+2025-12-11,Reading,30.0,,50
+2025-12-11,Reading,30.0,,50
+2025-12-11,Reading,30.0,,50
+2025-12-11,Reading,30.0,,50
+2025-12-12,Reading,30.0,,50
+2025-12-12,Reading,30.0,,50
+2025-12-12,Reading,30.0,,50
+2025-12-12,Reading,30.0,,50
+2025-12-13,Reading,30.0,,50
+2025-12-13,Reading,30.0,,50
+2025-12-13,Reading,30.0,,50
+2025-12-13,Reading,30.0,,50
+2025-12-14,Reading,30.0,,50
+2025-12-14,Reading,30.0,,50
+2025-12-14,Reading,30.0,,50
+2025-12-14,Reading,30.0,,50
+2025-12-15,Reading,30.0,,51
+2025-12-15,Reading,30.0,,51
+2025-12-15,Reading,30.0,,51
+2025-12-15,Reading,30.0,,51
+2025-12-16,Reading,30.0,,51
+2025-12-16,Reading,30.0,,51
+2025-12-16,Reading,30.0,,51
+2025-12-16,Reading,30.0,,51
+2025-12-17,Reading,30.0,,51
+2025-12-17,Reading,30.0,,51
+2025-12-17,Reading,30.0,,51
+2025-12-17,Reading,30.0,,51
+2025-12-18,Reading,30.0,,51
+2025-12-18,Reading,30.0,,51
+2025-12-18,Reading,30.0,,51
+2025-12-18,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,30.0,,51
+2025-12-20,Reading,20.0,,51
+2025-12-21,Reading,30.0,,51
+2025-12-21,Reading,30.0,,51
+2025-12-21,Reading,30.0,,51
+2025-12-21,Reading,30.0,,51
+2025-12-22,Reading,30.0,,52
+2025-12-22,Reading,30.0,,52
+2025-12-22,Reading,30.0,,52
+2025-12-22,Reading,30.0,,52
+2025-12-23,Reading,60.0,,52
+2025-12-23,Reading,60.0,,52
+2025-12-23,Reading,30.0,,52
+2025-12-23,Reading,30.0,,52
+2025-12-23,Reading,30.0,,52
+2025-12-23,Reading,30.0,,52
+2025-12-24,Reading,30.0,,52
+2025-12-24,Reading,30.0,,52
+2025-12-24,Reading,30.0,,52
+2025-12-24,Reading,30.0,,52
+2025-12-25,Reading,30.0,,52
+2025-12-25,Reading,30.0,,52
+2025-12-25,Reading,30.0,,52
+2025-12-25,Reading,30.0,,52
+2025-12-26,Reading,30.0,,52
+2025-12-26,Reading,30.0,,52
+2025-12-26,Reading,30.0,,52
+2025-12-26,Reading,30.0,,52
+2025-12-27,Reading,30.0,,52
+2025-12-27,Reading,30.0,,52
+2025-12-27,Reading,30.0,,52
+2025-12-27,Reading,30.0,,52
+2025-12-28,Reading,30.0,,52
+2025-12-28,Reading,30.0,,52
+2025-12-28,Reading,30.0,,52
+2025-12-28,Reading,30.0,,52
+2025-12-29,Reading,60.0,,1
+2025-12-29,Reading,30.0,,1
+2025-12-29,Reading,10.0,,1
+2025-12-29,Reading,20.0,,1
+2025-12-30,Reading,60.0,,1
+2025-12-30,Reading,30.0,,1
+2025-12-30,Reading,10.0,,1
+2025-12-30,Reading,20.0,,1
+2025-12-31,Reading,60.0,,1
+2025-12-31,Reading,30.0,,1
+2025-12-31,Reading,10.0,,1
+2025-12-31,Reading,20.0,,1
+2026-01-01,Reading,60.0,,1
+2026-01-01,Reading,30.0,,1
+2026-01-01,Reading,10.0,,1
+2026-01-01,Reading,20.0,,1
+2026-01-02,Reading,60.0,,1
+2026-01-02,Reading,30.0,,1
+2026-01-02,Reading,10.0,,1
+2026-01-02,Reading,20.0,,1
+2026-01-03,Reading,60.0,,1
+2026-01-03,Reading,30.0,,1
+2026-01-03,Reading,10.0,,1
+2026-01-03,Reading,20.0,,1
+2026-01-04,Reading,60.0,,1
+2026-01-04,Reading,30.0,,1
+2026-01-04,Reading,10.0,,1
+2026-01-04,Reading,20.0,,1
+2026-01-05,Reading,60.0,,2
+2026-01-05,Reading,30.0,,2
+2026-01-05,Reading,10.0,,2
+2026-01-05,Reading,20.0,,2
+2026-01-06,Reading,60.0,,2
+2026-01-06,Reading,30.0,,2
+2026-01-06,Reading,10.0,,2
+2026-01-06,Reading,20.0,,2
+2026-01-07,Reading,60.0,,2
+2026-01-07,Reading,30.0,,2
+2026-01-07,Reading,10.0,,2
+2026-01-07,Reading,20.0,,2
+2026-01-08,Reading,60.0,,2
+2026-01-08,Reading,30.0,,2
+2026-01-08,Reading,10.0,,2
+2026-01-08,Reading,20.0,,2
+2026-01-09,Reading,20.0,,2
+2026-01-09,Reading,10.0,,2
+2026-01-09,Reading,20.0,,2
+2026-01-09,Reading,10.0,,2
+2026-01-10,Reading,20.0,,2
+2026-01-10,Reading,10.0,,2
+2026-01-10,Reading,20.0,,2
+2026-01-10,Reading,10.0,,2
+2026-01-11,Reading,20.0,,2
+2026-01-11,Reading,10.0,,2
+2026-01-11,Reading,20.0,,2
+2026-01-11,Reading,10.0,,2
+2026-01-12,Reading,20.0,,3
+2026-01-12,Reading,10.0,,3
+2026-01-12,Reading,20.0,,3
+2026-01-12,Reading,10.0,,3
+2026-01-13,Reading,40.0,,3
+2026-01-13,Reading,20.0,,3
+2026-01-13,Reading,40.0,,3
+2026-01-13,Reading,20.0,,3
+2026-01-14,Reading,20.0,,3
+2026-01-14,Reading,10.0,,3
+2026-01-14,Reading,20.0,,3
+2026-01-14,Reading,10.0,,3
+2026-01-15,Reading,20.0,,3
+2026-01-15,Reading,10.0,,3
+2026-01-15,Reading,20.0,,3
+2026-01-15,Reading,10.0,,3
+2026-01-16,Reading,20.0,,3
+2026-01-16,Reading,10.0,,3
+2026-01-16,Reading,20.0,,3
+2026-01-16,Reading,10.0,,3
+2026-01-17,Reading,20.0,,3
+2026-01-17,Reading,10.0,,3
+2026-01-17,Reading,20.0,,3
+2026-01-17,Reading,10.0,,3
+2026-01-18,Reading,20.0,,3
+2026-01-18,Reading,10.0,,3
+2026-01-18,Reading,20.0,,3
+2026-01-18,Reading,10.0,,3
+2026-01-19,Reading,60.0,,4
+2026-01-20,Reading,5.0,,4
+2026-01-20,Reading,8.0,,4
+2026-01-21,Reading,10.0,,4
+2026-01-21,Reading,10.0,,4
+2026-01-22,Reading,10.0,,4
+2026-01-22,Reading,10.0,,4
+2026-01-23,Reading,10.0,,4
+2026-01-23,Reading,9.0,,4
+2026-01-24,Reading,7.0,,4
+2026-01-24,Reading,6.0,,4
+2026-01-25,Reading,7.0,,4
+2026-01-25,Reading,7.0,,4
+2026-01-26,Reading,11.0,,5
+2026-01-26,Reading,7.0,,5
+2026-01-27,Reading,5.0,,5
+2026-01-28,Reading,4.0,,5
+2026-01-29,Reading,3.0,,5
+2026-01-29,Reading,5.0,,5
+2026-01-30,Reading,7.0,,5
+2026-01-31,Reading,4.0,,5
+2026-02-01,Reading,6.0,,5
+2026-02-02,Reading,20.0,,6
+2026-02-02,Reading,10.0,,6
+2026-02-02,Reading,20.0,,6
+2026-02-02,Reading,10.0,,6
+2026-02-03,Reading,20.0,,6
+2026-02-03,Reading,10.0,,6
+2026-02-03,Reading,20.0,,6
+2026-02-03,Reading,10.0,,6
+2026-02-04,Reading,20.0,,6
+2026-02-04,Reading,10.0,,6
+2026-02-04,Reading,20.0,,6
+2026-02-04,Reading,10.0,,6
+2026-02-05,Reading,20.0,,6
+2026-02-05,Reading,10.0,,6
+2026-02-05,Reading,20.0,,6
+2026-02-05,Reading,10.0,,6
+2026-02-06,Reading,20.0,,6
+2026-02-06,Reading,10.0,,6
+2026-02-06,Reading,20.0,,6
+2026-02-06,Reading,10.0,,6
+2026-02-07,Reading,20.0,,6
+2026-02-07,Reading,10.0,,6
+2026-02-07,Reading,20.0,,6
+2026-02-07,Reading,10.0,,6
+2026-02-08,Reading,20.0,,6
+2026-02-08,Reading,10.0,,6
+2026-02-08,Reading,20.0,,6
+2026-02-08,Reading,10.0,,6
+2026-02-09,Reading,20.0,,7
+2026-02-09,Reading,10.0,,7
+2026-02-09,Reading,20.0,,7
+2026-02-09,Reading,10.0,,7
+2026-02-10,Reading,20.0,,7
+2026-02-10,Reading,10.0,,7
+2026-02-10,Reading,20.0,,7
+2026-02-10,Reading,10.0,,7
+2026-02-11,Reading,20.0,,7
+2026-02-11,Reading,10.0,,7
+2026-02-11,Reading,20.0,,7
+2026-02-11,Reading,10.0,,7
+2026-02-12,Reading,20.0,,7
+2026-02-12,Reading,10.0,,7
+2026-02-12,Reading,20.0,,7
+2026-02-12,Reading,10.0,,7
+2026-02-13,Reading,20.0,,7
+2026-02-13,Reading,10.0,,7
+2026-02-13,Reading,20.0,,7
+2026-02-13,Reading,10.0,,7
+2026-02-14,Reading,20.0,,7
+2026-02-15,Reading,20.0,,7
+2026-02-16,Reading,5.0,,8
+2026-02-16,Reading,5.0,,8
+2026-02-17,Reading,5.0,,8
+2026-02-17,Reading,5.0,,8
+2026-02-18,Reading,5.0,,8
+2026-02-18,Reading,5.0,,8
+2026-02-19,Reading,5.0,,8
+2026-02-19,Reading,5.0,,8
+2026-02-19,Reading,5.0,,8
+2026-02-19,Reading,5.0,,8
+2026-02-19,Reading,12.0,,8
+2026-02-20,Reading,5.0,,8
+2026-02-21,Reading,5.0,,8
+2026-02-22,Reading,5.0,,8
+2026-02-23,Reading,20.0,,9
+2026-02-23,Reading,20.0,,9
+2026-02-23,Reading,25.0,,9
+2026-02-23,Reading,20.0,,9
+2026-02-23,Reading,30.0,,9
+2026-02-23,Reading,15.0,,9
+2026-02-23,Reading,15.0,,9
+2026-02-24,Reading,20.0,,9
+2026-02-24,Reading,20.0,,9
+2026-02-24,Reading,25.0,,9
+2026-02-24,Reading,20.0,,9
+2026-02-24,Reading,30.0,,9
+2026-02-24,Reading,15.0,,9
+2026-02-24,Reading,15.0,,9
+2026-02-25,Reading,20.0,,9
+2026-02-25,Reading,20.0,,9
+2026-02-25,Reading,25.0,,9
+2026-02-25,Reading,20.0,,9
+2026-02-25,Reading,30.0,,9
+2026-02-25,Reading,15.0,,9
+2026-02-25,Reading,15.0,,9
+2026-02-26,Reading,20.0,,9
+2026-02-26,Reading,20.0,,9
+2026-02-26,Reading,25.0,,9
+2026-02-26,Reading,20.0,,9
+2026-02-26,Reading,9.0,,9
+2026-02-27,Reading,20.0,,9
+2026-02-27,Reading,20.0,,9
+2026-02-27,Reading,25.0,,9
+2026-02-27,Reading,20.0,,9
+2026-02-27,Reading,30.0,,9
+2026-02-27,Reading,15.0,,9
+2026-02-27,Reading,15.0,,9
+2026-02-28,Reading,20.0,,9
+2026-02-28,Reading,20.0,,9
+2026-02-28,Reading,25.0,,9
+2026-02-28,Reading,20.0,,9
+2026-02-28,Reading,30.0,,9
+2026-02-28,Reading,15.0,,9
+2026-02-28,Reading,15.0,,9
+2026-03-01,Reading,20.0,,9
+2026-03-01,Reading,20.0,,9
+2026-03-01,Reading,25.0,,9
+2026-03-01,Reading,20.0,,9
+2026-03-01,Reading,30.0,,9
+2026-03-01,Reading,15.0,,9
+2026-03-01,Reading,15.0,,9
+2026-03-02,Reading,20.0,,10
+2026-03-02,Reading,20.0,,10
+2026-03-02,Reading,25.0,,10
+2026-03-02,Reading,20.0,,10
+2026-03-02,Reading,30.0,,10
+2026-03-02,Reading,15.0,,10
+2026-03-02,Reading,15.0,,10
+2026-03-02,Reading,5.0,,10
+2026-03-03,Reading,20.0,,10
+2026-03-03,Reading,20.0,,10
+2026-03-03,Reading,25.0,,10
+2026-03-03,Reading,20.0,,10
+2026-03-03,Reading,30.0,,10
+2026-03-03,Reading,15.0,,10
+2026-03-03,Reading,15.0,,10
+2026-03-03,Reading,5.0,,10
+2026-03-04,Reading,20.0,,10
+2026-03-04,Reading,20.0,,10
+2026-03-04,Reading,25.0,,10
+2026-03-04,Reading,20.0,,10
+2026-03-04,Reading,30.0,,10
+2026-03-04,Reading,15.0,,10
+2026-03-04,Reading,15.0,,10
+2026-03-04,Reading,15.0,,10
+2026-03-05,Reading,20.0,,10
+2026-03-05,Reading,20.0,,10
+2026-03-05,Reading,25.0,,10
+2026-03-05,Reading,20.0,,10
+2026-03-05,Reading,30.0,,10
+2026-03-05,Reading,15.0,,10
+2026-03-05,Reading,15.0,,10
+2026-03-05,Reading,10.0,,10
+2026-03-06,Reading,20.0,,10
+2026-03-06,Reading,20.0,,10
+2026-03-06,Reading,25.0,,10
+2026-03-06,Reading,20.0,,10
+2026-03-06,Reading,30.0,,10
+2026-03-06,Reading,15.0,,10
+2026-03-06,Reading,15.0,,10
+2026-03-07,Reading,20.0,,10
+2026-03-07,Reading,20.0,,10
+2026-03-07,Reading,25.0,,10
+2026-03-07,Reading,20.0,,10
+2026-03-07,Reading,30.0,,10
+2026-03-07,Reading,15.0,,10
+2026-03-07,Reading,15.0,,10
+2026-03-08,Reading,20.0,,10
+2026-03-08,Reading,20.0,,10
+2026-03-08,Reading,25.0,,10
+2026-03-08,Reading,20.0,,10
+2026-03-08,Reading,30.0,,10
+2026-03-08,Reading,15.0,,10
+2026-03-08,Reading,15.0,,10
+2026-03-09,Reading,20.0,,11
+2026-03-09,Reading,20.0,,11
+2026-03-09,Reading,25.0,,11
+2026-03-09,Reading,20.0,,11
+2026-03-09,Reading,30.0,,11
+2026-03-09,Reading,15.0,,11
+2026-03-09,Reading,15.0,,11
+2026-03-10,Reading,7.0,,11
+2026-03-11,Reading,20.0,,11
+2026-03-11,Reading,20.0,,11
+2026-03-11,Reading,25.0,,11
+2026-03-11,Reading,20.0,,11
+2026-03-11,Reading,30.0,,11
+2026-03-11,Reading,15.0,,11
+2026-03-11,Reading,15.0,,11
+2026-03-11,Listening,30.0,,
