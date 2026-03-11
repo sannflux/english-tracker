@@ -6,7 +6,7 @@ import io
 
 # --- CONFIGURATION ---
 # Replace these with your details or use Streamlit Secrets
-GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "YOUR_GITHUB_TOKEN")
+GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "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")
 REPO_NAME = "sannflux/english-tracker"
 FILE_PATH = "data.csv"
 
