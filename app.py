@@ -4,6 +4,7 @@ from github import Github
 from datetime import datetime, timedelta
 import io
 import plotly.express as px
+import numpy as np
 
 # --- CONFIGURATION & SESSION STATE ---
 st.set_page_config(page_title="English Pro Tracker", layout="wide", page_icon="🇬🇧")
@@ -42,28 +43,28 @@ def load_data_from_github(_token, repo_name, file_path):
         
         # 1. FIX: Aggressive Date Cleaning & Forward Fill
         if 'Date' in df.columns:
+            # Convert to string and explicitly replace all variants of empty/null with pd.NA
             df['Date'] = df['Date'].astype(str).str.strip()
-            # Replace empty strings and common null representations with pandas NA
-            df['Date'] = df['Date'].replace({'': pd.NA, 'nan': pd.NA, 'NaN': pd.NA, 'NaT': pd.NA, 'None': pd.NA})
-            df['Date'] = df['Date'].ffill() # Forward fill the dates
+            df['Date'] = df['Date'].replace(r'^(nan|NaN|NaT|None|)$', pd.NA, regex=True)
+            df['Date'] = df['Date'].ffill() # Forward fill down the blanks
+            
+            # Parse dates: Try original long format first, then coerce standard formats
+            try:
+                df['Date'] = pd.to_datetime(df['Date'], format="%A, %d %B %Y")
+            except ValueError:
+                df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
         
         # 2. FIX: Skill Cleaning & Fallback
         if 'Skill' in df.columns:
             df['Skill'] = df['Skill'].astype(str).str.strip()
-            df['Skill'] = df['Skill'].replace({'': pd.NA, 'nan': pd.NA, 'NaN': pd.NA, 'None': pd.NA})
-            df['Skill'] = df['Skill'].ffill().fillna("Reading") # Fallback to ensure editor doesn't break
+            df['Skill'] = df['Skill'].replace(r'^(nan|NaN|NaT|None|)$', pd.NA, regex=True)
+            df['Skill'] = df['Skill'].ffill().fillna("Reading") 
             
             # Ensure only valid options remain for the data editor
             valid_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
             df.loc[~df['Skill'].isin(valid_skills), 'Skill'] = "Reading"
         
-        # Robust Date Parsing
-        try:
-            df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d")
-        except ValueError:
-            df['Date'] = pd.to_datetime(df['Date'], format='mixed', dayfirst=True, errors='coerce')
-        
-        # 3. FIX: Numeric parsing without dropping rows
+        # 3. Numeric parsing without dropping rows
         if 'Time Spent' in df.columns:
             df['Time Spent'] = pd.to_numeric(df['Time Spent'], errors='coerce').fillna(0)
         
@@ -78,7 +79,7 @@ def save_to_github(token, repo_name, file_path, df, current_sha):
         repo = g.get_repo(repo_name)
         df_to_save = df.copy()
         
-        # Standardize date format for safety
+        # Standardize date format for safety when saving
         df_to_save['Date'] = pd.to_datetime(df_to_save['Date']).dt.strftime("%Y-%m-%d")
         
         csv_buffer = io.StringIO()
@@ -243,13 +244,17 @@ if st.session_state.df is not None:
                 # Prepare Heatmap Data
                 hm_data = df.dropna(subset=['Date']).copy()
                 hm_data['Weekday'] = hm_data['Date'].dt.day_name()
-                hm_data['Week'] = hm_data['Date'].dt.isocalendar().week
+                
+                # FIX: Force Week to be a strict categorical String (e.g. "W52") to prevent plotly float axes
+                hm_data['Week'] = "W" + hm_data['Date'].dt.isocalendar().week.astype(str)
                 
                 weekdays_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
                 pivot_df = hm_data.pivot_table(index='Weekday', columns='Week', values='Time Spent', aggfunc='sum').reindex(weekdays_order).fillna(0)
                 
                 fig_heat = px.imshow(pivot_df, color_continuous_scale='Greens', title="Time Spent per Week/Day", aspect="auto")
                 fig_heat.update_layout(margin=dict(l=0, r=0, t=30, b=0))
+                # Explicitly tell Plotly the X-axis is categorical
+                fig_heat.update_xaxes(type='category') 
                 st.plotly_chart(fig_heat, use_container_width=True)
             else:
                 st.write("Not enough data for heatmap.")
@@ -257,10 +262,13 @@ if st.session_state.df is not None:
         with tab_week:
             if not df.empty and df['Date'].notna().any():
                 week_data = df.dropna(subset=['Date']).copy()
-                week_data['Week'] = week_data['Date'].dt.isocalendar().week
-                weekly = week_data.groupby('Week')['Time Spent'].sum().reset_index()
+                # FIX: Force Week to be a strict string here too
+                week_data['Week_Str'] = "W" + week_data['Date'].dt.isocalendar().week.astype(str)
+                weekly = week_data.groupby('Week_Str')['Time Spent'].sum().reset_index()
                 weekly['Hours'] = weekly['Time Spent'] / 60
-                fig_week = px.bar(weekly, x='Week', y='Hours', title="Hours per Week", color_discrete_sequence=['#00CC96'])
+                
+                fig_week = px.bar(weekly, x='Week_Str', y='Hours', title="Hours per Week", color_discrete_sequence=['#00CC96'])
+                fig_week.update_xaxes(type='category', categoryorder='category ascending')
                 st.plotly_chart(fig_week, use_container_width=True)
 
         with tab_skill:
@@ -273,7 +281,7 @@ if st.session_state.df is not None:
     st.subheader("📝 Editable Data History")
     
     display_df = df.copy()
-    # Handle NaT before converting to date to avoid UI crashes
+    # Safely convert to date for UI rendering
     display_df['Date'] = pd.to_datetime(display_df['Date']).dt.date 
     display_df = display_df.sort_values(by="Date", ascending=False, na_position='last').reset_index(drop=True)
     
@@ -288,7 +296,7 @@ if st.session_state.df is not None:
             "Skill": st.column_config.SelectboxColumn("Skill", options=["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"], required=True),
             "Time Spent": st.column_config.ProgressColumn("Time Spent (m)", format="%f", min_value=0, max_value=max(float(max_time), 120.0)),
             "Notes": st.column_config.TextColumn("Notes", max_chars=200),
-            "Week": None # Hide calculated columns
+            "Week": None # Hide calculated columns if they exist
         }
     )
     
