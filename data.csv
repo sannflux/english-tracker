@@ -1,718 +1,719 @@
-﻿Date,Skill,Time Spent
-"Wednesday, 03 September 2025",Listening dan writing ,25
-,Listening ,23
-,Speaking ,25
-"Friday, 05 September 2025",Listening dan writing ,19
-,Listening ,83
-,Reading ,25
-,Grammar ,
-"Saturday, 06 September 2025",Listening dan writing ,75
-,Listening ,60
-,Listening ,123
-"Sunday, 07 September 2025",Listening ,55
-,Pronunciation ,75
-"Monday, 08 September 2025",Listening ,20
-,Pronunciation ,16
-"Thursday, 11 September 2025",Listening dan writing ,25
-"Friday, 12 September 2025",Listening ,19
-"Saturday, 13 September 2025",Listening ,37
-"Sunday, 14 September 2025",Grammar ,25
-,Listening ,112
-,Pronunciation ,30
-,Speaking ,5
-"Monday, 15 September 2025",Listening ,45
-"Tuesday, 16 September 2025",Listening ,29
-,Write,5
-,Speaking ,4
-,Reading,4
-"Wednesday, 17 September 2025",Listening ,24
-,Write,3
-"Thursday, 18 September 2025",Listening ,38
-,Grammar ,12
-,Write,5
-,Speaking ,1
-,Pronunciation ,4
-"Friday, 19 September 2025",Listening ,54
-,Write,25
-,Pronunciation ,22
-,Grammar ,9
-"Saturday, 20 September 2025",Write,90
-,Reading,27
-,Grammar ,28
-,Listening ,84
-"Sunday, 21 September 2025",Reading,21
-,Listening ,31
-,Grammar ,91
-,Write,117
-"Monday, 22 September 2025",Write,150
-,Grammar ,54
-"Tuesday, 23 September 2025",Grammar ,124
-,Write,50
-"Tuesday, 23 September 2025",Write,160
-,Reading,5
-,Grammar ,39
-,Speaking,10
-,Listening ,13
-,Pronunciation ,10
-"Thursday, 25 September 2025",Write,10
-,Grammar ,10
-,Speaking ,27
-,Pronunciation ,4
-,Listening ,17
-"Friday, 26 September 2025",Speaking ,10
-,Grammar ,23
-"Saturday, 27 September 2025",Speaking ,13
-,Grammar ,144
-,Listening ,34
-,Write,5
-,Reading,4
-"Sunday, 28 September 2025",Grammar ,198
-,Speaking ,12
-,Pronunciation ,15
-,Reading,5
-,Listening ,9
-"Monday, 29 September 2025",Grammar,26
-,Speaking ,3
-,Reading,3
-,Listening ,15
-,Write,19
-"Tuesday, 30 September 2025",Grammar,13
-,Speaking ,2
-"Wednesday, 01 October 2025",Grammar,5
-,Speaking ,2
-,Listening ,8
-"Thursday, 02 October 2025",Grammar,13
-,Speaking ,2
-,Writing ,3
-"Friday, 03 October 2025",Reading,13
-,Writing ,2
-"Saturday, 04 October 2025",Listening ,13
-,Writing ,2
-"Sunday, 05 October 2025",Reading,13
-,Writing ,2
-"Monday, 06 October 2025",Grammar,13
-,Writing ,2
-"Tuesday, 07 October 2025",Listening ,13
-,Speaking ,2
-"Wednesday, 08 October 2025",Reading,13
-,Writing ,2
-"Thursday, 09 October 2025",Grammar,13
-,Writing ,2
-"Friday, 10 October 2025",Listening ,13
-,Speaking ,2
-"Saturday, 11 October 2025",Reading,13
-,Writing ,2
-"Sunday, 12 October 2025",Grammar,13
-,Writing ,2
-"Monday, 13 October 2025",Listening ,13
-,Speaking ,2
-"Tuesday, 14 October 2025",Reading,13
-,Writing ,2
-"Wednesday, 15 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,10
-"Thursday, 16 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,10
-"Friday, 17 October 2025",Listening ,10
-,Reading,10
-,Speaking ,10
-"Saturday, 18 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,10
-"Sunday, 19 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,10
-"Monday, 20 October 2025",Listening ,10
-,Reading,10
-,Speaking ,10
-"Tuesday, 21 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,10
-"Wednesday, 22 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,5
-,Vocabulary ,5
-"Thursday, 23 October 2025",Listening ,10
-,Reading,10
-,Speaking ,10
-"Friday, 24 October 2025",Listening ,10
-,Speaking ,10
-,Writing ,5
-,Vocabulary ,5
-"Saturday, 25 October 2025",Grammar,10
-,Writing ,10
-,Pronunciation ,5
-,Vocabulary ,5
-"Sunday, 26 October 2025",Listening ,10
-,Reading,10
-,Speaking ,5
-,Vocabulary ,5
-"Monday, 27 October 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Tuesday, 28 October 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Wednesday, 29 October 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Thursday, 30 October 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Friday, 31 October 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Saturday, 01 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Sunday, 02 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Monday, 03 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Tuesday, 04 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Wednesday, 05 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Thursday, 06 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Friday, 07 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Saturday, 08 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Sunday, 09 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Monday, 10 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Tuesday, 11 November 2025",Pronunciation ,6
-,Speaking ,6
-,Reading,6
-,Vocabulary ,6
-,Writing ,6
-"Wednesday, 12 November 2025",Pronunciation ,6
-,Speaking ,6
-,Grammar,6
-,Vocabulary ,6
-,Listening ,6
-"Thursday, 13 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Friday, 14 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Saturday, 15 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Sunday, 16 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Monday, 17 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Tuesday, 18 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Wednesday, 19 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Thursday, 20 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Friday, 21 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Sunday, 23 November 2025 ",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Monday, 24 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Wednesday, 26 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Thursday, 27 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Friday, 28 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Saturday, 29 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Sunday, 30 November 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Monday, 01 December 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Tuesday, 02 December 2025",Speaking ,12
-,Grammar ,12
-,Reading ,12
-,Listening ,12
-,Vocabulary ,12
-"Wednesday, 03 December 2025",Speaking ,12
-,Grammar ,12
-,Reading ,24
-,Listening ,24
-,Vocabulary ,12
-"Thursday, 04 December 2025",Speaking ,18
-,Grammar ,30
-,Reading ,30
-,Vocabulary ,12
-"Friday, 05 December 2025",Reading ,30
-,Speaking ,18
-,Grammar ,30
-,Vocabulary ,20
-"Saturday, 06 December 2025",Reading ,30
-,Speaking ,18
-,Grammar ,30
-,Vocabulary ,30
-"Sunday, 07 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 08 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Tuesday, 09 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Wednesday, 10 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Thursday, 11 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Friday, 12 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 13 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Sunday, 14 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 15 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Tuesday, 16 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Wednesday, 17 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Thursday, 18 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 20 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 20 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-,Writing ,20
-"Sunday, 21 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 22 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Tuesday, 23 December 2025",Reading ,60
-,Listening ,60
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-,Writing ,30
-"Wednesday, 24 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Thursday, 25 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Friday, 26 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Saturday, 27 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Sunday, 28 December 2025",Reading ,30
-,Speaking ,30
-,Grammar ,30
-,Vocabulary ,30
-"Monday, 29 December 2025",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Tuesday, 30 December 2025",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Wednesday, 31 December 2025",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Thursday, 01 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Friday, 02 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Saturday, 03 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Sunday, 04 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Monday, 05 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Tuesday, 06 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Wednesday, 07 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Thursday, 08 January 2026",Reading ,60
-,Listening ,30
-,Writing ,10
-,Vocabulary ,20
-"Friday, 09 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 10 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Sunday, 11 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Monday, 12 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Tuesday, 13 January 2026",Listening ,40
-,Speaking ,20
-,Reading ,40
-,Writing ,20
-"Wednesday, 14 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Thursday, 15 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Friday, 16 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 17 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Sunday, 18 January 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Monday, 19 January 2026",Listening ,60
-"Tuesday, 20 January 2026",Listening ,5
-,Writing ,8
-"Wednesday, 21 January 2026",Listening ,10
-,Writing ,10
-"Thursday, 22 January 2026",Listening ,10
-,Writing ,10
-"Friday, 23 January 2026",Listening ,10
-,Writing ,9
-"Saturday, 24 January 2026",Writing ,7
-,Listening ,6
-"Sunday, 25 January 2026",Listening ,7
-,Writing ,7
-"Monday, 26 January 2026",Writing ,11
-,Writing ,7
-"Tuesday, 27 January 2026",Listening ,5
-"Wednesday, 28 January 2026",Listening ,4
-"Thursday, 29 January 2026",Writing ,3
-,Listening ,5
-"Friday, 30 January 2026",Listening ,7
-"Saturday, 31 January 2026",Listening ,4
-"Sunday, 01 February 2026",Listening ,6
-"Monday, 02 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Tuesday, 03 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Wednesday, 04 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Thursday, 05 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Friday, 06 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 07 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Sunday, 08 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Monday, 09 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Tuesday, 10 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Wednesday, 11 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Thursday, 12 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Friday, 13 February 2026",Listening ,20
-,Speaking ,10
-,Reading ,20
-,Writing ,10
-"Saturday, 14 February 2026",Listening ,20
-"Sunday, 15 February 2026",Speaking ,20
-"Monday, 16 February 2026",Writing ,5
-,Speaking ,5
-"Tuesday, 17 February 2026",Writing ,5
-,Speaking ,5
-"Wednesday, 18 February 2026",Writing ,5
-,Speaking ,5
-"Thursday, 19 February 2026",Writing ,5
-,Speaking ,5
-,Writing ,5
-,Speaking ,5
-,Listening ,12
-"Friday, 20 February 2026",Writing ,5
-"Saturday, 21 February 2026",Writing ,5
-"Sunday, 22 February 2026",Writing ,5
-"Monday, 23 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Tuesday, 24 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Wednesday, 25 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Thursday, 26 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,9
-"Friday, 27 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Saturday, 28 February 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Sunday, 01 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Monday, 02 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review ,5
-"Tuesday, 03 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review ,5
-"Wednesday, 04 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review & Anki,15
-"Thursday, 05 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-,Vocabulary review & Anki,10
-"Friday, 06 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Saturday, 07 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Sunday, 08 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Monday, 09 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
-"Tuesday, 10 March 2026",Reading ,7
-"Wednesday, 11 March 2026",Reading ,20
-,Reading Analysis ,20
-,Listening ,25
-,Shadowing ,20
-,Grammar ,30
-,Writing ,15
-,Speaking ,15
+Date,Skill,Time Spent,Notes
+"Wednesday, 03 September 2025",Listening dan writing,25.0,
+"Wednesday, 03 September 2025",Listening,23.0,
+"Wednesday, 03 September 2025",Speaking,25.0,
+"Friday, 05 September 2025",Listening dan writing,19.0,
+"Friday, 05 September 2025",Listening,83.0,
+"Friday, 05 September 2025",Reading,25.0,
+"Friday, 05 September 2025",Grammar,0.0,
+"Saturday, 06 September 2025",Listening dan writing,75.0,
+"Saturday, 06 September 2025",Listening,60.0,
+"Saturday, 06 September 2025",Listening,123.0,
+"Sunday, 07 September 2025",Listening,55.0,
+"Sunday, 07 September 2025",Pronunciation,75.0,
+"Monday, 08 September 2025",Listening,20.0,
+"Monday, 08 September 2025",Pronunciation,16.0,
+"Thursday, 11 September 2025",Listening dan writing,25.0,
+"Friday, 12 September 2025",Listening,19.0,
+"Saturday, 13 September 2025",Listening,37.0,
+"Sunday, 14 September 2025",Grammar,25.0,
+"Sunday, 14 September 2025",Listening,112.0,
+"Sunday, 14 September 2025",Pronunciation,30.0,
+"Sunday, 14 September 2025",Speaking,5.0,
+"Monday, 15 September 2025",Listening,45.0,
+"Tuesday, 16 September 2025",Listening,29.0,
+"Tuesday, 16 September 2025",Write,5.0,
+"Tuesday, 16 September 2025",Speaking,4.0,
+"Tuesday, 16 September 2025",Reading,4.0,
+"Wednesday, 17 September 2025",Listening,24.0,
+"Wednesday, 17 September 2025",Write,3.0,
+"Thursday, 18 September 2025",Listening,38.0,
+"Thursday, 18 September 2025",Grammar,12.0,
+"Thursday, 18 September 2025",Write,5.0,
+"Thursday, 18 September 2025",Speaking,1.0,
+"Thursday, 18 September 2025",Pronunciation,4.0,
+"Friday, 19 September 2025",Listening,54.0,
+"Friday, 19 September 2025",Write,25.0,
+"Friday, 19 September 2025",Pronunciation,22.0,
+"Friday, 19 September 2025",Grammar,9.0,
+"Saturday, 20 September 2025",Write,90.0,
+"Saturday, 20 September 2025",Reading,27.0,
+"Saturday, 20 September 2025",Grammar,28.0,
+"Saturday, 20 September 2025",Listening,84.0,
+"Sunday, 21 September 2025",Reading,21.0,
+"Sunday, 21 September 2025",Listening,31.0,
+"Sunday, 21 September 2025",Grammar,91.0,
+"Sunday, 21 September 2025",Write,117.0,
+"Monday, 22 September 2025",Write,150.0,
+"Monday, 22 September 2025",Grammar,54.0,
+"Tuesday, 23 September 2025",Grammar,124.0,
+"Tuesday, 23 September 2025",Write,50.0,
+"Tuesday, 23 September 2025",Write,160.0,
+"Tuesday, 23 September 2025",Reading,5.0,
+"Tuesday, 23 September 2025",Grammar,39.0,
+"Tuesday, 23 September 2025",Speaking,10.0,
+"Tuesday, 23 September 2025",Listening,13.0,
+"Tuesday, 23 September 2025",Pronunciation,10.0,
+"Thursday, 25 September 2025",Write,10.0,
+"Thursday, 25 September 2025",Grammar,10.0,
+"Thursday, 25 September 2025",Speaking,27.0,
+"Thursday, 25 September 2025",Pronunciation,4.0,
+"Thursday, 25 September 2025",Listening,17.0,
+"Friday, 26 September 2025",Speaking,10.0,
+"Friday, 26 September 2025",Grammar,23.0,
+"Saturday, 27 September 2025",Speaking,13.0,
+"Saturday, 27 September 2025",Grammar,144.0,
+"Saturday, 27 September 2025",Listening,34.0,
+"Saturday, 27 September 2025",Write,5.0,
+"Saturday, 27 September 2025",Reading,4.0,
+"Sunday, 28 September 2025",Grammar,198.0,
+"Sunday, 28 September 2025",Speaking,12.0,
+"Sunday, 28 September 2025",Pronunciation,15.0,
+"Sunday, 28 September 2025",Reading,5.0,
+"Sunday, 28 September 2025",Listening,9.0,
+"Monday, 29 September 2025",Grammar,26.0,
+"Monday, 29 September 2025",Speaking,3.0,
+"Monday, 29 September 2025",Reading,3.0,
+"Monday, 29 September 2025",Listening,15.0,
+"Monday, 29 September 2025",Write,19.0,
+"Tuesday, 30 September 2025",Grammar,13.0,
+"Tuesday, 30 September 2025",Speaking,2.0,
+"Wednesday, 01 October 2025",Grammar,5.0,
+"Wednesday, 01 October 2025",Speaking,2.0,
+"Wednesday, 01 October 2025",Listening,8.0,
+"Thursday, 02 October 2025",Grammar,13.0,
+"Thursday, 02 October 2025",Speaking,2.0,
+"Thursday, 02 October 2025",Writing,3.0,
+"Friday, 03 October 2025",Reading,13.0,
+"Friday, 03 October 2025",Writing,2.0,
+"Saturday, 04 October 2025",Listening,13.0,
+"Saturday, 04 October 2025",Writing,2.0,
+"Sunday, 05 October 2025",Reading,13.0,
+"Sunday, 05 October 2025",Writing,2.0,
+"Monday, 06 October 2025",Grammar,13.0,
+"Monday, 06 October 2025",Writing,2.0,
+"Tuesday, 07 October 2025",Listening,13.0,
+"Tuesday, 07 October 2025",Speaking,2.0,
+"Wednesday, 08 October 2025",Reading,13.0,
+"Wednesday, 08 October 2025",Writing,2.0,
+"Thursday, 09 October 2025",Grammar,13.0,
+"Thursday, 09 October 2025",Writing,2.0,
+"Friday, 10 October 2025",Listening,13.0,
+"Friday, 10 October 2025",Speaking,2.0,
+"Saturday, 11 October 2025",Reading,13.0,
+"Saturday, 11 October 2025",Writing,2.0,
+"Sunday, 12 October 2025",Grammar,13.0,
+"Sunday, 12 October 2025",Writing,2.0,
+"Monday, 13 October 2025",Listening,13.0,
+"Monday, 13 October 2025",Speaking,2.0,
+"Tuesday, 14 October 2025",Reading,13.0,
+"Tuesday, 14 October 2025",Writing,2.0,
+"Wednesday, 15 October 2025",Listening,10.0,
+"Wednesday, 15 October 2025",Speaking,10.0,
+"Wednesday, 15 October 2025",Writing,10.0,
+"Thursday, 16 October 2025",Grammar,10.0,
+"Thursday, 16 October 2025",Writing,10.0,
+"Thursday, 16 October 2025",Pronunciation,10.0,
+"Friday, 17 October 2025",Listening,10.0,
+"Friday, 17 October 2025",Reading,10.0,
+"Friday, 17 October 2025",Speaking,10.0,
+"Saturday, 18 October 2025",Listening,10.0,
+"Saturday, 18 October 2025",Speaking,10.0,
+"Saturday, 18 October 2025",Writing,10.0,
+"Sunday, 19 October 2025",Grammar,10.0,
+"Sunday, 19 October 2025",Writing,10.0,
+"Sunday, 19 October 2025",Pronunciation,10.0,
+"Monday, 20 October 2025",Listening,10.0,
+"Monday, 20 October 2025",Reading,10.0,
+"Monday, 20 October 2025",Speaking,10.0,
+"Tuesday, 21 October 2025",Listening,10.0,
+"Tuesday, 21 October 2025",Speaking,10.0,
+"Tuesday, 21 October 2025",Writing,10.0,
+"Wednesday, 22 October 2025",Grammar,10.0,
+"Wednesday, 22 October 2025",Writing,10.0,
+"Wednesday, 22 October 2025",Pronunciation,5.0,
+"Wednesday, 22 October 2025",Vocabulary,5.0,
+"Thursday, 23 October 2025",Listening,10.0,
+"Thursday, 23 October 2025",Reading,10.0,
+"Thursday, 23 October 2025",Speaking,10.0,
+"Friday, 24 October 2025",Listening,10.0,
+"Friday, 24 October 2025",Speaking,10.0,
+"Friday, 24 October 2025",Writing,5.0,
+"Friday, 24 October 2025",Vocabulary,5.0,
+"Saturday, 25 October 2025",Grammar,10.0,
+"Saturday, 25 October 2025",Writing,10.0,
+"Saturday, 25 October 2025",Pronunciation,5.0,
+"Saturday, 25 October 2025",Vocabulary,5.0,
+"Sunday, 26 October 2025",Listening,10.0,
+"Sunday, 26 October 2025",Reading,10.0,
+"Sunday, 26 October 2025",Speaking,5.0,
+"Sunday, 26 October 2025",Vocabulary,5.0,
+"Monday, 27 October 2025",Pronunciation,6.0,
+"Monday, 27 October 2025",Speaking,6.0,
+"Monday, 27 October 2025",Grammar,6.0,
+"Monday, 27 October 2025",Vocabulary,6.0,
+"Monday, 27 October 2025",Listening,6.0,
+"Tuesday, 28 October 2025",Pronunciation,6.0,
+"Tuesday, 28 October 2025",Speaking,6.0,
+"Tuesday, 28 October 2025",Reading,6.0,
+"Tuesday, 28 October 2025",Vocabulary,6.0,
+"Tuesday, 28 October 2025",Writing,6.0,
+"Wednesday, 29 October 2025",Pronunciation,6.0,
+"Wednesday, 29 October 2025",Speaking,6.0,
+"Wednesday, 29 October 2025",Grammar,6.0,
+"Wednesday, 29 October 2025",Vocabulary,6.0,
+"Wednesday, 29 October 2025",Listening,6.0,
+"Thursday, 30 October 2025",Pronunciation,6.0,
+"Thursday, 30 October 2025",Speaking,6.0,
+"Thursday, 30 October 2025",Reading,6.0,
+"Thursday, 30 October 2025",Vocabulary,6.0,
+"Thursday, 30 October 2025",Writing,6.0,
+"Friday, 31 October 2025",Pronunciation,6.0,
+"Friday, 31 October 2025",Speaking,6.0,
+"Friday, 31 October 2025",Grammar,6.0,
+"Friday, 31 October 2025",Vocabulary,6.0,
+"Friday, 31 October 2025",Listening,6.0,
+"Saturday, 01 November 2025",Pronunciation,6.0,
+"Saturday, 01 November 2025",Speaking,6.0,
+"Saturday, 01 November 2025",Reading,6.0,
+"Saturday, 01 November 2025",Vocabulary,6.0,
+"Saturday, 01 November 2025",Writing,6.0,
+"Sunday, 02 November 2025",Pronunciation,6.0,
+"Sunday, 02 November 2025",Speaking,6.0,
+"Sunday, 02 November 2025",Grammar,6.0,
+"Sunday, 02 November 2025",Vocabulary,6.0,
+"Sunday, 02 November 2025",Listening,6.0,
+"Monday, 03 November 2025",Pronunciation,6.0,
+"Monday, 03 November 2025",Speaking,6.0,
+"Monday, 03 November 2025",Grammar,6.0,
+"Monday, 03 November 2025",Vocabulary,6.0,
+"Monday, 03 November 2025",Listening,6.0,
+"Tuesday, 04 November 2025",Pronunciation,6.0,
+"Tuesday, 04 November 2025",Speaking,6.0,
+"Tuesday, 04 November 2025",Reading,6.0,
+"Tuesday, 04 November 2025",Vocabulary,6.0,
+"Tuesday, 04 November 2025",Writing,6.0,
+"Wednesday, 05 November 2025",Pronunciation,6.0,
+"Wednesday, 05 November 2025",Speaking,6.0,
+"Wednesday, 05 November 2025",Grammar,6.0,
+"Wednesday, 05 November 2025",Vocabulary,6.0,
+"Wednesday, 05 November 2025",Listening,6.0,
+"Thursday, 06 November 2025",Pronunciation,6.0,
+"Thursday, 06 November 2025",Speaking,6.0,
+"Thursday, 06 November 2025",Reading,6.0,
+"Thursday, 06 November 2025",Vocabulary,6.0,
+"Thursday, 06 November 2025",Writing,6.0,
+"Friday, 07 November 2025",Pronunciation,6.0,
+"Friday, 07 November 2025",Speaking,6.0,
+"Friday, 07 November 2025",Grammar,6.0,
+"Friday, 07 November 2025",Vocabulary,6.0,
+"Friday, 07 November 2025",Listening,6.0,
+"Saturday, 08 November 2025",Pronunciation,6.0,
+"Saturday, 08 November 2025",Speaking,6.0,
+"Saturday, 08 November 2025",Reading,6.0,
+"Saturday, 08 November 2025",Vocabulary,6.0,
+"Saturday, 08 November 2025",Writing,6.0,
+"Sunday, 09 November 2025",Pronunciation,6.0,
+"Sunday, 09 November 2025",Speaking,6.0,
+"Sunday, 09 November 2025",Grammar,6.0,
+"Sunday, 09 November 2025",Vocabulary,6.0,
+"Sunday, 09 November 2025",Listening,6.0,
+"Monday, 10 November 2025",Pronunciation,6.0,
+"Monday, 10 November 2025",Speaking,6.0,
+"Monday, 10 November 2025",Grammar,6.0,
+"Monday, 10 November 2025",Vocabulary,6.0,
+"Monday, 10 November 2025",Listening,6.0,
+"Tuesday, 11 November 2025",Pronunciation,6.0,
+"Tuesday, 11 November 2025",Speaking,6.0,
+"Tuesday, 11 November 2025",Reading,6.0,
+"Tuesday, 11 November 2025",Vocabulary,6.0,
+"Tuesday, 11 November 2025",Writing,6.0,
+"Wednesday, 12 November 2025",Pronunciation,6.0,
+"Wednesday, 12 November 2025",Speaking,6.0,
+"Wednesday, 12 November 2025",Grammar,6.0,
+"Wednesday, 12 November 2025",Vocabulary,6.0,
+"Wednesday, 12 November 2025",Listening,6.0,
+"Thursday, 13 November 2025",Speaking,12.0,
+"Thursday, 13 November 2025",Grammar,12.0,
+"Thursday, 13 November 2025",Reading,12.0,
+"Thursday, 13 November 2025",Listening,12.0,
+"Thursday, 13 November 2025",Vocabulary,12.0,
+"Friday, 14 November 2025",Speaking,12.0,
+"Friday, 14 November 2025",Grammar,12.0,
+"Friday, 14 November 2025",Reading,12.0,
+"Friday, 14 November 2025",Listening,12.0,
+"Friday, 14 November 2025",Vocabulary,12.0,
+"Saturday, 15 November 2025",Speaking,12.0,
+"Saturday, 15 November 2025",Grammar,12.0,
+"Saturday, 15 November 2025",Reading,12.0,
+"Saturday, 15 November 2025",Listening,12.0,
+"Saturday, 15 November 2025",Vocabulary,12.0,
+"Sunday, 16 November 2025",Speaking,12.0,
+"Sunday, 16 November 2025",Grammar,12.0,
+"Sunday, 16 November 2025",Reading,12.0,
+"Sunday, 16 November 2025",Listening,12.0,
+"Sunday, 16 November 2025",Vocabulary,12.0,
+"Monday, 17 November 2025",Speaking,12.0,
+"Monday, 17 November 2025",Grammar,12.0,
+"Monday, 17 November 2025",Reading,12.0,
+"Monday, 17 November 2025",Listening,12.0,
+"Monday, 17 November 2025",Vocabulary,12.0,
+"Tuesday, 18 November 2025",Speaking,12.0,
+"Tuesday, 18 November 2025",Grammar,12.0,
+"Tuesday, 18 November 2025",Reading,12.0,
+"Tuesday, 18 November 2025",Listening,12.0,
+"Tuesday, 18 November 2025",Vocabulary,12.0,
+"Wednesday, 19 November 2025",Speaking,12.0,
+"Wednesday, 19 November 2025",Grammar,12.0,
+"Wednesday, 19 November 2025",Reading,12.0,
+"Wednesday, 19 November 2025",Listening,12.0,
+"Wednesday, 19 November 2025",Vocabulary,12.0,
+"Thursday, 20 November 2025",Speaking,12.0,
+"Thursday, 20 November 2025",Grammar,12.0,
+"Thursday, 20 November 2025",Reading,12.0,
+"Thursday, 20 November 2025",Listening,12.0,
+"Thursday, 20 November 2025",Vocabulary,12.0,
+"Friday, 21 November 2025",Speaking,12.0,
+"Friday, 21 November 2025",Grammar,12.0,
+"Friday, 21 November 2025",Reading,12.0,
+"Friday, 21 November 2025",Listening,12.0,
+"Friday, 21 November 2025",Vocabulary,12.0,
+"Sunday, 23 November 2025",Speaking,12.0,
+"Sunday, 23 November 2025",Grammar,12.0,
+"Sunday, 23 November 2025",Reading,12.0,
+"Sunday, 23 November 2025",Listening,12.0,
+"Sunday, 23 November 2025",Vocabulary,12.0,
+"Monday, 24 November 2025",Speaking,12.0,
+"Monday, 24 November 2025",Grammar,12.0,
+"Monday, 24 November 2025",Reading,12.0,
+"Monday, 24 November 2025",Listening,12.0,
+"Monday, 24 November 2025",Vocabulary,12.0,
+"Wednesday, 26 November 2025",Speaking,12.0,
+"Wednesday, 26 November 2025",Grammar,12.0,
+"Wednesday, 26 November 2025",Reading,12.0,
+"Wednesday, 26 November 2025",Listening,12.0,
+"Wednesday, 26 November 2025",Vocabulary,12.0,
+"Thursday, 27 November 2025",Speaking,12.0,
+"Thursday, 27 November 2025",Grammar,12.0,
+"Thursday, 27 November 2025",Reading,12.0,
+"Thursday, 27 November 2025",Listening,12.0,
+"Thursday, 27 November 2025",Vocabulary,12.0,
+"Friday, 28 November 2025",Speaking,12.0,
+"Friday, 28 November 2025",Grammar,12.0,
+"Friday, 28 November 2025",Reading,12.0,
+"Friday, 28 November 2025",Listening,12.0,
+"Friday, 28 November 2025",Vocabulary,12.0,
+"Saturday, 29 November 2025",Speaking,12.0,
+"Saturday, 29 November 2025",Grammar,12.0,
+"Saturday, 29 November 2025",Reading,12.0,
+"Saturday, 29 November 2025",Listening,12.0,
+"Saturday, 29 November 2025",Vocabulary,12.0,
+"Sunday, 30 November 2025",Speaking,12.0,
+"Sunday, 30 November 2025",Grammar,12.0,
+"Sunday, 30 November 2025",Reading,12.0,
+"Sunday, 30 November 2025",Listening,12.0,
+"Sunday, 30 November 2025",Vocabulary,12.0,
+"Monday, 01 December 2025",Speaking,12.0,
+"Monday, 01 December 2025",Grammar,12.0,
+"Monday, 01 December 2025",Reading,12.0,
+"Monday, 01 December 2025",Listening,12.0,
+"Monday, 01 December 2025",Vocabulary,12.0,
+"Tuesday, 02 December 2025",Speaking,12.0,
+"Tuesday, 02 December 2025",Grammar,12.0,
+"Tuesday, 02 December 2025",Reading,12.0,
+"Tuesday, 02 December 2025",Listening,12.0,
+"Tuesday, 02 December 2025",Vocabulary,12.0,
+"Wednesday, 03 December 2025",Speaking,12.0,
+"Wednesday, 03 December 2025",Grammar,12.0,
+"Wednesday, 03 December 2025",Reading,24.0,
+"Wednesday, 03 December 2025",Listening,24.0,
+"Wednesday, 03 December 2025",Vocabulary,12.0,
+"Thursday, 04 December 2025",Speaking,18.0,
+"Thursday, 04 December 2025",Grammar,30.0,
+"Thursday, 04 December 2025",Reading,30.0,
+"Thursday, 04 December 2025",Vocabulary,12.0,
+"Friday, 05 December 2025",Reading,30.0,
+"Friday, 05 December 2025",Speaking,18.0,
+"Friday, 05 December 2025",Grammar,30.0,
+"Friday, 05 December 2025",Vocabulary,20.0,
+"Saturday, 06 December 2025",Reading,30.0,
+"Saturday, 06 December 2025",Speaking,18.0,
+"Saturday, 06 December 2025",Grammar,30.0,
+"Saturday, 06 December 2025",Vocabulary,30.0,
+"Sunday, 07 December 2025",Reading,30.0,
+"Sunday, 07 December 2025",Speaking,30.0,
+"Sunday, 07 December 2025",Grammar,30.0,
+"Sunday, 07 December 2025",Vocabulary,30.0,
+"Monday, 08 December 2025",Reading,30.0,
+"Monday, 08 December 2025",Speaking,30.0,
+"Monday, 08 December 2025",Grammar,30.0,
+"Monday, 08 December 2025",Vocabulary,30.0,
+"Tuesday, 09 December 2025",Reading,30.0,
+"Tuesday, 09 December 2025",Speaking,30.0,
+"Tuesday, 09 December 2025",Grammar,30.0,
+"Tuesday, 09 December 2025",Vocabulary,30.0,
+"Wednesday, 10 December 2025",Reading,30.0,
+"Wednesday, 10 December 2025",Speaking,30.0,
+"Wednesday, 10 December 2025",Grammar,30.0,
+"Wednesday, 10 December 2025",Vocabulary,30.0,
+"Thursday, 11 December 2025",Reading,30.0,
+"Thursday, 11 December 2025",Speaking,30.0,
+"Thursday, 11 December 2025",Grammar,30.0,
+"Thursday, 11 December 2025",Vocabulary,30.0,
+"Friday, 12 December 2025",Reading,30.0,
+"Friday, 12 December 2025",Speaking,30.0,
+"Friday, 12 December 2025",Grammar,30.0,
+"Friday, 12 December 2025",Vocabulary,30.0,
+"Saturday, 13 December 2025",Reading,30.0,
+"Saturday, 13 December 2025",Speaking,30.0,
+"Saturday, 13 December 2025",Grammar,30.0,
+"Saturday, 13 December 2025",Vocabulary,30.0,
+"Sunday, 14 December 2025",Reading,30.0,
+"Sunday, 14 December 2025",Speaking,30.0,
+"Sunday, 14 December 2025",Grammar,30.0,
+"Sunday, 14 December 2025",Vocabulary,30.0,
+"Monday, 15 December 2025",Reading,30.0,
+"Monday, 15 December 2025",Speaking,30.0,
+"Monday, 15 December 2025",Grammar,30.0,
+"Monday, 15 December 2025",Vocabulary,30.0,
+"Tuesday, 16 December 2025",Reading,30.0,
+"Tuesday, 16 December 2025",Speaking,30.0,
+"Tuesday, 16 December 2025",Grammar,30.0,
+"Tuesday, 16 December 2025",Vocabulary,30.0,
+"Wednesday, 17 December 2025",Reading,30.0,
+"Wednesday, 17 December 2025",Speaking,30.0,
+"Wednesday, 17 December 2025",Grammar,30.0,
+"Wednesday, 17 December 2025",Vocabulary,30.0,
+"Thursday, 18 December 2025",Reading,30.0,
+"Thursday, 18 December 2025",Speaking,30.0,
+"Thursday, 18 December 2025",Grammar,30.0,
+"Thursday, 18 December 2025",Vocabulary,30.0,
+"Saturday, 20 December 2025",Reading,30.0,
+"Saturday, 20 December 2025",Speaking,30.0,
+"Saturday, 20 December 2025",Grammar,30.0,
+"Saturday, 20 December 2025",Vocabulary,30.0,
+"Saturday, 20 December 2025",Reading,30.0,
+"Saturday, 20 December 2025",Speaking,30.0,
+"Saturday, 20 December 2025",Grammar,30.0,
+"Saturday, 20 December 2025",Vocabulary,30.0,
+"Saturday, 20 December 2025",Writing,20.0,
+"Sunday, 21 December 2025",Reading,30.0,
+"Sunday, 21 December 2025",Speaking,30.0,
+"Sunday, 21 December 2025",Grammar,30.0,
+"Sunday, 21 December 2025",Vocabulary,30.0,
+"Monday, 22 December 2025",Reading,30.0,
+"Monday, 22 December 2025",Speaking,30.0,
+"Monday, 22 December 2025",Grammar,30.0,
+"Monday, 22 December 2025",Vocabulary,30.0,
+"Tuesday, 23 December 2025",Reading,60.0,
+"Tuesday, 23 December 2025",Listening,60.0,
+"Tuesday, 23 December 2025",Speaking,30.0,
+"Tuesday, 23 December 2025",Grammar,30.0,
+"Tuesday, 23 December 2025",Vocabulary,30.0,
+"Tuesday, 23 December 2025",Writing,30.0,
+"Wednesday, 24 December 2025",Reading,30.0,
+"Wednesday, 24 December 2025",Speaking,30.0,
+"Wednesday, 24 December 2025",Grammar,30.0,
+"Wednesday, 24 December 2025",Vocabulary,30.0,
+"Thursday, 25 December 2025",Reading,30.0,
+"Thursday, 25 December 2025",Speaking,30.0,
+"Thursday, 25 December 2025",Grammar,30.0,
+"Thursday, 25 December 2025",Vocabulary,30.0,
+"Friday, 26 December 2025",Reading,30.0,
+"Friday, 26 December 2025",Speaking,30.0,
+"Friday, 26 December 2025",Grammar,30.0,
+"Friday, 26 December 2025",Vocabulary,30.0,
+"Saturday, 27 December 2025",Reading,30.0,
+"Saturday, 27 December 2025",Speaking,30.0,
+"Saturday, 27 December 2025",Grammar,30.0,
+"Saturday, 27 December 2025",Vocabulary,30.0,
+"Sunday, 28 December 2025",Reading,30.0,
+"Sunday, 28 December 2025",Speaking,30.0,
+"Sunday, 28 December 2025",Grammar,30.0,
+"Sunday, 28 December 2025",Vocabulary,30.0,
+"Monday, 29 December 2025",Reading,60.0,
+"Monday, 29 December 2025",Listening,30.0,
+"Monday, 29 December 2025",Writing,10.0,
+"Monday, 29 December 2025",Vocabulary,20.0,
+"Tuesday, 30 December 2025",Reading,60.0,
+"Tuesday, 30 December 2025",Listening,30.0,
+"Tuesday, 30 December 2025",Writing,10.0,
+"Tuesday, 30 December 2025",Vocabulary,20.0,
+"Wednesday, 31 December 2025",Reading,60.0,
+"Wednesday, 31 December 2025",Listening,30.0,
+"Wednesday, 31 December 2025",Writing,10.0,
+"Wednesday, 31 December 2025",Vocabulary,20.0,
+"Thursday, 01 January 2026",Reading,60.0,
+"Thursday, 01 January 2026",Listening,30.0,
+"Thursday, 01 January 2026",Writing,10.0,
+"Thursday, 01 January 2026",Vocabulary,20.0,
+"Friday, 02 January 2026",Reading,60.0,
+"Friday, 02 January 2026",Listening,30.0,
+"Friday, 02 January 2026",Writing,10.0,
+"Friday, 02 January 2026",Vocabulary,20.0,
+"Saturday, 03 January 2026",Reading,60.0,
+"Saturday, 03 January 2026",Listening,30.0,
+"Saturday, 03 January 2026",Writing,10.0,
+"Saturday, 03 January 2026",Vocabulary,20.0,
+"Sunday, 04 January 2026",Reading,60.0,
+"Sunday, 04 January 2026",Listening,30.0,
+"Sunday, 04 January 2026",Writing,10.0,
+"Sunday, 04 January 2026",Vocabulary,20.0,
+"Monday, 05 January 2026",Reading,60.0,
+"Monday, 05 January 2026",Listening,30.0,
+"Monday, 05 January 2026",Writing,10.0,
+"Monday, 05 January 2026",Vocabulary,20.0,
+"Tuesday, 06 January 2026",Reading,60.0,
+"Tuesday, 06 January 2026",Listening,30.0,
+"Tuesday, 06 January 2026",Writing,10.0,
+"Tuesday, 06 January 2026",Vocabulary,20.0,
+"Wednesday, 07 January 2026",Reading,60.0,
+"Wednesday, 07 January 2026",Listening,30.0,
+"Wednesday, 07 January 2026",Writing,10.0,
+"Wednesday, 07 January 2026",Vocabulary,20.0,
+"Thursday, 08 January 2026",Reading,60.0,
+"Thursday, 08 January 2026",Listening,30.0,
+"Thursday, 08 January 2026",Writing,10.0,
+"Thursday, 08 January 2026",Vocabulary,20.0,
+"Friday, 09 January 2026",Listening,20.0,
+"Friday, 09 January 2026",Speaking,10.0,
+"Friday, 09 January 2026",Reading,20.0,
+"Friday, 09 January 2026",Writing,10.0,
+"Saturday, 10 January 2026",Listening,20.0,
+"Saturday, 10 January 2026",Speaking,10.0,
+"Saturday, 10 January 2026",Reading,20.0,
+"Saturday, 10 January 2026",Writing,10.0,
+"Sunday, 11 January 2026",Listening,20.0,
+"Sunday, 11 January 2026",Speaking,10.0,
+"Sunday, 11 January 2026",Reading,20.0,
+"Sunday, 11 January 2026",Writing,10.0,
+"Monday, 12 January 2026",Listening,20.0,
+"Monday, 12 January 2026",Speaking,10.0,
+"Monday, 12 January 2026",Reading,20.0,
+"Monday, 12 January 2026",Writing,10.0,
+"Tuesday, 13 January 2026",Listening,40.0,
+"Tuesday, 13 January 2026",Speaking,20.0,
+"Tuesday, 13 January 2026",Reading,40.0,
+"Tuesday, 13 January 2026",Writing,20.0,
+"Wednesday, 14 January 2026",Listening,20.0,
+"Wednesday, 14 January 2026",Speaking,10.0,
+"Wednesday, 14 January 2026",Reading,20.0,
+"Wednesday, 14 January 2026",Writing,10.0,
+"Thursday, 15 January 2026",Listening,20.0,
+"Thursday, 15 January 2026",Speaking,10.0,
+"Thursday, 15 January 2026",Reading,20.0,
+"Thursday, 15 January 2026",Writing,10.0,
+"Friday, 16 January 2026",Listening,20.0,
+"Friday, 16 January 2026",Speaking,10.0,
+"Friday, 16 January 2026",Reading,20.0,
+"Friday, 16 January 2026",Writing,10.0,
+"Saturday, 17 January 2026",Listening,20.0,
+"Saturday, 17 January 2026",Speaking,10.0,
+"Saturday, 17 January 2026",Reading,20.0,
+"Saturday, 17 January 2026",Writing,10.0,
+"Sunday, 18 January 2026",Listening,20.0,
+"Sunday, 18 January 2026",Speaking,10.0,
+"Sunday, 18 January 2026",Reading,20.0,
+"Sunday, 18 January 2026",Writing,10.0,
+"Monday, 19 January 2026",Listening,60.0,
+"Tuesday, 20 January 2026",Listening,5.0,
+"Tuesday, 20 January 2026",Writing,8.0,
+"Wednesday, 21 January 2026",Listening,10.0,
+"Wednesday, 21 January 2026",Writing,10.0,
+"Thursday, 22 January 2026",Listening,10.0,
+"Thursday, 22 January 2026",Writing,10.0,
+"Friday, 23 January 2026",Listening,10.0,
+"Friday, 23 January 2026",Writing,9.0,
+"Saturday, 24 January 2026",Writing,7.0,
+"Saturday, 24 January 2026",Listening,6.0,
+"Sunday, 25 January 2026",Listening,7.0,
+"Sunday, 25 January 2026",Writing,7.0,
+"Monday, 26 January 2026",Writing,11.0,
+"Monday, 26 January 2026",Writing,7.0,
+"Tuesday, 27 January 2026",Listening,5.0,
+"Wednesday, 28 January 2026",Listening,4.0,
+"Thursday, 29 January 2026",Writing,3.0,
+"Thursday, 29 January 2026",Listening,5.0,
+"Friday, 30 January 2026",Listening,7.0,
+"Saturday, 31 January 2026",Listening,4.0,
+"Sunday, 01 February 2026",Listening,6.0,
+"Monday, 02 February 2026",Listening,20.0,
+"Monday, 02 February 2026",Speaking,10.0,
+"Monday, 02 February 2026",Reading,20.0,
+"Monday, 02 February 2026",Writing,10.0,
+"Tuesday, 03 February 2026",Listening,20.0,
+"Tuesday, 03 February 2026",Speaking,10.0,
+"Tuesday, 03 February 2026",Reading,20.0,
+"Tuesday, 03 February 2026",Writing,10.0,
+"Wednesday, 04 February 2026",Listening,20.0,
+"Wednesday, 04 February 2026",Speaking,10.0,
+"Wednesday, 04 February 2026",Reading,20.0,
+"Wednesday, 04 February 2026",Writing,10.0,
+"Thursday, 05 February 2026",Listening,20.0,
+"Thursday, 05 February 2026",Speaking,10.0,
+"Thursday, 05 February 2026",Reading,20.0,
+"Thursday, 05 February 2026",Writing,10.0,
+"Friday, 06 February 2026",Listening,20.0,
+"Friday, 06 February 2026",Speaking,10.0,
+"Friday, 06 February 2026",Reading,20.0,
+"Friday, 06 February 2026",Writing,10.0,
+"Saturday, 07 February 2026",Listening,20.0,
+"Saturday, 07 February 2026",Speaking,10.0,
+"Saturday, 07 February 2026",Reading,20.0,
+"Saturday, 07 February 2026",Writing,10.0,
+"Sunday, 08 February 2026",Listening,20.0,
+"Sunday, 08 February 2026",Speaking,10.0,
+"Sunday, 08 February 2026",Reading,20.0,
+"Sunday, 08 February 2026",Writing,10.0,
+"Monday, 09 February 2026",Listening,20.0,
+"Monday, 09 February 2026",Speaking,10.0,
+"Monday, 09 February 2026",Reading,20.0,
+"Monday, 09 February 2026",Writing,10.0,
+"Tuesday, 10 February 2026",Listening,20.0,
+"Tuesday, 10 February 2026",Speaking,10.0,
+"Tuesday, 10 February 2026",Reading,20.0,
+"Tuesday, 10 February 2026",Writing,10.0,
+"Wednesday, 11 February 2026",Listening,20.0,
+"Wednesday, 11 February 2026",Speaking,10.0,
+"Wednesday, 11 February 2026",Reading,20.0,
+"Wednesday, 11 February 2026",Writing,10.0,
+"Thursday, 12 February 2026",Listening,20.0,
+"Thursday, 12 February 2026",Speaking,10.0,
+"Thursday, 12 February 2026",Reading,20.0,
+"Thursday, 12 February 2026",Writing,10.0,
+"Friday, 13 February 2026",Listening,20.0,
+"Friday, 13 February 2026",Speaking,10.0,
+"Friday, 13 February 2026",Reading,20.0,
+"Friday, 13 February 2026",Writing,10.0,
+"Saturday, 14 February 2026",Listening,20.0,
+"Sunday, 15 February 2026",Speaking,20.0,
+"Monday, 16 February 2026",Writing,5.0,
+"Monday, 16 February 2026",Speaking,5.0,
+"Tuesday, 17 February 2026",Writing,5.0,
+"Tuesday, 17 February 2026",Speaking,5.0,
+"Wednesday, 18 February 2026",Writing,5.0,
+"Wednesday, 18 February 2026",Speaking,5.0,
+"Thursday, 19 February 2026",Writing,5.0,
+"Thursday, 19 February 2026",Speaking,5.0,
+"Thursday, 19 February 2026",Writing,5.0,
+"Thursday, 19 February 2026",Speaking,5.0,
+"Thursday, 19 February 2026",Listening,12.0,
+"Friday, 20 February 2026",Writing,5.0,
+"Saturday, 21 February 2026",Writing,5.0,
+"Sunday, 22 February 2026",Writing,5.0,
+"Monday, 23 February 2026",Reading,20.0,
+"Monday, 23 February 2026",Reading Analysis,20.0,
+"Monday, 23 February 2026",Listening,25.0,
+"Monday, 23 February 2026",Shadowing,20.0,
+"Monday, 23 February 2026",Grammar,30.0,
+"Monday, 23 February 2026",Writing,15.0,
+"Monday, 23 February 2026",Speaking,15.0,
+"Tuesday, 24 February 2026",Reading,20.0,
+"Tuesday, 24 February 2026",Reading Analysis,20.0,
+"Tuesday, 24 February 2026",Listening,25.0,
+"Tuesday, 24 February 2026",Shadowing,20.0,
+"Tuesday, 24 February 2026",Grammar,30.0,
+"Tuesday, 24 February 2026",Writing,15.0,
+"Tuesday, 24 February 2026",Speaking,15.0,
+"Wednesday, 25 February 2026",Reading,20.0,
+"Wednesday, 25 February 2026",Reading Analysis,20.0,
+"Wednesday, 25 February 2026",Listening,25.0,
+"Wednesday, 25 February 2026",Shadowing,20.0,
+"Wednesday, 25 February 2026",Grammar,30.0,
+"Wednesday, 25 February 2026",Writing,15.0,
+"Wednesday, 25 February 2026",Speaking,15.0,
+"Thursday, 26 February 2026",Reading,20.0,
+"Thursday, 26 February 2026",Reading Analysis,20.0,
+"Thursday, 26 February 2026",Listening,25.0,
+"Thursday, 26 February 2026",Shadowing,20.0,
+"Thursday, 26 February 2026",Grammar,9.0,
+"Friday, 27 February 2026",Reading,20.0,
+"Friday, 27 February 2026",Reading Analysis,20.0,
+"Friday, 27 February 2026",Listening,25.0,
+"Friday, 27 February 2026",Shadowing,20.0,
+"Friday, 27 February 2026",Grammar,30.0,
+"Friday, 27 February 2026",Writing,15.0,
+"Friday, 27 February 2026",Speaking,15.0,
+"Saturday, 28 February 2026",Reading,20.0,
+"Saturday, 28 February 2026",Reading Analysis,20.0,
+"Saturday, 28 February 2026",Listening,25.0,
+"Saturday, 28 February 2026",Shadowing,20.0,
+"Saturday, 28 February 2026",Grammar,30.0,
+"Saturday, 28 February 2026",Writing,15.0,
+"Saturday, 28 February 2026",Speaking,15.0,
+"Sunday, 01 March 2026",Reading,20.0,
+"Sunday, 01 March 2026",Reading Analysis,20.0,
+"Sunday, 01 March 2026",Listening,25.0,
+"Sunday, 01 March 2026",Shadowing,20.0,
+"Sunday, 01 March 2026",Grammar,30.0,
+"Sunday, 01 March 2026",Writing,15.0,
+"Sunday, 01 March 2026",Speaking,15.0,
+"Monday, 02 March 2026",Reading,20.0,
+"Monday, 02 March 2026",Reading Analysis,20.0,
+"Monday, 02 March 2026",Listening,25.0,
+"Monday, 02 March 2026",Shadowing,20.0,
+"Monday, 02 March 2026",Grammar,30.0,
+"Monday, 02 March 2026",Writing,15.0,
+"Monday, 02 March 2026",Speaking,15.0,
+"Monday, 02 March 2026",Vocabulary review,5.0,
+"Tuesday, 03 March 2026",Reading,20.0,
+"Tuesday, 03 March 2026",Reading Analysis,20.0,
+"Tuesday, 03 March 2026",Listening,25.0,
+"Tuesday, 03 March 2026",Shadowing,20.0,
+"Tuesday, 03 March 2026",Grammar,30.0,
+"Tuesday, 03 March 2026",Writing,15.0,
+"Tuesday, 03 March 2026",Speaking,15.0,
+"Tuesday, 03 March 2026",Vocabulary review,5.0,
+"Wednesday, 04 March 2026",Reading,20.0,
+"Wednesday, 04 March 2026",Reading Analysis,20.0,
+"Wednesday, 04 March 2026",Listening,25.0,
+"Wednesday, 04 March 2026",Shadowing,20.0,
+"Wednesday, 04 March 2026",Grammar,30.0,
+"Wednesday, 04 March 2026",Writing,15.0,
+"Wednesday, 04 March 2026",Speaking,15.0,
+"Wednesday, 04 March 2026",Vocabulary review & Anki,15.0,
+"Thursday, 05 March 2026",Reading,20.0,
+"Thursday, 05 March 2026",Reading Analysis,20.0,
+"Thursday, 05 March 2026",Listening,25.0,
+"Thursday, 05 March 2026",Shadowing,20.0,
+"Thursday, 05 March 2026",Grammar,30.0,
+"Thursday, 05 March 2026",Writing,15.0,
+"Thursday, 05 March 2026",Speaking,15.0,
+"Thursday, 05 March 2026",Vocabulary review & Anki,10.0,
+"Friday, 06 March 2026",Reading,20.0,
+"Friday, 06 March 2026",Reading Analysis,20.0,
+"Friday, 06 March 2026",Listening,25.0,
+"Friday, 06 March 2026",Shadowing,20.0,
+"Friday, 06 March 2026",Grammar,30.0,
+"Friday, 06 March 2026",Writing,15.0,
+"Friday, 06 March 2026",Speaking,15.0,
+"Saturday, 07 March 2026",Reading,20.0,
+"Saturday, 07 March 2026",Reading Analysis,20.0,
+"Saturday, 07 March 2026",Listening,25.0,
+"Saturday, 07 March 2026",Shadowing,20.0,
+"Saturday, 07 March 2026",Grammar,30.0,
+"Saturday, 07 March 2026",Writing,15.0,
+"Saturday, 07 March 2026",Speaking,15.0,
+"Sunday, 08 March 2026",Reading,20.0,
+"Sunday, 08 March 2026",Reading Analysis,20.0,
+"Sunday, 08 March 2026",Listening,25.0,
+"Sunday, 08 March 2026",Shadowing,20.0,
+"Sunday, 08 March 2026",Grammar,30.0,
+"Sunday, 08 March 2026",Writing,15.0,
+"Sunday, 08 March 2026",Speaking,15.0,
+"Monday, 09 March 2026",Reading,20.0,
+"Monday, 09 March 2026",Reading Analysis,20.0,
+"Monday, 09 March 2026",Listening,25.0,
+"Monday, 09 March 2026",Shadowing,20.0,
+"Monday, 09 March 2026",Grammar,30.0,
+"Monday, 09 March 2026",Writing,15.0,
+"Monday, 09 March 2026",Speaking,15.0,
+"Tuesday, 10 March 2026",Reading,7.0,
+"Wednesday, 11 March 2026",Reading,20.0,
+"Wednesday, 11 March 2026",Reading Analysis,20.0,
+"Wednesday, 11 March 2026",Listening,25.0,
+"Wednesday, 11 March 2026",Shadowing,20.0,
+"Wednesday, 11 March 2026",Grammar,30.0,
+"Wednesday, 11 March 2026",Writing,15.0,
+"Wednesday, 11 March 2026",Speaking,15.0,
+"Wednesday, 11 March 2026",Listening,30.0,
