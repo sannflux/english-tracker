@@ -1,33 +1,51 @@
 import streamlit as st
 import pandas as pd
-from github import Github
+from github import Github, GithubException
 from datetime import datetime, timedelta
 import plotly.express as px
+import io
 
 # --- CONFIGURATION & SESSION STATE ---
 st.set_page_config(page_title="English Learning Tracker", layout="wide")
 
 if 'df' not in st.session_state:
     st.session_state.df = None
+if 'sha' not in st.session_state:
+    st.session_state.sha = None
 
 # --- GITHUB INTEGRATION FUNCTIONS ---
 def load_data_from_github(token, repo_name, file_path):
     try:
         g = Github(token)
-        repo = g.get_user().get_repo(repo_name)
-        file_content = repo.get_contents(file_path)
-        decoded_content = file_content.decoded_content.decode()
-        df = pd.read_csv(pd.compat.StringIO(decoded_content))
-        # Ensure date column is datetime objects
-        df['Date'] = pd.to_datetime(df['Date'], format='%A, %d %B %Y')
-        return df, file_content.sha
+        # Fix: Use get_repo directly for "username/repo" format
+        repo = g.get_repo(repo_name) 
+        
+        try:
+            file_content = repo.get_contents(file_path)
+            decoded_content = file_content.decoded_content.decode()
+            df = pd.read_csv(io.StringIO(decoded_content))
+            # Ensure date column is datetime objects
+            df['Date'] = pd.to_datetime(df['Date'], format='%A, %d %B %Y')
+            return df, file_content.sha, "success"
+        except GithubException as e:
+            if e.status == 404:
+                return None, None, "file_not_found"
+            return None, None, f"GitHub Error: {e.data.get('message', str(e))}"
+            
+    except GithubException as e:
+        if e.status == 401:
+            return None, None, "Invalid GitHub Token."
+        elif e.status == 404:
+            return None, None, "Repository not found. Check the name."
+        return None, None, f"Connection Error: {e.data.get('message', str(e))}"
     except Exception as e:
-        return None, None
+        return None, None, str(e)
 
 def save_data_to_github(token, repo_name, file_path, df, sha):
     try:
         g = Github(token)
-        repo = g.get_user().get_repo(repo_name)
+        repo = g.get_repo(repo_name)
+        
         # Convert datetime back to the specific string format for saving
         df_to_save = df.copy()
         df_to_save['Date'] = df_to_save['Date'].dt.strftime('%A, %d %B %Y')
@@ -54,7 +72,7 @@ def calculate_streak(df):
     current_date = today
     
     # Check if last entry was today or yesterday to continue streak
-    if dates[0] < today - timedelta(days=1):
+    if not dates or dates[0] < today - timedelta(days=1):
         return 0
         
     for date in dates:
@@ -72,20 +90,23 @@ st.title("🇬🇧 English Learning Tracker")
 with st.sidebar:
     st.header("Settings & Sync")
     gh_token = st.text_input("GitHub Personal Access Token", type="password")
-    gh_repo = st.text_input("Repository Name (e.g., 'user/english-tracker')")
+    gh_repo = st.text_input("Repository Name", value="sannflux/english-tracker")
     gh_path = "data.csv"
     
     if st.button("Connect & Sync Data"):
         if gh_token and gh_repo:
-            df, sha = load_data_from_github(gh_token, gh_repo, gh_path)
-            if df is not None:
+            df, sha, status = load_data_from_github(gh_token, gh_repo, gh_path)
+            
+            if status == "success":
                 st.session_state.df = df
                 st.session_state.sha = sha
                 st.success("Data synced from GitHub!")
-            else:
-                st.warning("No file found. Starting with a fresh dataset.")
+            elif status == "file_not_found":
+                st.warning("Connected to repo, but 'data.csv' not found. Starting fresh.")
                 st.session_state.df = pd.DataFrame(columns=['Date', 'Skill', 'Time Spent'])
                 st.session_state.sha = None
+            else:
+                st.error(f"Failed to connect: {status}")
         else:
             st.error("Please provide Token and Repo name.")
 
@@ -111,26 +132,26 @@ if st.session_state.df is not None:
                 })
                 # Add to dataframe
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-                st.success("Entry added locally!")
+                st.success("Entry added locally! Don't forget to push to GitHub.")
 
-        if st.button("🚀 Push to GitHub"):
+        if st.button("🚀 Push to GitHub", type="primary"):
             success = save_data_to_github(gh_token, gh_repo, gh_path, st.session_state.df, st.session_state.sha)
             if success:
-                st.success("Saved to GitHub!")
-                # Refresh SHA
-                _, st.session_state.sha = load_data_from_github(gh_token, gh_repo, gh_path)
+                st.success("Successfully saved to GitHub!")
+                # Refresh SHA after creating/updating the file
+                _, st.session_state.sha, _ = load_data_from_github(gh_token, gh_repo, gh_path)
 
     with col2:
         # --- CALCULATIONS ---
         df = st.session_state.df
-        total_mins = df['Time Spent'].sum()
+        total_mins = df['Time Spent'].sum() if not df.empty else 0
         total_hours = total_mins / 60
         streak = calculate_streak(df)
         
         # Dashboard Metrics
         m1, m2, m3 = st.columns(3)
         m1.metric("Total Hours", f"{total_hours:.1f}h")
-        m2.metric("Days Studied", len(df['Date'].unique()))
+        m2.metric("Days Studied", len(df['Date'].unique()) if not df.empty else 0)
         m3.metric("Current Streak", f"{streak} Days 🔥")
 
         # Milestone Progress Bar
@@ -145,7 +166,10 @@ if st.session_state.df is not None:
     tab1, tab2, tab3 = st.tabs(["Recent Logs", "Weekly Summary", "Skill Distribution"])
     
     with tab1:
-        st.dataframe(df.sort_values(by='Date', ascending=False), use_container_width=True)
+        if not df.empty:
+            st.dataframe(df.sort_values(by='Date', ascending=False), use_container_width=True)
+        else:
+            st.info("No logs yet. Add your first session above!")
     
     with tab2:
         if not df.empty:
@@ -161,14 +185,16 @@ if st.session_state.df is not None:
             
             fig = px.bar(weekly_summary, x='Week Label', y='Hours', title="Weekly Progress")
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Log some data to see weekly summaries.")
 
     with tab3:
         if not df.empty:
             skill_summary = df.groupby('Skill')['Time Spent'].sum().reset_index()
             fig_pie = px.pie(skill_summary, values='Time Spent', names='Skill', title="Time by Skill")
             st.plotly_chart(fig_pie, use_container_width=True)
+        else:
+            st.info("Log some data to see skill distribution.")
 
 else:
-    st.info("Please connect to your GitHub repository in the sidebar to load your data or start a new log.")
-
-
+    st.info("👈 Please connect to your GitHub repository in the sidebar. Once connected, you can add logs and save them directly to GitHub.")
