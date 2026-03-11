@@ -245,15 +245,17 @@ if st.session_state.df is not None:
                 hm_data = df.dropna(subset=['Date']).copy()
                 hm_data['Weekday'] = hm_data['Date'].dt.day_name()
                 
-                # FIX: Force Week to be a strict categorical String (e.g. "W52") to prevent plotly float axes
-                hm_data['Week'] = "W" + hm_data['Date'].dt.isocalendar().week.astype(str)
+                # FIX: Force strictly zero-padded string (e.g., "W06", "W52") for accurate chronological sorting
+                hm_data['Week'] = "W" + hm_data['Date'].dt.isocalendar().week.astype(str).str.zfill(2)
                 
                 weekdays_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
                 pivot_df = hm_data.pivot_table(index='Weekday', columns='Week', values='Time Spent', aggfunc='sum').reindex(weekdays_order).fillna(0)
                 
+                # Sort columns alphabetically (which is now chronologically due to zfill)
+                pivot_df = pivot_df.reindex(sorted(pivot_df.columns), axis=1)
+                
                 fig_heat = px.imshow(pivot_df, color_continuous_scale='Greens', title="Time Spent per Week/Day", aspect="auto")
                 fig_heat.update_layout(margin=dict(l=0, r=0, t=30, b=0))
-                # Explicitly tell Plotly the X-axis is categorical
                 fig_heat.update_xaxes(type='category') 
                 st.plotly_chart(fig_heat, use_container_width=True)
             else:
@@ -262,9 +264,13 @@ if st.session_state.df is not None:
         with tab_week:
             if not df.empty and df['Date'].notna().any():
                 week_data = df.dropna(subset=['Date']).copy()
-                # FIX: Force Week to be a strict string here too
-                week_data['Week_Str'] = "W" + week_data['Date'].dt.isocalendar().week.astype(str)
+                
+                # FIX: Zero-padded string for chronological bar chart sorting
+                week_data['Week_Str'] = "W" + week_data['Date'].dt.isocalendar().week.astype(str).str.zfill(2)
                 weekly = week_data.groupby('Week_Str')['Time Spent'].sum().reset_index()
+                
+                # Ensure dataframe is sorted chronologically before plotting
+                weekly = weekly.sort_values('Week_Str')
                 weekly['Hours'] = weekly['Time Spent'] / 60
                 
                 fig_week = px.bar(weekly, x='Week_Str', y='Hours', title="Hours per Week", color_discrete_sequence=['#00CC96'])
