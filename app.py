@@ -47,13 +47,15 @@ def load_data_from_github(_token, repo_name, file_path):
             def clean_dt(val):
                 if pd.isna(val): return val
                 val = str(val)
+                # Remove day names like "Wednesday, "
                 return val.split(',')[-1].strip() if ',' in val else val
             
             df['Date'] = df['Date'].apply(clean_dt)
-            df['Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce')
+            # Mixed format handling for different CSV styles
+            df['Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce', dayfirst=True)
             df['Date'] = df['Date'].ffill().bfill()
 
-        # 3. Clean Skills (ffill to cover the blank rows)
+        # 3. Clean Skills
         if 'Skill' in df.columns:
             df['Skill'] = df['Skill'].astype(str).str.strip()
             df['Skill'] = df['Skill'].replace({'nan': np.nan, 'None': np.nan})
@@ -76,7 +78,7 @@ def save_to_github(token, repo_name, file_path, df, current_sha):
         repo = g.get_repo(repo_name)
         df_save = df.copy()
         
-        # Format date back to a clean string for CSV
+        # Save back in human-readable format
         df_save['Date'] = pd.to_datetime(df_save['Date']).dt.strftime("%A, %d %B %Y")
         
         csv_buffer = io.StringIO()
@@ -124,6 +126,7 @@ with st.sidebar:
 st.title("🇬🇧 English Learning Pro")
 
 if st.session_state.df is not None:
+    # Use a copy to avoid mutating session state accidentally
     df = st.session_state.df.copy()
     
     # CALCULATIONS
@@ -132,9 +135,11 @@ if st.session_state.df is not None:
     level = int(total_hrs // 50) + 1
     xp_progress = (total_hrs % 50) / 50
     
-    # Fix: Use YYYY-Wxx format for guaranteed chronological sorting
-    df['Week_Label'] = df['Date'].dt.strftime('%Y-W%W')
-    current_week_label = datetime.now().strftime('%Y-W%W')
+    # FIX: Use ISO-8601 Year (%G) and Week (%V) to fix the "Week 0" and "2026" ghost weeks bug
+    df['Week_Label'] = df['Date'].dt.strftime('%G-W%V')
+    
+    # Calculate current week using same ISO logic
+    current_week_label = datetime.now().strftime('%G-W%V')
     this_week_hrs = df[df['Week_Label'] == current_week_label]['Time Spent'].sum() / 60
 
     if level > st.session_state.prev_level and st.session_state.prev_level != 0:
@@ -156,12 +161,12 @@ if st.session_state.df is not None:
         st.subheader("➕ Add Session")
         with st.form("new_entry", clear_on_submit=True):
             d = st.date_input("Date", datetime.now())
-            # Expanded options to cover your custom inputs, or user can type anything in the data editor later
             s = st.selectbox("Skill", ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary", "Listening dan writing"])
             t = st.number_input("Minutes", 1, 300, 30)
             n = st.text_input("Notes")
             if st.form_submit_button("Push to GitHub"):
                 new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
+                # Append to current session state
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 new_sha = save_to_github(gh_token, gh_repo, "data.csv", st.session_state.df, st.session_state.file_sha)
                 if new_sha:
@@ -175,7 +180,8 @@ if st.session_state.df is not None:
         with t1:
             weekly_df = df.groupby('Week_Label')['Time Spent'].sum().reset_index()
             weekly_df['Hours'] = weekly_df['Time Spent'] / 60
-            weekly_df = weekly_df.sort_values('Week_Label') # Explicit sort
+            # Sort chronologically by the ISO label
+            weekly_df = weekly_df.sort_values('Week_Label') 
             fig = px.bar(weekly_df, x='Week_Label', y='Hours', color_discrete_sequence=['#00CC96'])
             fig.update_xaxes(type='category', categoryorder='category ascending')
             st.plotly_chart(fig, use_container_width=True)
@@ -185,11 +191,12 @@ if st.session_state.df is not None:
             st.plotly_chart(fig2, use_container_width=True)
 
     st.subheader("📝 History")
+    # Refresh display_df from state
     display_df = st.session_state.df.copy()
     display_df['Date'] = display_df['Date'].dt.date
     display_df = display_df.sort_values("Date", ascending=False).reset_index(drop=True)
     
-    # Fix: Changed Skill to TextColumn so custom entries like "Listening dan writing" don't turn blank
+    # Keep Skill as TextColumn to support custom entries from your CSV
     edited = st.data_editor(
         display_df[['Date', 'Skill', 'Time Spent', 'Notes']],
         use_container_width=True,
@@ -203,13 +210,14 @@ if st.session_state.df is not None:
     
     if not edited.equals(display_df[['Date', 'Skill', 'Time Spent', 'Notes']]):
         if st.button("💾 Save Edits"):
-            # Convert dates back to datetime before saving
-            edited['Date'] = pd.to_datetime(edited['Date'])
-            new_sha = save_to_github(gh_token, gh_repo, "data.csv", edited, st.session_state.file_sha)
+            # Prepare for saving
+            edited_for_save = edited.copy()
+            edited_for_save['Date'] = pd.to_datetime(edited_for_save['Date'])
+            new_sha = save_to_github(gh_token, gh_repo, "data.csv", edited_for_save, st.session_state.file_sha)
             if new_sha:
                 st.session_state.file_sha = new_sha
-                st.session_state.df = edited
-                st.success("Saved!")
+                st.session_state.df = edited_for_save
+                st.success("History Updated!")
                 st.rerun()
 else:
     st.info("👈 Enter Token and click Force Sync to start.")
