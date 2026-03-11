@@ -35,12 +35,27 @@ def load_data_from_github(_token, repo_name, file_path):
         # DATA CLEANING & SCHEMA ENFORCEMENT
         df.columns = df.columns.str.strip()
         
-        # Ensure 'Notes' column exists (Feature 8)
+        # Ensure 'Notes' column exists
         if 'Notes' not in df.columns:
             df['Notes'] = ""
-            
         df['Notes'] = df['Notes'].fillna("")
-        df['Date'] = df['Date'].astype(str).str.strip().replace({'': pd.NA, 'nan': pd.NA, 'NaT': pd.NA}).ffill()
+        
+        # 1. FIX: Aggressive Date Cleaning & Forward Fill
+        if 'Date' in df.columns:
+            df['Date'] = df['Date'].astype(str).str.strip()
+            # Replace empty strings and common null representations with pandas NA
+            df['Date'] = df['Date'].replace({'': pd.NA, 'nan': pd.NA, 'NaN': pd.NA, 'NaT': pd.NA, 'None': pd.NA})
+            df['Date'] = df['Date'].ffill() # Forward fill the dates
+        
+        # 2. FIX: Skill Cleaning & Fallback
+        if 'Skill' in df.columns:
+            df['Skill'] = df['Skill'].astype(str).str.strip()
+            df['Skill'] = df['Skill'].replace({'': pd.NA, 'nan': pd.NA, 'NaN': pd.NA, 'None': pd.NA})
+            df['Skill'] = df['Skill'].ffill().fillna("Reading") # Fallback to ensure editor doesn't break
+            
+            # Ensure only valid options remain for the data editor
+            valid_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
+            df.loc[~df['Skill'].isin(valid_skills), 'Skill'] = "Reading"
         
         # Robust Date Parsing
         try:
@@ -48,9 +63,9 @@ def load_data_from_github(_token, repo_name, file_path):
         except ValueError:
             df['Date'] = pd.to_datetime(df['Date'], format='mixed', dayfirst=True, errors='coerce')
         
-        # Numeric parsing
-        df = df.dropna(subset=['Time Spent'])
-        df['Time Spent'] = pd.to_numeric(df['Time Spent'], errors='coerce').fillna(0)
+        # 3. FIX: Numeric parsing without dropping rows
+        if 'Time Spent' in df.columns:
+            df['Time Spent'] = pd.to_numeric(df['Time Spent'], errors='coerce').fillna(0)
         
         return df, contents.sha, "success"
     except Exception as e:
@@ -84,12 +99,12 @@ def save_to_github(token, repo_name, file_path, df, current_sha):
 # --- CALCULATION LOGIC ---
 def get_streak(df):
     if df.empty: return 0
-    dates = pd.to_datetime(df['Date']).dt.date.unique()
+    dates = pd.to_datetime(df['Date']).dt.date.dropna().unique()
     dates = sorted(dates, reverse=True)
     today = datetime.now().date()
     streak = 0
     curr = today
-    if dates[0] < today - timedelta(days=1): return 0
+    if not dates or dates[0] < today - timedelta(days=1): return 0
     for d in dates:
         if d == curr or d == curr - timedelta(days=1):
             streak += 1
@@ -168,24 +183,26 @@ if st.session_state.df is not None:
     best_day_str = "N/A"
     current_week_hrs = 0
     
-    if not df.empty:
+    if not df.empty and df['Date'].notna().any():
+        valid_df = df.dropna(subset=['Date']).copy()
+        
         # 7-Day Rolling Average
-        daily_totals = df.groupby('Date')['Time Spent'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
+        daily_totals = valid_df.groupby('Date')['Time Spent'].sum().reset_index().set_index('Date').resample('D').sum().fillna(0)
         if len(daily_totals) >= 7:
             rolling_7d = daily_totals['Time Spent'].rolling(7).mean().iloc[-1]
         elif len(daily_totals) > 0:
             rolling_7d = daily_totals['Time Spent'].mean()
             
         # Best Day Insight
-        day_avg = df.groupby(df['Date'].dt.day_name())['Time Spent'].mean()
+        day_avg = valid_df.groupby(valid_df['Date'].dt.day_name())['Time Spent'].mean()
         if not day_avg.empty:
             best_day = day_avg.idxmax()
             best_day_str = f"{best_day[:3]} ({day_avg.max():.0f}m avg)"
             
         # Current Week Target
         current_week = datetime.now().isocalendar().week
-        df['Week'] = df['Date'].dt.isocalendar().week
-        current_week_hrs = df[df['Week'] == current_week]['Time Spent'].sum() / 60
+        valid_df['Week'] = valid_df['Date'].dt.isocalendar().week
+        current_week_hrs = valid_df[valid_df['Week'] == current_week]['Time Spent'].sum() / 60
 
     # Render Metric Cards
     m1, m2, m3, m4, m5, m6 = st.columns(6)
@@ -222,9 +239,9 @@ if st.session_state.df is not None:
         tab_heat, tab_week, tab_skill = st.tabs(["Activity Heatmap", "Weekly Progress", "Skill Breakdown"])
         
         with tab_heat:
-            if not df.empty:
+            if not df.empty and df['Date'].notna().any():
                 # Prepare Heatmap Data
-                hm_data = df.copy()
+                hm_data = df.dropna(subset=['Date']).copy()
                 hm_data['Weekday'] = hm_data['Date'].dt.day_name()
                 hm_data['Week'] = hm_data['Date'].dt.isocalendar().week
                 
@@ -238,8 +255,10 @@ if st.session_state.df is not None:
                 st.write("Not enough data for heatmap.")
 
         with tab_week:
-            if not df.empty:
-                weekly = df.groupby('Week')['Time Spent'].sum().reset_index()
+            if not df.empty and df['Date'].notna().any():
+                week_data = df.dropna(subset=['Date']).copy()
+                week_data['Week'] = week_data['Date'].dt.isocalendar().week
+                weekly = week_data.groupby('Week')['Time Spent'].sum().reset_index()
                 weekly['Hours'] = weekly['Time Spent'] / 60
                 fig_week = px.bar(weekly, x='Week', y='Hours', title="Hours per Week", color_discrete_sequence=['#00CC96'])
                 st.plotly_chart(fig_week, use_container_width=True)
@@ -254,8 +273,9 @@ if st.session_state.df is not None:
     st.subheader("📝 Editable Data History")
     
     display_df = df.copy()
-    display_df['Date'] = display_df['Date'].dt.date # Convert to standard date for editor
-    display_df = display_df.sort_values(by="Date", ascending=False).reset_index(drop=True)
+    # Handle NaT before converting to date to avoid UI crashes
+    display_df['Date'] = pd.to_datetime(display_df['Date']).dt.date 
+    display_df = display_df.sort_values(by="Date", ascending=False, na_position='last').reset_index(drop=True)
     
     max_time = df['Time Spent'].max() if not df.empty else 120
     
