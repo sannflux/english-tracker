@@ -41,24 +41,27 @@ def load_data_from_github(_token, repo_name, file_path):
             df['Notes'] = ""
         df['Notes'] = df['Notes'].fillna("")
         
-        # 1. FIX: Aggressive Date Cleaning & Forward Fill
+        # 1. FIX: Ironclad Date Cleaning (Bi-directional Fill)
         if 'Date' in df.columns:
-            # Convert to string and explicitly replace all variants of empty/null with pd.NA
-            df['Date'] = df['Date'].astype(str).str.strip()
-            df['Date'] = df['Date'].replace(r'^(nan|NaN|NaT|None|)$', pd.NA, regex=True)
-            df['Date'] = df['Date'].ffill() # Forward fill down the blanks
+            # Force empty strings or pure whitespace to true NaN
+            df['Date'] = df['Date'].replace(r'^\s*$', np.nan, regex=True)
             
-            # Parse dates: Try original long format first, then coerce standard formats
-            try:
-                df['Date'] = pd.to_datetime(df['Date'], format="%A, %d %B %Y")
-            except ValueError:
-                df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+            # Forward fill first, then backward fill for top-row blanks
+            df['Date'] = df['Date'].ffill().bfill()
+            
+            # Safely stringify and strip out day names (e.g., "Friday, 29 Nov..." -> "29 Nov...")
+            df['Date'] = df['Date'].astype(str).apply(lambda x: x.split(', ')[-1] if isinstance(x, str) and ', ' in x else x)
+            
+            # Convert to datetime and coerce any remaining garbage into NaT
+            df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+            
+            # Final safety net for coerced NaTs
+            df['Date'] = df['Date'].ffill().bfill()
         
-        # 2. FIX: Skill Cleaning & Fallback
+        # 2. FIX: Ironclad Skill Cleaning
         if 'Skill' in df.columns:
-            df['Skill'] = df['Skill'].astype(str).str.strip()
-            df['Skill'] = df['Skill'].replace(r'^(nan|NaN|NaT|None|)$', pd.NA, regex=True)
-            df['Skill'] = df['Skill'].ffill().fillna("Reading") 
+            df['Skill'] = df['Skill'].replace(r'^\s*$', np.nan, regex=True)
+            df['Skill'] = df['Skill'].ffill().bfill().fillna("Reading") 
             
             # Ensure only valid options remain for the data editor
             valid_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
@@ -245,7 +248,7 @@ if st.session_state.df is not None:
                 hm_data = df.dropna(subset=['Date']).copy()
                 hm_data['Weekday'] = hm_data['Date'].dt.day_name()
                 
-                # FIX: Force strictly zero-padded string (e.g., "W06", "W52") for accurate chronological sorting
+                # Zero-padded string (e.g., "W06", "W52") for accurate chronological sorting
                 hm_data['Week'] = "W" + hm_data['Date'].dt.isocalendar().week.astype(str).str.zfill(2)
                 
                 weekdays_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -265,7 +268,7 @@ if st.session_state.df is not None:
             if not df.empty and df['Date'].notna().any():
                 week_data = df.dropna(subset=['Date']).copy()
                 
-                # FIX: Zero-padded string for chronological bar chart sorting
+                # Zero-padded string for chronological bar chart sorting
                 week_data['Week_Str'] = "W" + week_data['Date'].dt.isocalendar().week.astype(str).str.zfill(2)
                 weekly = week_data.groupby('Week_Str')['Time Spent'].sum().reset_index()
                 
