@@ -34,34 +34,24 @@ def load_data_from_github(_token, repo_name, file_path):
         decoded_string = contents.decoded_content.decode('utf-8')
         df = pd.read_csv(io.StringIO(decoded_string))
         
-        # 1. Clean Column Names
         df.columns = df.columns.str.strip()
-        
-        # Globally replace empty strings or spaces with real NaNs for ffill to work
         df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
         
-        # 2. FIX BLANK DATES
         if 'Date' in df.columns:
             df['Date'] = df['Date'].ffill() 
-            
             def clean_dt(val):
                 if pd.isna(val): return val
                 val = str(val)
-                # Remove day names like "Wednesday, "
                 return val.split(',')[-1].strip() if ',' in val else val
             
             df['Date'] = df['Date'].apply(clean_dt)
-            # Mixed format handling for different CSV styles
             df['Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce', dayfirst=True)
             df['Date'] = df['Date'].ffill().bfill()
 
-        # 3. Clean Skills
         if 'Skill' in df.columns:
             df['Skill'] = df['Skill'].astype(str).str.strip()
-            df['Skill'] = df['Skill'].replace({'nan': np.nan, 'None': np.nan})
             df['Skill'] = df['Skill'].ffill().fillna("Unspecified")
 
-        # 4. Clean Time Spent
         if 'Time Spent' in df.columns:
             df['Time Spent'] = pd.to_numeric(df['Time Spent'], errors='coerce').fillna(0)
             
@@ -77,13 +67,10 @@ def save_to_github(token, repo_name, file_path, df, current_sha):
         g = Github(token)
         repo = g.get_repo(repo_name)
         df_save = df.copy()
-        
-        # Save back in human-readable format
         df_save['Date'] = pd.to_datetime(df_save['Date']).dt.strftime("%A, %d %B %Y")
-        
         csv_buffer = io.StringIO()
         df_save.to_csv(csv_buffer, index=False)
-        res = repo.update_file(path=file_path, message="Sync from Streamlit App", content=csv_buffer.getvalue(), sha=current_sha)
+        res = repo.update_file(path=file_path, message="Sync", content=csv_buffer.getvalue(), sha=current_sha)
         return res['content'].sha 
     except Exception as e:
         st.error(f"Save Error: {e}")
@@ -126,7 +113,6 @@ with st.sidebar:
 st.title("🇬🇧 English Learning Pro")
 
 if st.session_state.df is not None:
-    # Use a copy to avoid mutating session state accidentally
     df = st.session_state.df.copy()
     
     # CALCULATIONS
@@ -135,12 +121,28 @@ if st.session_state.df is not None:
     level = int(total_hrs // 50) + 1
     xp_progress = (total_hrs % 50) / 50
     
-    # FIX: Use ISO-8601 Year (%G) and Week (%V) to fix the "Week 0" and "2026" ghost weeks bug
-    df['Week_Label'] = df['Date'].dt.strftime('%G-W%V')
-    
-    # Calculate current week using same ISO logic
-    current_week_label = datetime.now().strftime('%G-W%V')
-    this_week_hrs = df[df['Week_Label'] == current_week_label]['Time Spent'].sum() / 60
+    # FIX: Personal "Journey Week" Calculation
+    if not df.empty and df['Date'].notna().any():
+        # Find the absolute first day of study
+        start_date = df['Date'].min()
+        
+        # Calculate days since start for each row, then group into 7-day weeks (Week 1, 2, 3...)
+        df['Days_Since_Start'] = (df['Date'] - start_date).dt.days
+        df['Study_Week'] = (df['Days_Since_Start'] // 7) + 1
+        
+        # Create zero-padded label for perfect sorting (e.g., "Week 01", "Week 12")
+        df['Week_Label'] = "Week " + df['Study_Week'].astype(str).str.zfill(2)
+        
+        # Calculate what the current week is based on TODAY
+        now = datetime.now()
+        days_since_start_now = (now - start_date).days
+        current_study_week = (max(0, days_since_start_now) // 7) + 1
+        current_week_label = "Week " + str(current_study_week).zfill(2)
+        
+        this_week_hrs = df[df['Week_Label'] == current_week_label]['Time Spent'].sum() / 60
+    else:
+        df['Week_Label'] = "Week 01"
+        this_week_hrs = 0
 
     if level > st.session_state.prev_level and st.session_state.prev_level != 0:
         st.balloons()
@@ -151,7 +153,7 @@ if st.session_state.df is not None:
     m1.metric("Level", f"Lvl {level}")
     m2.metric("Total Time", f"{total_hrs:.1f}h")
     m3.metric("Streak", f"{streak} Days 🔥")
-    m4.metric("This Week", f"{this_week_hrs:.1f}h")
+    m4.metric("Current Week", f"{this_week_hrs:.1f}h")
     st.progress(xp_progress)
 
     st.divider()
@@ -166,7 +168,6 @@ if st.session_state.df is not None:
             n = st.text_input("Notes")
             if st.form_submit_button("Push to GitHub"):
                 new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
-                # Append to current session state
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 new_sha = save_to_github(gh_token, gh_repo, "data.csv", st.session_state.df, st.session_state.file_sha)
                 if new_sha:
@@ -178,25 +179,25 @@ if st.session_state.df is not None:
         st.subheader("📊 Analysis")
         t1, t2 = st.tabs(["Weekly Progress", "Skill Distribution"])
         with t1:
-            weekly_df = df.groupby('Week_Label')['Time Spent'].sum().reset_index()
-            weekly_df['Hours'] = weekly_df['Time Spent'] / 60
-            # Sort chronologically by the ISO label
-            weekly_df = weekly_df.sort_values('Week_Label') 
-            fig = px.bar(weekly_df, x='Week_Label', y='Hours', color_discrete_sequence=['#00CC96'])
-            fig.update_xaxes(type='category', categoryorder='category ascending')
-            st.plotly_chart(fig, use_container_width=True)
+            if not df.empty:
+                weekly_df = df.groupby('Week_Label')['Time Spent'].sum().reset_index()
+                weekly_df['Hours'] = weekly_df['Time Spent'] / 60
+                weekly_df = weekly_df.sort_values('Week_Label') 
+                
+                fig = px.bar(weekly_df, x='Week_Label', y='Hours', color_discrete_sequence=['#00CC96'])
+                fig.update_xaxes(type='category', categoryorder='category ascending', title="Study Journey Week")
+                st.plotly_chart(fig, use_container_width=True)
         with t2:
-            skill_df = df.groupby('Skill')['Time Spent'].sum().reset_index()
-            fig2 = px.pie(skill_df, values='Time Spent', names='Skill', hole=0.4)
-            st.plotly_chart(fig2, use_container_width=True)
+            if not df.empty:
+                skill_df = df.groupby('Skill')['Time Spent'].sum().reset_index()
+                fig2 = px.pie(skill_df, values='Time Spent', names='Skill', hole=0.4)
+                st.plotly_chart(fig2, use_container_width=True)
 
     st.subheader("📝 History")
-    # Refresh display_df from state
     display_df = st.session_state.df.copy()
     display_df['Date'] = display_df['Date'].dt.date
     display_df = display_df.sort_values("Date", ascending=False).reset_index(drop=True)
     
-    # Keep Skill as TextColumn to support custom entries from your CSV
     edited = st.data_editor(
         display_df[['Date', 'Skill', 'Time Spent', 'Notes']],
         use_container_width=True,
@@ -210,14 +211,13 @@ if st.session_state.df is not None:
     
     if not edited.equals(display_df[['Date', 'Skill', 'Time Spent', 'Notes']]):
         if st.button("💾 Save Edits"):
-            # Prepare for saving
-            edited_for_save = edited.copy()
-            edited_for_save['Date'] = pd.to_datetime(edited_for_save['Date'])
-            new_sha = save_to_github(gh_token, gh_repo, "data.csv", edited_for_save, st.session_state.file_sha)
+            edited_save = edited.copy()
+            edited_save['Date'] = pd.to_datetime(edited_save['Date'])
+            new_sha = save_to_github(gh_token, gh_repo, "data.csv", edited_save, st.session_state.file_sha)
             if new_sha:
                 st.session_state.file_sha = new_sha
-                st.session_state.df = edited_for_save
-                st.success("History Updated!")
+                st.session_state.df = edited_save
+                st.success("Updated!")
                 st.rerun()
 else:
     st.info("👈 Enter Token and click Force Sync to start.")
