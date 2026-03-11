@@ -54,8 +54,11 @@ def load_data_from_github(_token, repo_name, file_path):
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
             df['Date'] = df['Date'].ffill().bfill() # Final safety fill
             
-        # 3. Skill Cleaning (Forward fill if user left it blank)
+        # 3. FIX: Strict Skill Cleaning (Strips spaces, fixes capitalization)
         if 'Skill' in df.columns:
+            # Convert to string, strip spaces, and Title Case (e.g. " listening " -> "Listening")
+            df['Skill'] = df['Skill'].astype(str).str.strip().str.title()
+            df['Skill'] = df['Skill'].replace({'Nan': np.nan, 'None': np.nan, '': np.nan})
             df['Skill'] = df['Skill'].replace(r'^\s*$', np.nan, regex=True)
             df['Skill'] = df['Skill'].ffill().fillna("Reading")
             
