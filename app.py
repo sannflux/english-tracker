@@ -25,7 +25,8 @@ def get_ai_recommendation(api_key, dataframe):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        # STRICT MODEL LOCK
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
         summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
         prompt = f"""
         Act as an expert English Study Coach. Here is my study data (Skill: Total Minutes): {summary}.
@@ -54,7 +55,6 @@ def load_data_from_github(_token, repo_name, file_path):
         df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
         
         if 'Date' in df.columns:
-            # Flexible read, but standardized state
             df['Date'] = df['Date'].apply(lambda x: str(x).split(',')[-1].strip() if ',' in str(x) else x)
             df['Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce', dayfirst=True)
             df['Date'] = df['Date'].ffill().bfill()
@@ -70,17 +70,13 @@ def load_data_from_github(_token, repo_name, file_path):
         return None, None, str(e)
 
 def save_to_github(token, repo_name, file_path, df):
-    """Refined save logic with ATOMIC SHA-fetching to prevent 409 Conflict Errors"""
     try:
         g = get_gh_client(token)
         repo = g.get_repo(repo_name)
-        
-        # Always fetch the fresh SHA right before saving
         latest_contents = repo.get_contents(file_path)
         latest_sha = latest_contents.sha
         
         df_save = df.copy()
-        # Enforce YYYY-MM-DD backend storage
         df_save['Date'] = pd.to_datetime(df_save['Date']).dt.strftime("%Y-%m-%d")
         csv_buffer = io.StringIO()
         df_save.to_csv(csv_buffer, index=False)
@@ -118,7 +114,6 @@ with st.sidebar:
     gh_repo = st.text_input("Repo", value=st.session_state.saved_repo)
     st.session_state.gemini_key = st.text_input("Gemini API Key", type="password", value=st.session_state.gemini_key)
     
-    # Fixed Credential Saving
     if st.button("💾 Save Credentials", use_container_width=True):
         st.session_state.saved_token = gh_token
         st.session_state.saved_repo = gh_repo
@@ -180,7 +175,6 @@ if st.session_state.df is not None:
     xp_progress = (total_hrs % 50) / 50
     streak = get_streak(df)
 
-    # Automated Celebration Logic
     if level > st.session_state.prev_level and st.session_state.prev_level != 0:
         st.balloons()
         st.session_state.prev_level = level
@@ -231,7 +225,6 @@ if st.session_state.df is not None:
                     fig_gh.update_layout(height=250, margin=dict(l=0,r=0,t=0,b=0), coloraxis_showscale=False)
                     st.plotly_chart(fig_gh, use_container_width=True)
                 
-                # RESTORED: Ghost Pacer on Mountain Chart
                 df_sorted = df.sort_values('Date')
                 df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
                 fig_mtn = px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color])
@@ -247,11 +240,12 @@ if st.session_state.df is not None:
                 st.plotly_chart(fig_mtn, use_container_width=True)
                 
             with c2:
-                # NEW: Donut chart
                 st.subheader("Skill Diet")
                 if not df.empty:
                     diet_data = df.groupby('Skill')['Time Spent'].sum()
                     fig_donut = px.pie(names=diet_data.index, values=diet_data.values, hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
+                    # FIXED DONUT CHART LABELS
+                    fig_donut.update_traces(textinfo='label+percent', textposition='inside')
                     fig_donut.update_layout(showlegend=False, height=250, margin=dict(l=20,r=20,t=20,b=20))
                     st.plotly_chart(fig_donut, use_container_width=True)
 
@@ -277,7 +271,6 @@ if st.session_state.df is not None:
 
             st.divider()
             
-            # RESTORED: Time Machine and Heatmap
             i1, i2 = st.columns(2)
             with i1:
                 target_past = (now - timedelta(days=30)).date()
@@ -292,7 +285,6 @@ if st.session_state.df is not None:
                 st.plotly_chart(px.imshow(pivot.corr().fillna(0), text_auto=True, title="Skill Pairing", color_continuous_scale="Purples"), use_container_width=True)
 
         with tab_trophy:
-            # RESTORED: Trophies
             badges = [("First Step", "Logged 1st session", total_hrs > 0), ("Novice", "10h total", total_hrs >= 10), ("Master", "Level 10", level >= 10)]
             cols = st.columns(3)
             for i, (name, desc, unlocked) in enumerate(badges):
@@ -300,7 +292,6 @@ if st.session_state.df is not None:
                 else: cols[i].info(f"🔒 **{name}**\n\n{desc}")
 
         with tab_history:
-            # RESTORED: Merge Days Tool
             col_title, col_btn = st.columns([3, 1])
             col_title.subheader("📝 Session History")
             if col_btn.button("🧹 Merge Duplicate Days"):
@@ -323,7 +314,6 @@ if st.session_state.df is not None:
             display_df = df.copy().sort_values("Date", ascending=False)
             display_df['Delete'] = False
             
-            # UPGRADED: column_config Editor
             edited_hist = st.data_editor(
                 display_df[['Delete', 'Date', 'Skill', 'Time Spent', 'Notes']],
                 column_config={
@@ -358,7 +348,6 @@ if st.session_state.df is not None:
                 st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False}, use_container_width=True)
 
             with c2:
-                # RESTORED: Year Wrapped
                 st.subheader(f"🎧 Your {now.year} Wrapped")
                 if st.button("✨ Reveal My Wrapped ✨", use_container_width=True):
                     st.balloons()
@@ -385,7 +374,6 @@ if st.session_state.df is not None:
                 new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
                 updated_df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 
-                # Atomic Save Logic
                 new_sha = save_to_github(gh_token, gh_repo, "data.csv", updated_df)
                 if new_sha:
                     st.session_state.df = updated_df
