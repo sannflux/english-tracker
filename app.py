@@ -141,7 +141,7 @@ with st.sidebar:
     st.session_state.accent_color = theme_map[theme]
     
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
-    yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10) # FEATURE 5 Setup
+    yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
 
 # --- MAIN UI ---
 if st.session_state.df is not None:
@@ -180,7 +180,6 @@ if st.session_state.df is not None:
         tab_dash, tab_insights, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History", "📸 Share"])
 
         with tab_dash:
-            # FEATURE 5: Macro-Goals (Yearly Tracking)
             df_year = df[df['Date'].dt.year == now.year]
             ytd_hrs = df_year['Time Spent'].sum() / 60
             day_of_year = now.timetuple().tm_yday
@@ -214,7 +213,6 @@ if st.session_state.df is not None:
                 st.plotly_chart(fig_radar, use_container_width=True)
 
         with tab_insights:
-            # FEATURE 6: Future Self Predictor
             st.subheader("🔮 The 'Future Self' Predictor")
             last_14 = now.date() - timedelta(days=14)
             df_14 = df[df['Date'].dt.date >= last_14]
@@ -263,30 +261,30 @@ if st.session_state.df is not None:
                 if new_sha: st.rerun()
                 
         with tab_share:
-            # FEATURE 7: Plotly Share Card
             st.subheader("📸 Your Share Card")
             st.write("Hover over the image below and click the 📷 icon in the top right corner to download this as a PNG for social media!")
             
+            # --- FIX: FULLY RESPONSIVE SHARE CARD ---
             fig_share = go.Figure()
-            # Add decorative background elements
-            fig_share.add_trace(go.Scatter(x=[0, 10], y=[0, 10], mode="markers", marker=dict(size=0.1, color="rgba(0,0,0,0)"), hoverinfo="none"))
             
-            # Text Annotations for the Card
-            fig_share.add_annotation(text="🇬🇧 English Learning Journey", x=5, y=9, font=dict(size=24, color="gray"), showarrow=False)
-            fig_share.add_annotation(text=f"Level {level} Scholar", x=5, y=7.5, font=dict(size=36, color=st.session_state.accent_color, weight="bold"), showarrow=False)
-            fig_share.add_annotation(text=f"{total_hrs:.1f} Total Hours", x=5, y=5.5, font=dict(size=28), showarrow=False)
-            fig_share.add_annotation(text=f"{streak} Day Streak 🔥", x=5, y=3.5, font=dict(size=28), showarrow=False)
-            fig_share.add_annotation(text=f"Favorite Skill: {df.groupby('Skill')['Time Spent'].sum().idxmax()}", x=5, y=1.5, font=dict(size=20, color="gray"), showarrow=False)
+            # Use xref/yref="paper" to place text relative to the plot area (0.0 to 1.0)
+            # This prevents overlap regardless of screen size!
+            fig_share.add_annotation(text="🇬🇧 English Learning Journey", xref="paper", yref="paper", x=0.5, y=0.9, font=dict(size=20, color="gray"), showarrow=False)
+            fig_share.add_annotation(text=f"Level {level} Scholar", xref="paper", yref="paper", x=0.5, y=0.7, font=dict(size=32, color=st.session_state.accent_color, weight="bold"), showarrow=False)
+            fig_share.add_annotation(text=f"{total_hrs:.1f} Total Hours", xref="paper", yref="paper", x=0.5, y=0.5, font=dict(size=24), showarrow=False)
+            fig_share.add_annotation(text=f"{streak} Day Streak 🔥", xref="paper", yref="paper", x=0.5, y=0.3, font=dict(size=24), showarrow=False)
+            
+            fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
+            fig_share.add_annotation(text=f"Favorite Skill: {fav_skill}", xref="paper", yref="paper", x=0.5, y=0.1, font=dict(size=18, color="gray"), showarrow=False)
             
             fig_share.update_layout(
-                xaxis=dict(visible=False, range=[0, 10]), 
-                yaxis=dict(visible=False, range=[0, 10]),
+                xaxis=dict(visible=False), 
+                yaxis=dict(visible=False),
                 plot_bgcolor="white" if st.session_state.accent_color in ["#00CC96", "#0099FF"] else "#1E1E1E",
                 margin=dict(l=10, r=10, t=10, b=10),
-                height=500,
-                width=500
+                height=400
             )
-            st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False})
+            st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False}, use_container_width=True)
 
     # LOG SESSION
     st.divider()
