@@ -30,13 +30,10 @@ def set_background(png_file):
             background-size: cover;
             background-attachment: fixed;
         }}
-        
-        /* Glassmorphism Effect for Containers */
         [data-testid="stSidebar"] {{
             background-color: rgba(0, 0, 0, 0.7) !important;
             backdrop-filter: blur(10px);
         }}
-        
         .stTabs [data-baseweb="tab-panel"] {{
             background-color: rgba(20, 20, 20, 0.6) !important;
             padding: 20px;
@@ -44,20 +41,9 @@ def set_background(png_file):
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }}
-
-        [data-testid="stMetricValue"] {{
-            color: white !important;
-        }}
-        
-        h1, h2, h3, h4, p, span {{
-            color: white !important;
-        }}
-
-        .stMarkdown div p {{
-            color: white !important;
-        }}
-        
-        /* Fix visibility for info boxes */
+        [data-testid="stMetricValue"] {{ color: white !important; }}
+        h1, h2, h3, h4, p, span {{ color: white !important; }}
+        .stMarkdown div p {{ color: white !important; }}
         .stAlert {{
             background-color: rgba(0, 0, 0, 0.4) !important;
             color: white !important;
@@ -67,7 +53,6 @@ def set_background(png_file):
         '''
         st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# Apply the background
 set_background('background.jpg')
 
 # Persistent Credential Loader
@@ -75,8 +60,7 @@ CRED_FILE = "credentials.json"
 def load_credentials():
     if os.path.exists(CRED_FILE):
         try:
-            with open(CRED_FILE, "r") as f:
-                return json.load(f)
+            with open(CRED_FILE, "r") as f: return json.load(f)
         except: return {}
     return {}
 
@@ -86,8 +70,7 @@ def save_credentials_to_disk():
         "saved_repo": st.session_state.saved_repo,
         "gemini_key": st.session_state.gemini_key
     }
-    with open(CRED_FILE, "w") as f:
-        json.dump(creds, f)
+    with open(CRED_FILE, "w") as f: json.dump(creds, f)
 
 local_creds = load_credentials()
 
@@ -97,7 +80,7 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         st.session_state[key] = None if key not in ['prev_level'] else 0
         if key == 'accent_color': st.session_state[key] = "#00CC96"
         if key == 'zen_mode': st.session_state[key] = False
-        if key == 'milestone_reward': st.session_state[key] = "Treat myself to coffee"
+        if key == 'milestone_reward': st.session_state[key] = "A specialty coffee ☕"
         if key == 'custom_skills': st.session_state[key] = ""
         if key == 'last_ai_rec': st.session_state[key] = ""
         
@@ -113,16 +96,14 @@ def get_ai_recommendation(api_key, dataframe, current_date):
         all_time_summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
         last_7_days_df = dataframe[dataframe['Date'].dt.date >= (current_date.date() - timedelta(days=7))]
         recent_summary = last_7_days_df.groupby('Skill')['Time Spent'].sum().to_dict()
-        prompt = f"""Act as an expert English Study Coach. Here is my data: Totals: {all_time_summary}, Recent: {recent_summary}. Focus on neglect vs strength. 100 words max."""
+        prompt = f"Act as an expert English Study Coach. Here is my data: Totals: {all_time_summary}, Recent: {recent_summary}. Focus on neglect vs strength. 100 words max."
         response = model.generate_content(prompt)
         return response.text
-    except Exception as e:
-        return f"AI Error: {str(e)}"
+    except Exception as e: return f"AI Error: {str(e)}"
 
 # --- GITHUB HELPER FUNCTIONS ---
 @st.cache_resource(show_spinner=False)
-def get_gh_client(token):
-    return Github(token)
+def get_gh_client(token): return Github(token)
 
 @st.cache_data(ttl=300, show_spinner=False)
 def load_data_from_github(_token, repo_name, file_path):
@@ -176,21 +157,32 @@ def get_streak(df):
 
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(current_date, available_skills, current_level):
-    with st.form("new_entry", clear_on_submit=True):
-        st.write("Record your progress:")
-        col_d, col_s = st.columns(2)
-        d = col_d.date_input("Date", current_date)
-        s = col_s.selectbox("Skill", available_skills)
-        t = st.number_input("Minutes", 1, 600, 30)
-        n = st.text_input("Notes")
-        if st.form_submit_button("Log Entry", use_container_width=True):
-            new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
-            updated_df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-            sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", updated_df)
-            if sha:
-                st.session_state.df, st.session_state.file_sha = updated_df, sha
-                st.session_state.prev_level = current_level 
-                st.rerun()
+    st.write("Record your progress:")
+    col_d, col_s = st.columns(2)
+    d = col_d.date_input("Date", current_date)
+    s = col_s.selectbox("Skill", available_skills)
+    
+    # Quick-select time buttons
+    st.write("Duration:")
+    t_col1, t_col2, t_col3, t_col4 = st.columns(4)
+    time_val = 30
+    if t_col1.button("15m"): time_val = 15
+    if t_col2.button("30m"): time_val = 30
+    if t_col3.button("1h"): time_val = 60
+    if t_col4.button("2h"): time_val = 120
+    
+    t = st.number_input("Minutes", 1, 600, time_val)
+    n = st.text_input("Notes")
+    
+    if st.button("Log Entry", use_container_width=True, type="primary"):
+        new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
+        updated_df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+        sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", updated_df)
+        if sha:
+            st.session_state.df, st.session_state.file_sha = updated_df, sha
+            st.session_state.prev_level = current_level 
+            st.toast("Progress Saved!", icon="🚀")
+            st.rerun()
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -199,23 +191,28 @@ with st.sidebar:
     st.text_input("Repo", key="saved_repo")
     st.text_input("Gemini API Key", type="password", key="gemini_key")
     if st.button("💾 Save Credentials", use_container_width=True):
-        save_credentials_to_disk(); st.success("Locked!")
-    if st.button("🔄 Force Sync", use_container_width=True):
-        load_data_from_github.clear()
-        df, sha, status = load_data_from_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv")
-        if status == "success": st.session_state.df, st.session_state.file_sha = df, sha; st.success("Synced!")
-        else: st.error(status)
+        save_credentials_to_disk(); st.toast("Credentials Secured", icon="🔐")
+    
     st.divider()
+    st.session_state.zen_mode = st.toggle("🧘 Zen Mode", value=st.session_state.zen_mode)
     theme = st.selectbox("Theme", ["Emerald City", "Ocean Deep", "Sunset Orange", "Royal Purple"])
     theme_map = {"Emerald City": "#00CC96", "Ocean Deep": "#0099FF", "Sunset Orange": "#FF5733", "Royal Purple": "#8E44AD"}
     st.session_state.accent_color = theme_map[theme]
+    
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
     yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
+    st.session_state.milestone_reward = st.text_input("Next Milestone Reward", value=st.session_state.milestone_reward)
+
     with st.expander("⚙️ Advanced Settings"):
-        st.session_state.custom_skills = st.text_input("Custom Skills", value=st.session_state.custom_skills)
+        st.session_state.custom_skills = st.text_input("Custom Skills (comma separated)", value=st.session_state.custom_skills)
         if st.session_state.df is not None:
-            old_sk = st.selectbox("Select Skill to Rename", options=sorted(st.session_state.df['Skill'].unique().tolist()))
-            new_sk = st.text_input("Enter New Name")
+            if st.button("📥 Download Local Backup"):
+                csv = st.session_state.df.to_csv(index=False).encode('utf-8')
+                st.download_button("Click to Download", csv, "english_pro_backup.csv", "text/csv")
+            
+            st.divider()
+            old_sk = st.selectbox("Rename Skill", options=sorted(st.session_state.df['Skill'].unique().tolist()))
+            new_sk = st.text_input("New Name")
             if st.button("🚀 Bulk Rename"):
                 if new_sk.strip():
                     up_df = st.session_state.df.copy()
@@ -245,16 +242,30 @@ if st.session_state.df is not None:
         if st.button("➕ Log Study Time", type="primary", use_container_width=True):
             log_session_dialog(now, all_skills, level)
 
+    # Metrics Bar
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Level", f"Lvl {level}"); m2.metric("Total", f"{total_hrs:.1f}h"); m3.metric("Streak", f"{streak} Days"); m4.metric("Pacer", f"{rem_min/60:.1f}h left")
-    st.progress(xp_progress, text=f"XP to Level {level+1}")
+    m1.metric("Level", f"Lvl {level}")
+    m2.metric("Total", f"{total_hrs:.1f}h", f"{ (total_hrs/yearly_goal)*100:.1f}% of goal")
+    m3.metric("Streak", f"{streak} Days", "🔥" if streak > 0 else "")
+    pacer_color = "normal" if rem_min > 0 else "inverse"
+    m4.metric("Pacer", f"{rem_min/60:.1f}h left", "Weekly Goal" if rem_min > 0 else "Goal Met!", delta_color=pacer_color)
+    
+    st.progress(xp_progress, text=f"XP to Level {level+1} | Next Reward: {st.session_state.milestone_reward}")
 
     if not st.session_state.zen_mode:
-        tab_dash, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🏆 Trophies", "📝 History", "📸 Share Profile"])
+        tab_dash, tab_coach, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🤖 AI Coach", "🏆 Trophies", "📝 History", "📸 Share"])
         
         with tab_dash:
             c1, c2 = st.columns([2, 1])
             with c1:
+                # Contribution Heatmap (30-day)
+                last_30_days = [(now.date() - timedelta(days=i)) for i in range(30)]
+                daily_counts = df.groupby(df['Date'].dt.date)['Time Spent'].sum()
+                heat_data = [daily_counts.get(d, 0) for d in last_30_days]
+                fig_heat = px.bar(x=last_30_days, y=heat_data, title="30-Day Activity Heatmap", labels={'x':'Date', 'y':'Minutes'}, color=heat_data, color_continuous_scale="Viridis")
+                fig_heat.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white', height=300)
+                st.plotly_chart(fig_heat, use_container_width=True)
+
                 df_sorted = df.sort_values('Date')
                 df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
                 fig_mtn = px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color])
@@ -262,24 +273,58 @@ if st.session_state.df is not None:
                 st.plotly_chart(fig_mtn, use_container_width=True)
             with c2:
                 diet = df.groupby('Skill')['Time Spent'].sum()
+                # Skill Balance Score
+                if not diet.empty:
+                    balance = 100 - (np.std(diet.values) / np.mean(diet.values) * 10)
+                    st.metric("Balance Score", f"{max(0, min(100, balance)):.0f}%")
+                
                 fig_donut = px.pie(names=diet.index, values=diet.values, hole=0.5, title="Skill Diet")
                 fig_donut.update_traces(textinfo='label+percent', textposition='inside')
                 fig_donut.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
                 st.plotly_chart(fig_donut, use_container_width=True)
 
+        with tab_coach:
+            st.subheader("🤖 Gemini AI Study Coach")
+            if st.button("Generate Fresh Insights", type="primary"):
+                with st.spinner("Analyzing your study patterns..."):
+                    recommendation = get_ai_recommendation(st.session_state.gemini_key, df, now)
+                    st.session_state.last_ai_rec = recommendation
+            
+            if st.session_state.last_ai_rec:
+                st.info(st.session_state.last_ai_rec)
+            else:
+                st.write("Click the button above to get personalized feedback from Gemini.")
+
         with tab_trophy:
             skill_sums = df.groupby('Skill')['Time Spent'].sum()
-            badges = [("Scholar", "10h total", total_hrs >= 10), ("King", "30-day streak", streak >= 30), ("Specialist", "50h in one skill", any(skill_sums >= 3000))]
+            badges = [
+                ("Scholar", "10h total", total_hrs >= 10),
+                ("King", "30-day streak", streak >= 30),
+                ("Specialist", "50h in one skill", any(skill_sums >= 3000)),
+                ("Weekend Warrior", "Log 5 weekends", len(df[df['Date'].dt.weekday >= 5]['Date'].unique()) >= 5),
+                ("Polymath", "5+ skills logged", len(diet) >= 5)
+            ]
             cols = st.columns(3)
             for i, (n, d, u) in enumerate(badges):
-                if u: cols[i].success(f"🌟 **{n}**\n\n{d}")
-                else: cols[i].info(f"🔒 **{n}**\n\n{d}")
+                with cols[i % 3]:
+                    if u: st.success(f"🌟 **{n}**\n\n{d}")
+                    else: st.info(f"🔒 **{n}**\n\n{d}")
 
         with tab_history:
-            edited = st.data_editor(df.sort_values("Date", ascending=False), column_config={"Date": st.column_config.DateColumn(), "Skill": st.column_config.SelectboxColumn(options=all_skills)}, use_container_width=True, hide_index=True)
-            if st.button("🗑️ Commit Changes"):
+            st.write("Tip: You can now delete rows by selecting them and pressing 'Delete' on your keyboard.")
+            edited = st.data_editor(
+                df.sort_values("Date", ascending=False), 
+                column_config={"Date": st.column_config.DateColumn(), "Skill": st.column_config.SelectboxColumn(options=all_skills)}, 
+                use_container_width=True, 
+                hide_index=False,
+                num_rows="dynamic"
+            )
+            if st.button("🗑️ Commit Changes to GitHub"):
                 sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", edited)
-                if sha: st.session_state.df, st.session_state.file_sha = edited, sha; st.rerun()
+                if sha: 
+                    st.session_state.df, st.session_state.file_sha = edited, sha
+                    st.toast("Sync Complete", icon="✅")
+                    st.rerun()
 
         with tab_share:
             fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
@@ -299,5 +344,9 @@ if st.session_state.df is not None:
             fig_share.update_layout(xaxis=dict(visible=False, range=[0,1]), yaxis=dict(visible=False, range=[0,1]), plot_bgcolor="#111111", paper_bgcolor="#111111", margin=dict(l=10, r=10, t=10, b=10), height=450, showlegend=False)
             st.plotly_chart(fig_share, use_container_width=True, config={'displayModeBar': False})
             st.caption("Right-click to 'Save Image As' and share!")
+
+    else:
+        st.warning("🧘 Zen Mode Active. Focus on your goals.")
+        st.info(f"You've completed **{total_hrs:.1f} hours** of your **{yearly_goal} hour** yearly goal. Keep going!")
 
 else: st.info("👈 Enter Connection info in sidebar to begin.")
