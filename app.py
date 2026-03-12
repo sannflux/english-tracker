@@ -365,15 +365,3 @@ if st.session_state.df is not None:
 
 else:
     st.info("👈 Enter Connection info in sidebar to begin.")
-
-# --- Updated requirements.txt ---
-"""
-streamlit
-pandas
-PyGithub
-plotly
-google-generativeai
-numpy
-requests
-pytz
-"""
