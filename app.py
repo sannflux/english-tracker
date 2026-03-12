@@ -7,9 +7,32 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import google.generativeai as genai
+import json
+import os
 
 # --- CONFIGURATION & SESSION STATE ---
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
+
+# Persistent Credential Loader
+CRED_FILE = "credentials.json"
+def load_credentials():
+    if os.path.exists(CRED_FILE):
+        try:
+            with open(CRED_FILE, "r") as f:
+                return json.load(f)
+        except: return {}
+    return {}
+
+def save_credentials_to_disk():
+    creds = {
+        "saved_token": st.session_state.saved_token,
+        "saved_repo": st.session_state.saved_repo,
+        "gemini_key": st.session_state.gemini_key
+    }
+    with open(CRED_FILE, "w") as f:
+        json.dump(creds, f)
+
+local_creds = load_credentials()
 
 # Initialize Session States
 for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills', 'last_ai_rec']:
@@ -18,17 +41,20 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         if key == 'accent_color': st.session_state[key] = "#00CC96"
         if key == 'zen_mode': st.session_state[key] = False
         if key == 'milestone_reward': st.session_state[key] = "Treat myself to coffee"
-        if key in ['saved_token', 'saved_repo', 'gemini_key', 'custom_skills', 'last_ai_rec']: st.session_state[key] = ""
+        if key == 'custom_skills': st.session_state[key] = ""
+        if key == 'last_ai_rec': st.session_state[key] = ""
+        
+        # Load from JSON if available
+        if key in ['saved_token', 'saved_repo', 'gemini_key']:
+            st.session_state[key] = local_creds.get(key, "")
 
 # --- AI COACH LOGIC (GEMINI) ---
 def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
         genai.configure(api_key=api_key)
-        # STRICT MODEL LOCK
         model = genai.GenerativeModel('gemini-2.5-flash-lite')
         
-        # FEATURE 4: Context-Aware Summaries
         all_time_summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
         last_7_days_df = dataframe[dataframe['Date'].dt.date >= (current_date.date() - timedelta(days=7))]
         recent_summary = last_7_days_df.groupby('Skill')['Time Spent'].sum().to_dict()
@@ -140,18 +166,18 @@ def log_session_dialog(current_date, available_skills, current_level):
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
-    gh_token = st.text_input("GitHub Token", type="password", value=st.session_state.saved_token)
-    gh_repo = st.text_input("Repo", value=st.session_state.saved_repo)
-    st.session_state.gemini_key = st.text_input("Gemini API Key", type="password", value=st.session_state.gemini_key)
+    # Widgets directly bound to session_state using `key=`
+    st.text_input("GitHub Token", type="password", key="saved_token")
+    st.text_input("Repo", key="saved_repo")
+    st.text_input("Gemini API Key", type="password", key="gemini_key")
     
     if st.button("💾 Save Credentials", use_container_width=True):
-        st.session_state.saved_token = gh_token
-        st.session_state.saved_repo = gh_repo
-        st.success("Credentials locked!")
+        save_credentials_to_disk()
+        st.success("Credentials locked persistently!")
     
     if st.button("🔄 Force Sync", use_container_width=True):
         load_data_from_github.clear()
-        df, sha, status = load_data_from_github(gh_token, gh_repo, "data.csv")
+        df, sha, status = load_data_from_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv")
         if status == "success":
             st.session_state.df, st.session_state.file_sha = df, sha
             st.success("Synced!")
@@ -162,7 +188,7 @@ with st.sidebar:
     can_undo = st.session_state.df is not None and len(st.session_state.df) > 1
     if st.button("↩️ Undo Last Log", use_container_width=True, disabled=not can_undo):
         undo_df = st.session_state.df.iloc[:-1]
-        new_sha = save_to_github(gh_token, gh_repo, "data.csv", undo_df)
+        new_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", undo_df)
         if new_sha:
             st.session_state.df = undo_df
             st.session_state.file_sha = new_sha
@@ -217,7 +243,6 @@ if st.session_state.df is not None:
     days_left = 7 - now.weekday()
     pace = remaining_min / days_left if days_left > 0 else remaining_min
 
-    # HEADER & LOG BUTTON
     c_title, c_btn = st.columns([3, 1])
     with c_title:
         st.title("🇬🇧 English Pro Elite")
@@ -292,9 +317,8 @@ if st.session_state.df is not None:
                     fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, height=250)
                     st.plotly_chart(fig_radar, use_container_width=True)
                     
-                    # FEATURE 6: Sub-Skill Leveling (RPG Style)
                     st.markdown("##### ⚔️ RPG Skill Mastery (1 Lvl = 10h)")
-                    skill_levels = (diet_data / 600).astype(int) + 1 # 600 mins = 10 hours
+                    skill_levels = (diet_data / 600).astype(int) + 1 
                     sk_cols = st.columns(3)
                     for idx, (skill, sk_lvl) in enumerate(skill_levels.items()):
                         sk_cols[idx % 3].metric(skill, f"Lvl {sk_lvl}")
@@ -331,11 +355,10 @@ if st.session_state.df is not None:
 
         with tab_trophy:
             st.subheader("🏆 Dynamic Trophy Room")
-            # FEATURE 7: Dynamic Trophies
             skill_sums_min = df.groupby('Skill')['Time Spent'].sum()
-            has_specialist = any(skill_sums_min >= 3000) # 50 hours in one skill
-            has_generalist = sum([1 for s in base_skills if skill_sums_min.get(s, 0) >= 600]) == len(base_skills) # 10h in all base skills
-            has_weekend = any(df['Date'].dt.dayofweek >= 5) # Logged on Sat/Sun
+            has_specialist = any(skill_sums_min >= 3000) 
+            has_generalist = sum([1 for s in base_skills if skill_sums_min.get(s, 0) >= 600]) == len(base_skills) 
+            has_weekend = any(df['Date'].dt.dayofweek >= 5) 
             
             badges = [
                 ("First Step", "Log your 1st session", total_hrs > 0), 
@@ -370,7 +393,7 @@ if st.session_state.df is not None:
                     }).reset_index()
                     grouped['Date'] = pd.to_datetime(grouped['Date_Str'])
                     grouped = grouped.drop(columns=['Date_Str']).sort_values('Date', ascending=False)
-                    new_sha = save_to_github(gh_token, gh_repo, "data.csv", grouped)
+                    new_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", grouped)
                     if new_sha:
                         st.session_state.df = grouped
                         st.session_state.file_sha = new_sha
@@ -394,7 +417,7 @@ if st.session_state.df is not None:
             
             if st.button("🗑️ Commit Changes", type="primary"):
                 filtered_save = edited_hist[edited_hist['Delete'] == False].drop(columns=['Delete'])
-                new_sha = save_to_github(gh_token, gh_repo, "data.csv", filtered_save)
+                new_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", filtered_save)
                 if new_sha: 
                     st.session_state.df = filtered_save
                     st.rerun()
