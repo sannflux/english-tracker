@@ -21,17 +21,25 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         if key in ['saved_token', 'saved_repo', 'gemini_key', 'custom_skills', 'last_ai_rec']: st.session_state[key] = ""
 
 # --- AI COACH LOGIC (GEMINI) ---
-def get_ai_recommendation(api_key, dataframe):
+def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
         genai.configure(api_key=api_key)
         # STRICT MODEL LOCK
         model = genai.GenerativeModel('gemini-2.5-flash-lite')
-        summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
+        
+        # FEATURE 4: Context-Aware Summaries
+        all_time_summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
+        last_7_days_df = dataframe[dataframe['Date'].dt.date >= (current_date.date() - timedelta(days=7))]
+        recent_summary = last_7_days_df.groupby('Skill')['Time Spent'].sum().to_dict()
+        
         prompt = f"""
-        Act as an expert English Study Coach. Here is my study data (Skill: Total Minutes): {summary}.
-        Based on these hours, identify which skill I am neglecting most and suggest a specific 30-minute 
-        activity I should do today to improve. Keep it under 100 words.
+        Act as an expert English Study Coach. Here is my study data:
+        - All-Time Totals (Minutes): {all_time_summary}
+        - Last 7 Days (Minutes): {recent_summary}
+        
+        Based on my recent habits vs my all-time strengths, identify what I need to focus on right now. 
+        Suggest a specific 30-minute activity I should do today to improve. Keep it under 100 words.
         """
         response = model.generate_content(prompt)
         return response.text
@@ -107,6 +115,28 @@ def get_streak(df):
         else: break
     return streak
 
+# --- DIALOG (POP-UP) LOGIC ---
+@st.dialog("➕ Log New Study Session")
+def log_session_dialog(current_date, available_skills, current_level):
+    with st.form("new_entry", clear_on_submit=True):
+        st.write("Record your progress below:")
+        col_d, col_s = st.columns(2)
+        d = col_d.date_input("Date", current_date)
+        s = col_s.selectbox("Skill", available_skills)
+        t = st.number_input("Minutes Spent", 1, 600, 30)
+        n = st.text_input("Session Notes (Optional)")
+        
+        if st.form_submit_button("Log Entry", use_container_width=True):
+            new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
+            updated_df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+            
+            new_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", updated_df)
+            if new_sha:
+                st.session_state.df = updated_df
+                st.session_state.file_sha = new_sha
+                st.session_state.prev_level = current_level 
+                st.rerun()
+
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
@@ -143,7 +173,8 @@ with st.sidebar:
         st.header("🤖 AI Study Coach")
         if st.button("Ask Coach"):
             with st.spinner("Analyzing history..."):
-                st.session_state.last_ai_rec = get_ai_recommendation(st.session_state.gemini_key, st.session_state.df)
+                now = datetime.now()
+                st.session_state.last_ai_rec = get_ai_recommendation(st.session_state.gemini_key, st.session_state.df, now)
         if st.session_state.last_ai_rec:
             st.info(st.session_state.last_ai_rec)
 
@@ -186,7 +217,15 @@ if st.session_state.df is not None:
     days_left = 7 - now.weekday()
     pace = remaining_min / days_left if days_left > 0 else remaining_min
 
-    st.title("🇬🇧 English Pro Elite")
+    # HEADER & LOG BUTTON
+    c_title, c_btn = st.columns([3, 1])
+    with c_title:
+        st.title("🇬🇧 English Pro Elite")
+    with c_btn:
+        st.write("") 
+        if st.button("➕ Log Study Time", type="primary", use_container_width=True):
+            log_session_dialog(now, all_skills, level)
+
     with st.expander(f"🎁 Level Reward: {st.session_state.milestone_reward}", expanded=False):
         st.session_state.milestone_reward = st.text_input("Reward", value=st.session_state.milestone_reward)
 
@@ -244,7 +283,6 @@ if st.session_state.df is not None:
                 if not df.empty:
                     diet_data = df.groupby('Skill')['Time Spent'].sum()
                     fig_donut = px.pie(names=diet_data.index, values=diet_data.values, hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
-                    # FIXED DONUT CHART LABELS
                     fig_donut.update_traces(textinfo='label+percent', textposition='inside')
                     fig_donut.update_layout(showlegend=False, height=250, margin=dict(l=20,r=20,t=20,b=20))
                     st.plotly_chart(fig_donut, use_container_width=True)
@@ -253,6 +291,13 @@ if st.session_state.df is not None:
                     fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
                     fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, height=250)
                     st.plotly_chart(fig_radar, use_container_width=True)
+                    
+                    # FEATURE 6: Sub-Skill Leveling (RPG Style)
+                    st.markdown("##### ⚔️ RPG Skill Mastery (1 Lvl = 10h)")
+                    skill_levels = (diet_data / 600).astype(int) + 1 # 600 mins = 10 hours
+                    sk_cols = st.columns(3)
+                    for idx, (skill, sk_lvl) in enumerate(skill_levels.items()):
+                        sk_cols[idx % 3].metric(skill, f"Lvl {sk_lvl}")
 
         with tab_insights:
             st.subheader("🔮 The 'Future Self' Predictor")
@@ -285,11 +330,32 @@ if st.session_state.df is not None:
                 st.plotly_chart(px.imshow(pivot.corr().fillna(0), text_auto=True, title="Skill Pairing", color_continuous_scale="Purples"), use_container_width=True)
 
         with tab_trophy:
-            badges = [("First Step", "Logged 1st session", total_hrs > 0), ("Novice", "10h total", total_hrs >= 10), ("Master", "Level 10", level >= 10)]
+            st.subheader("🏆 Dynamic Trophy Room")
+            # FEATURE 7: Dynamic Trophies
+            skill_sums_min = df.groupby('Skill')['Time Spent'].sum()
+            has_specialist = any(skill_sums_min >= 3000) # 50 hours in one skill
+            has_generalist = sum([1 for s in base_skills if skill_sums_min.get(s, 0) >= 600]) == len(base_skills) # 10h in all base skills
+            has_weekend = any(df['Date'].dt.dayofweek >= 5) # Logged on Sat/Sun
+            
+            badges = [
+                ("First Step", "Log your 1st session", total_hrs > 0), 
+                ("Novice Scholar", "Reach 10h total", total_hrs >= 10), 
+                ("Dedication", "Reach 100h total", total_hrs >= 100),
+                ("Halfway There", "Reach Level 5", level >= 5),
+                ("Master Scholar", "Reach Level 10", level >= 10),
+                ("Streak Initiate", "Hit a 7-day streak", streak >= 7),
+                ("Streak Master", "Hit a 30-day streak", streak >= 30),
+                ("Weekend Warrior", "Log a session on a weekend", has_weekend),
+                ("The Specialist", "Spend 50 hours on a single skill", has_specialist),
+                ("The Generalist", "Spend 10 hours on every core skill", has_generalist)
+            ]
+            
             cols = st.columns(3)
             for i, (name, desc, unlocked) in enumerate(badges):
-                if unlocked: cols[i].success(f"🌟 **{name}**\n\n{desc}")
-                else: cols[i].info(f"🔒 **{name}**\n\n{desc}")
+                if unlocked: 
+                    cols[i % 3].success(f"🌟 **{name}**\n\n{desc}")
+                else: 
+                    cols[i % 3].info(f"🔒 **{name}**\n\n{desc}")
 
         with tab_history:
             col_title, col_btn = st.columns([3, 1])
@@ -361,23 +427,5 @@ if st.session_state.df is not None:
                         best_skill = df_year.groupby('Skill')['Time Spent'].sum().idxmax()
                         st.success(f"### 🎉 The {now.year} Wrap-Up\n> *\"Consistency is the key to mastery.\"*\n* ⏳ **Time Invested:** You spent **{tot_min:,.0f} minutes** ({tot_min/60:.1f} hours) learning English!\n* 🏆 **The Obsession:** Your most practiced skill was **{best_skill}**.\n* 📅 **The Prime Time:** Your busiest study month was **{top_month}**.\n* 🔥 **The Grind:** You showed up and studied on **{active_days} different days**.\n\n**You are crushing it. Bring on {now.year + 1}!** 🚀")
 
-    # LOG SESSION
-    st.divider()
-    with st.expander("➕ Log New Session", expanded=True):
-        with st.form("new_entry", clear_on_submit=True):
-            col_d, col_s, col_t = st.columns(3)
-            d = col_d.date_input("Date", now)
-            s = col_s.selectbox("Skill", all_skills)
-            t = col_t.number_input("Minutes", 1, 600, 30)
-            n = st.text_input("Notes")
-            if st.form_submit_button("Log Entry", use_container_width=True):
-                new_row = pd.DataFrame({"Date":[pd.to_datetime(d)], "Skill":[s], "Time Spent":[t], "Notes":[n]})
-                updated_df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-                
-                new_sha = save_to_github(gh_token, gh_repo, "data.csv", updated_df)
-                if new_sha:
-                    st.session_state.df = updated_df
-                    st.session_state.file_sha = new_sha
-                    st.rerun()
 else:
     st.info("👈 Enter Connection info in sidebar to begin.")
