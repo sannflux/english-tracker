@@ -12,13 +12,13 @@ import google.generativeai as genai
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
 
 # Initialize Session States
-for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key']:
+for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills']:
     if key not in st.session_state:
         st.session_state[key] = None if key not in ['prev_level'] else 0
         if key == 'accent_color': st.session_state[key] = "#00CC96"
         if key == 'zen_mode': st.session_state[key] = False
         if key == 'milestone_reward': st.session_state[key] = "Treat myself to coffee"
-        if key in ['saved_token', 'saved_repo', 'gemini_key']: st.session_state[key] = ""
+        if key in ['saved_token', 'saved_repo', 'gemini_key', 'custom_skills']: st.session_state[key] = ""
 
 # --- AI COACH LOGIC (GEMINI) ---
 def get_ai_recommendation(api_key, dataframe):
@@ -143,11 +143,21 @@ with st.sidebar:
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
     yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
 
+    # FEATURE 4: Custom Skill Creator (Settings)
+    with st.expander("⚙️ Advanced Settings"):
+        st.session_state.custom_skills = st.text_input("Custom Skills (comma separated)", value=st.session_state.custom_skills, placeholder="e.g., Mock Test, Translation")
+
 # --- MAIN UI ---
 if st.session_state.df is not None:
     df = st.session_state.df.copy()
     now = datetime.now()
-    all_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
+    
+    # DYNAMIC SKILLS LIST (Combines Defaults + Custom + Historical)
+    base_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
+    extra_skills = [s.strip() for s in st.session_state.custom_skills.split(',') if s.strip()]
+    historical_skills = df['Skill'].dropna().unique().tolist()
+    # Remove duplicates while preserving order
+    all_skills = list(dict.fromkeys(base_skills + extra_skills + historical_skills))
     
     # CALCULATIONS
     start_date = df['Date'].min()
@@ -207,6 +217,7 @@ if st.session_state.df is not None:
                 df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
                 st.plotly_chart(px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color]), use_container_width=True)
             with c2:
+                # Dynamically scales radar to fit all active skills
                 radar_data = df.groupby('Skill')['Time Spent'].sum().reindex(all_skills).fillna(0)
                 fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
                 fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, title="Skill Diet Balancer", height=350)
@@ -261,30 +272,54 @@ if st.session_state.df is not None:
                 if new_sha: st.rerun()
                 
         with tab_share:
-            st.subheader("📸 Your Share Card")
-            st.write("Hover over the image below and click the 📷 icon in the top right corner to download this as a PNG for social media!")
-            
-            # --- FIX: FULLY RESPONSIVE SHARE CARD ---
-            fig_share = go.Figure()
-            
-            # Use xref/yref="paper" to place text relative to the plot area (0.0 to 1.0)
-            # This prevents overlap regardless of screen size!
-            fig_share.add_annotation(text="🇬🇧 English Learning Journey", xref="paper", yref="paper", x=0.5, y=0.9, font=dict(size=20, color="gray"), showarrow=False)
-            fig_share.add_annotation(text=f"Level {level} Scholar", xref="paper", yref="paper", x=0.5, y=0.7, font=dict(size=32, color=st.session_state.accent_color, weight="bold"), showarrow=False)
-            fig_share.add_annotation(text=f"{total_hrs:.1f} Total Hours", xref="paper", yref="paper", x=0.5, y=0.5, font=dict(size=24), showarrow=False)
-            fig_share.add_annotation(text=f"{streak} Day Streak 🔥", xref="paper", yref="paper", x=0.5, y=0.3, font=dict(size=24), showarrow=False)
-            
-            fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
-            fig_share.add_annotation(text=f"Favorite Skill: {fav_skill}", xref="paper", yref="paper", x=0.5, y=0.1, font=dict(size=18, color="gray"), showarrow=False)
-            
-            fig_share.update_layout(
-                xaxis=dict(visible=False), 
-                yaxis=dict(visible=False),
-                plot_bgcolor="white" if st.session_state.accent_color in ["#00CC96", "#0099FF"] else "#1E1E1E",
-                margin=dict(l=10, r=10, t=10, b=10),
-                height=400
-            )
-            st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False}, use_container_width=True)
+            c1, c2 = st.columns([1, 1])
+            with c1:
+                st.subheader("📸 Your Share Card")
+                st.write("Hover over the image below and click the 📷 icon in the top right corner to download this as a PNG for social media!")
+                
+                fig_share = go.Figure()
+                fig_share.add_annotation(text="🇬🇧 English Learning Journey", xref="paper", yref="paper", x=0.5, y=0.9, font=dict(size=20, color="gray"), showarrow=False)
+                fig_share.add_annotation(text=f"Level {level} Scholar", xref="paper", yref="paper", x=0.5, y=0.7, font=dict(size=32, color=st.session_state.accent_color, weight="bold"), showarrow=False)
+                fig_share.add_annotation(text=f"{total_hrs:.1f} Total Hours", xref="paper", yref="paper", x=0.5, y=0.5, font=dict(size=24), showarrow=False)
+                fig_share.add_annotation(text=f"{streak} Day Streak 🔥", xref="paper", yref="paper", x=0.5, y=0.3, font=dict(size=24), showarrow=False)
+                
+                fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
+                fig_share.add_annotation(text=f"Favorite Skill: {fav_skill}", xref="paper", yref="paper", x=0.5, y=0.1, font=dict(size=18, color="gray"), showarrow=False)
+                
+                fig_share.update_layout(
+                    xaxis=dict(visible=False), yaxis=dict(visible=False),
+                    plot_bgcolor="white" if st.session_state.accent_color in ["#00CC96", "#0099FF"] else "#1E1E1E",
+                    margin=dict(l=10, r=10, t=10, b=10), height=400
+                )
+                st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False}, use_container_width=True)
+
+            with c2:
+                # FEATURE 3: Spotify Wrapped Generator
+                st.subheader(f"🎧 Your {now.year} Wrapped")
+                st.write(f"Generate a fun, text-based summary of your entire {now.year} journey!")
+                if st.button("✨ Reveal My Wrapped ✨", use_container_width=True):
+                    st.balloons()
+                    df_year = df[df['Date'].dt.year == now.year]
+                    if df_year.empty:
+                        st.warning(f"No data logged yet for {now.year}!")
+                    else:
+                        tot_min = df_year['Time Spent'].sum()
+                        top_month = df_year['Date'].dt.month_name().mode()[0]
+                        active_days = df_year['Date'].nunique()
+                        best_skill = df_year.groupby('Skill')['Time Spent'].sum().idxmax()
+                        
+                        wrapped_msg = f"""
+                        ### 🎉 The {now.year} Wrap-Up
+                        > *"Consistency is the key to mastery."*
+                        
+                        * ⏳ **Time Invested:** You spent **{tot_min:,.0f} minutes** ({tot_min/60:.1f} hours) learning English!
+                        * 🏆 **The Obsession:** Your most practiced skill was **{best_skill}**.
+                        * 📅 **The Prime Time:** Your busiest study month was **{top_month}**.
+                        * 🔥 **The Grind:** You showed up and studied on **{active_days} different days**.
+                        
+                        **You are crushing it. Bring on {now.year + 1}!** 🚀
+                        """
+                        st.success(wrapped_msg)
 
     # LOG SESSION
     st.divider()
@@ -292,6 +327,7 @@ if st.session_state.df is not None:
         with st.form("new_entry", clear_on_submit=True):
             col_d, col_s, col_t = st.columns(3)
             d = col_d.date_input("Date", now)
+            # Uses the dynamic all_skills list
             s = col_s.selectbox("Skill", all_skills)
             t = col_t.number_input("Minutes", 1, 600, 30)
             n = st.text_input("Notes")
