@@ -52,7 +52,6 @@ def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
         genai.configure(api_key=api_key)
-        # STRICT MODEL LOCK
         model = genai.GenerativeModel('gemini-2.5-flash-lite')
         
         all_time_summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
@@ -283,7 +282,7 @@ if st.session_state.df is not None:
 
     if not st.session_state.zen_mode:
         st.divider()
-        tab_dash, tab_insights, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History", "📸 Share"])
+        tab_dash, tab_insights, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History", "📸 Share Profile"])
 
         with tab_dash:
             df_year = df[df['Date'].dt.year == now.year]
@@ -466,19 +465,19 @@ if st.session_state.df is not None:
                                              marker=dict(size=250, color=st.session_state.accent_color, opacity=0.15), 
                                              hoverinfo="skip"))
                 
-                # Typography Layer
+                # Typography Layer using safe HTML tags for styling
                 fig_share.add_annotation(text="ENGLISH PRO ELITE", xref="paper", yref="paper", x=0.5, y=0.9, showarrow=False, 
-                                         font=dict(size=14, color="#AAAAAA", letterspacing=2))
+                                         font=dict(size=16, color="#AAAAAA"))
                 
-                fig_share.add_annotation(text=f'"{archetype}"', xref="paper", yref="paper", x=0.5, y=0.75, showarrow=False, 
-                                         font=dict(size=32, color=st.session_state.accent_color, family="serif", style="italic"))
+                fig_share.add_annotation(text=f'<i>"{archetype}"</i>', xref="paper", yref="paper", x=0.5, y=0.75, showarrow=False, 
+                                         font=dict(size=32, color=st.session_state.accent_color, family="serif"))
                 
-                fig_share.add_annotation(text=f"LEVEL {level}", xref="paper", yref="paper", x=0.5, y=0.55, showarrow=False, 
-                                         font=dict(size=64, color="#FFFFFF", weight="bold"))
+                fig_share.add_annotation(text=f"<b>LEVEL {level}</b>", xref="paper", yref="paper", x=0.5, y=0.55, showarrow=False, 
+                                         font=dict(size=64, color="#FFFFFF"))
                 
-                fig_share.add_annotation(text=f"{total_hrs:.1f} HOURS STUDIED", xref="paper", yref="paper", x=0.5, y=0.35, showarrow=False, 
+                fig_share.add_annotation(text=f"<b>{total_hrs:.1f}</b> HOURS STUDIED", xref="paper", yref="paper", x=0.5, y=0.35, showarrow=False, 
                                          font=dict(size=18, color="#FFFFFF"))
-                fig_share.add_annotation(text=f"{streak} DAY STREAK 🔥", xref="paper", yref="paper", x=0.5, y=0.25, showarrow=False, 
+                fig_share.add_annotation(text=f"<b>{streak}</b> DAY STREAK 🔥", xref="paper", yref="paper", x=0.5, y=0.25, showarrow=False, 
                                          font=dict(size=18, color="#FFFFFF"))
                 
                 # XP Bar Background & Fill
