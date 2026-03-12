@@ -143,7 +143,6 @@ with st.sidebar:
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
     yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
 
-    # FEATURE 4: Custom Skill Creator (Settings)
     with st.expander("⚙️ Advanced Settings"):
         st.session_state.custom_skills = st.text_input("Custom Skills (comma separated)", value=st.session_state.custom_skills, placeholder="e.g., Mock Test, Translation")
 
@@ -152,14 +151,11 @@ if st.session_state.df is not None:
     df = st.session_state.df.copy()
     now = datetime.now()
     
-    # DYNAMIC SKILLS LIST (Combines Defaults + Custom + Historical)
     base_skills = ["Listening", "Speaking", "Reading", "Writing", "Grammar", "Vocabulary"]
     extra_skills = [s.strip() for s in st.session_state.custom_skills.split(',') if s.strip()]
     historical_skills = df['Skill'].dropna().unique().tolist()
-    # Remove duplicates while preserving order
     all_skills = list(dict.fromkeys(base_skills + extra_skills + historical_skills))
     
-    # CALCULATIONS
     start_date = df['Date'].min()
     df['Study_Week'] = ((df['Date'] - start_date).dt.days // 7) + 1
     df['Week_Label'] = "Week " + df['Study_Week'].astype(str).str.zfill(2)
@@ -213,11 +209,23 @@ if st.session_state.df is not None:
                     fig_gh.update_layout(height=250, margin=dict(l=0,r=0,t=0,b=0), coloraxis_showscale=False)
                     st.plotly_chart(fig_gh, use_container_width=True)
                 
+                # FEATURE 2: Ghost Pacer on Mountain Chart
                 df_sorted = df.sort_values('Date')
                 df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
-                st.plotly_chart(px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color]), use_container_width=True)
+                fig_mtn = px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color])
+                
+                # Add Pacer Line for Current Year
+                start_of_year = pd.to_datetime(f"{now.year}-01-01")
+                end_of_year = pd.to_datetime(f"{now.year}-12-31")
+                cum_last_year = df[df['Date'].dt.year < now.year]['Time Spent'].sum() / 60
+                fig_mtn.add_trace(go.Scatter(
+                    x=[start_of_year, end_of_year], 
+                    y=[cum_last_year, cum_last_year + yearly_goal], 
+                    mode='lines', line=dict(color='gray', dash='dash'), name=f'{now.year} Pace Goal'
+                ))
+                st.plotly_chart(fig_mtn, use_container_width=True)
+                
             with c2:
-                # Dynamically scales radar to fit all active skills
                 radar_data = df.groupby('Skill')['Time Spent'].sum().reindex(all_skills).fillna(0)
                 fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
                 fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, title="Skill Diet Balancer", height=350)
@@ -261,6 +269,26 @@ if st.session_state.df is not None:
                 else: cols[i].info(f"🔒 **{name}**\n\n{desc}")
 
         with tab_history:
+            # FEATURE 6: Merge Days Tool
+            col_title, col_btn = st.columns([3, 1])
+            col_title.subheader("📝 Session History")
+            if col_btn.button("🧹 Merge Duplicate Days"):
+                with st.spinner("Merging..."):
+                    merge_df = df.copy()
+                    merge_df['Date_Str'] = merge_df['Date'].dt.strftime('%Y-%m-%d')
+                    grouped = merge_df.groupby(['Date_Str', 'Skill']).agg({
+                        'Time Spent': 'sum',
+                        'Notes': lambda x: ' | '.join(set([str(i) for i in x if str(i).strip()]))
+                    }).reset_index()
+                    grouped['Date'] = pd.to_datetime(grouped['Date_Str'])
+                    grouped = grouped.drop(columns=['Date_Str']).sort_values('Date', ascending=False)
+                    new_sha = save_to_github(gh_token, gh_repo, "data.csv", grouped, st.session_state.file_sha)
+                    if new_sha:
+                        st.session_state.df = grouped
+                        st.session_state.file_sha = new_sha
+                        st.success("Duplicates Merged!")
+                        st.rerun()
+
             display_df = df.copy().sort_values("Date", ascending=False)
             display_df['Delete'] = False
             display_df['Date'] = display_df['Date'].dt.date
@@ -275,28 +303,18 @@ if st.session_state.df is not None:
             c1, c2 = st.columns([1, 1])
             with c1:
                 st.subheader("📸 Your Share Card")
-                st.write("Hover over the image below and click the 📷 icon in the top right corner to download this as a PNG for social media!")
-                
                 fig_share = go.Figure()
                 fig_share.add_annotation(text="🇬🇧 English Learning Journey", xref="paper", yref="paper", x=0.5, y=0.9, font=dict(size=20, color="gray"), showarrow=False)
                 fig_share.add_annotation(text=f"Level {level} Scholar", xref="paper", yref="paper", x=0.5, y=0.7, font=dict(size=32, color=st.session_state.accent_color, weight="bold"), showarrow=False)
                 fig_share.add_annotation(text=f"{total_hrs:.1f} Total Hours", xref="paper", yref="paper", x=0.5, y=0.5, font=dict(size=24), showarrow=False)
                 fig_share.add_annotation(text=f"{streak} Day Streak 🔥", xref="paper", yref="paper", x=0.5, y=0.3, font=dict(size=24), showarrow=False)
-                
                 fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
                 fig_share.add_annotation(text=f"Favorite Skill: {fav_skill}", xref="paper", yref="paper", x=0.5, y=0.1, font=dict(size=18, color="gray"), showarrow=False)
-                
-                fig_share.update_layout(
-                    xaxis=dict(visible=False), yaxis=dict(visible=False),
-                    plot_bgcolor="white" if st.session_state.accent_color in ["#00CC96", "#0099FF"] else "#1E1E1E",
-                    margin=dict(l=10, r=10, t=10, b=10), height=400
-                )
+                fig_share.update_layout(xaxis=dict(visible=False), yaxis=dict(visible=False), plot_bgcolor="white" if st.session_state.accent_color in ["#00CC96", "#0099FF"] else "#1E1E1E", margin=dict(l=10, r=10, t=10, b=10), height=400)
                 st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False}, use_container_width=True)
 
             with c2:
-                # FEATURE 3: Spotify Wrapped Generator
                 st.subheader(f"🎧 Your {now.year} Wrapped")
-                st.write(f"Generate a fun, text-based summary of your entire {now.year} journey!")
                 if st.button("✨ Reveal My Wrapped ✨", use_container_width=True):
                     st.balloons()
                     df_year = df[df['Date'].dt.year == now.year]
@@ -307,19 +325,7 @@ if st.session_state.df is not None:
                         top_month = df_year['Date'].dt.month_name().mode()[0]
                         active_days = df_year['Date'].nunique()
                         best_skill = df_year.groupby('Skill')['Time Spent'].sum().idxmax()
-                        
-                        wrapped_msg = f"""
-                        ### 🎉 The {now.year} Wrap-Up
-                        > *"Consistency is the key to mastery."*
-                        
-                        * ⏳ **Time Invested:** You spent **{tot_min:,.0f} minutes** ({tot_min/60:.1f} hours) learning English!
-                        * 🏆 **The Obsession:** Your most practiced skill was **{best_skill}**.
-                        * 📅 **The Prime Time:** Your busiest study month was **{top_month}**.
-                        * 🔥 **The Grind:** You showed up and studied on **{active_days} different days**.
-                        
-                        **You are crushing it. Bring on {now.year + 1}!** 🚀
-                        """
-                        st.success(wrapped_msg)
+                        st.success(f"### 🎉 The {now.year} Wrap-Up\n> *\"Consistency is the key to mastery.\"*\n* ⏳ **Time Invested:** You spent **{tot_min:,.0f} minutes** ({tot_min/60:.1f} hours) learning English!\n* 🏆 **The Obsession:** Your most practiced skill was **{best_skill}**.\n* 📅 **The Prime Time:** Your busiest study month was **{top_month}**.\n* 🔥 **The Grind:** You showed up and studied on **{active_days} different days**.\n\n**You are crushing it. Bring on {now.year + 1}!** 🚀")
 
     # LOG SESSION
     st.divider()
@@ -327,7 +333,6 @@ if st.session_state.df is not None:
         with st.form("new_entry", clear_on_submit=True):
             col_d, col_s, col_t = st.columns(3)
             d = col_d.date_input("Date", now)
-            # Uses the dynamic all_skills list
             s = col_s.selectbox("Skill", all_skills)
             t = col_t.number_input("Minutes", 1, 600, 30)
             n = st.text_input("Notes")
