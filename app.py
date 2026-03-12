@@ -13,7 +13,7 @@ import base64
 
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
 
-# --- BACKGROUND (LAZY CACHED - IDEA 4) ---
+# --- BACKGROUND (LAZY CACHED - unchanged) ---
 @st.cache_resource(show_spinner=False)
 def get_base64_of_bin_file(bin_file):
     if not os.path.exists(bin_file):
@@ -40,7 +40,7 @@ def set_background(png_file):
 
 set_background('background.jpg')
 
-# --- CREDENTIALS & SESSION STATE (unchanged) ---
+# --- CREDENTIALS & SESSION STATE (unchanged + new toggle key) ---
 CRED_FILE = "credentials.json"
 def load_credentials():
     if os.path.exists(CRED_FILE):
@@ -58,7 +58,7 @@ def save_credentials_to_disk():
 
 local_creds = load_credentials()
 
-for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills', 'last_ai_rec', 'last_ai_time']:
+for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills', 'last_ai_rec', 'last_ai_time', 'ask_ai_auto', 'milestone_claimed_date']:
     if key not in st.session_state:
         st.session_state[key] = None if key not in ['prev_level'] else 0
         if key == 'accent_color': st.session_state[key] = "#00CC96"
@@ -67,10 +67,12 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         if key == 'custom_skills': st.session_state[key] = ""
         if key == 'last_ai_rec': st.session_state[key] = ""
         if key == 'last_ai_time': st.session_state[key] = None
+        if key == 'ask_ai_auto': st.session_state[key] = False  # YOUR REQUEST: default OFF, no auto on open
+        if key == 'milestone_claimed_date': st.session_state[key] = ""
         if key in ['saved_token', 'saved_repo', 'gemini_key']:
             st.session_state[key] = local_creds.get(key, "")
 
-# --- AI COACH (EXACT SAME - now SURFACED - IDEAS 9 & 11) ---
+# --- AI COACH (EXACT SAME - now gated by YOUR TOGGLE) ---
 def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
@@ -85,7 +87,7 @@ def get_ai_recommendation(api_key, dataframe, current_date):
     except Exception as e:
         return f"AI Error: {str(e)}"
 
-# --- CACHED HELPERS (IDEAS 1-3) ---
+# --- CACHED HELPERS (unchanged) ---
 @st.cache_data(ttl=300, show_spinner=False)
 def cached_get_streak(_df):
     if _df is None or _df.empty: return 0
@@ -115,14 +117,13 @@ def cached_donut(diet, accent_color):
     fig.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
     return fig
 
-# --- GITHUB (UNCHANGED) ---
+# --- GITHUB (enhanced with validation - chosen idea) ---
 @st.cache_resource(show_spinner=False)
 def get_gh_client(token):
     return Github(token)
 
 @st.cache_data(ttl=300, show_spinner=False)
 def load_data_from_github(_token, repo_name, file_path):
-    # exact same as original
     try:
         g = get_gh_client(_token)
         repo = g.get_repo(repo_name)
@@ -143,13 +144,19 @@ def load_data_from_github(_token, repo_name, file_path):
 
 def save_to_github(token, repo_name, file_path, df):
     try:
-        g = get_gh_client(token)
-        repo = g.get_repo(repo_name)
-        latest_sha = repo.get_contents(file_path).sha
+        # AUTO-VALIDATION (chosen idea)
         df_save = df.copy()
+        required_cols = ['Date', 'Skill', 'Time Spent', 'Notes']
+        for col in required_cols:
+            if col not in df_save.columns:
+                df_save[col] = "" if col == "Notes" else 0 if col == "Time Spent" else pd.to_datetime("today")
+        df_save = df_save[required_cols]
         df_save['Date'] = pd.to_datetime(df_save['Date']).dt.strftime("%Y-%m-%d")
         csv_buffer = io.StringIO()
         df_save.to_csv(csv_buffer, index=False)
+        g = get_gh_client(token)
+        repo = g.get_repo(repo_name)
+        latest_sha = repo.get_contents(file_path).sha
         res = repo.update_file(path=file_path, message="Sync Elite Tracker", content=csv_buffer.getvalue(), sha=latest_sha)
         return res['content'].sha 
     except Exception as e:
@@ -159,7 +166,6 @@ def save_to_github(token, repo_name, file_path, df):
 # --- UI UTILITIES ---
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(current_date, available_skills, current_level):
-    # exact same as original
     with st.form("new_entry", clear_on_submit=True):
         st.write("Record your progress:")
         col_d, col_s = st.columns(2)
@@ -195,7 +201,8 @@ with st.sidebar:
     st.session_state.accent_color = theme_map[theme]
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
     yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
-    st.checkbox("🧘 Zen Mode (full focus)", value=st.session_state.zen_mode, key="zen_mode")  # IDEA 8
+    st.checkbox("🧘 Zen Mode (full focus)", value=st.session_state.zen_mode, key="zen_mode")
+    st.checkbox("🔄 Ask AI Coach Automatically", value=st.session_state.ask_ai_auto, key="ask_ai_auto")  # YOUR EXACT REQUEST
     with st.expander("⚙️ Advanced Settings"):
         st.session_state.custom_skills = st.text_input("Custom Skills", value=st.session_state.custom_skills)
         if st.session_state.df is not None:
@@ -233,8 +240,8 @@ if st.session_state.df is not None:
     m1.metric("Level", f"Lvl {level}"); m2.metric("Total", f"{total_hrs:.1f}h"); m3.metric("Streak", f"{streak} Days"); m4.metric("Pacer", f"{rem_min/60:.1f}h left")
     st.progress(xp_progress, text=f"XP to Level {level+1}")
 
-    # AI COACH SURFACED (IDEA 9 + 11)
-    if st.session_state.gemini_key and (st.session_state.last_ai_rec == "" or (st.session_state.last_ai_time and (now - st.session_state.last_ai_time).seconds > 3600)):
+    # AI COACH - YOUR TOGGLE GATES THE AUTO (no longer fires on open)
+    if st.session_state.ask_ai_auto and st.session_state.gemini_key and (st.session_state.last_ai_rec == "" or (st.session_state.last_ai_time and (now - st.session_state.last_ai_time).seconds > 3600)):
         st.session_state.last_ai_rec = get_ai_recommendation(st.session_state.gemini_key, df, now)
         st.session_state.last_ai_time = now
     if st.session_state.last_ai_rec:
@@ -244,8 +251,14 @@ if st.session_state.df is not None:
             st.session_state.last_ai_time = now
             st.rerun()
 
-    # ZEN MODE (IDEA 8)
-    if not st.session_state.zen_mode:
+    # ZEN MODE (now truly full-screen)
+    if st.session_state.zen_mode:
+        st.set_page_config(initial_sidebar_state="collapsed", page_title="English Pro Elite - Zen")
+        df_sorted = df.sort_values('Date')
+        st.plotly_chart(cached_mountain(df_sorted, st.session_state.accent_color), use_container_width=True)
+        diet = df.groupby('Skill')['Time Spent'].sum()
+        st.plotly_chart(cached_donut(diet, st.session_state.accent_color), use_container_width=True)
+    else:
         tab_dash, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🏆 Trophies", "📝 History", "📸 Share Profile"])
         
         with tab_dash:
@@ -265,12 +278,17 @@ if st.session_state.df is not None:
                 if u: cols[i].success(f"🌟 **{n}**\n\n{d}")
                 else: cols[i].info(f"🔒 **{n}**\n\n{d}")
             
-            # MILESTONE REWARD (IDEA 12)
+            # MILESTONE REWARD (persisted + daily reset - chosen idea)
             st.subheader("🎁 Milestone Reward")
-            claimed = st.checkbox("Claim today's reward", value=False)
-            if claimed:
-                st.success(f"🎉 {st.session_state.milestone_reward} unlocked!")
-                st.balloons()
+            today_str = now.date().isoformat()
+            if st.session_state.milestone_claimed_date != today_str:
+                claimed = st.checkbox("Claim today's reward", value=False)
+                if claimed:
+                    st.success(f"🎉 {st.session_state.milestone_reward} unlocked!")
+                    st.balloons()
+                    st.session_state.milestone_claimed_date = today_str
+            else:
+                st.success(f"🎉 {st.session_state.milestone_reward} already claimed today!")
 
         with tab_history:
             edited = st.data_editor(df.sort_values("Date", ascending=False), column_config={"Date": st.column_config.DateColumn(), "Skill": st.column_config.SelectboxColumn(options=all_skills)}, use_container_width=True, hide_index=True)
@@ -279,7 +297,6 @@ if st.session_state.df is not None:
                 if sha: st.session_state.df, st.session_state.file_sha = edited, sha; st.rerun()
 
         with tab_share:
-            # exact same share figure as original
             fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
             archetype_map = {"Reading": "The Sage", "Listening": "The Observer", "Speaking": "The Orator", "Writing": "The Scribe", "Grammar": "The Architect", "Vocabulary": "The Wordsmith"}
             archetype = archetype_map.get(fav_skill, "The Scholar")
@@ -295,14 +312,18 @@ if st.session_state.df is not None:
             fig_share.add_shape(type="rect", x0=0.15, y0=0.1, x1=0.15 + (0.7 * xp_progress), y1=0.12, xref="paper", yref="paper", fillcolor=st.session_state.accent_color, line_width=0)
             fig_share.update_layout(xaxis=dict(visible=False, range=[0,1]), yaxis=dict(visible=False, range=[0,1]), plot_bgcolor="#111111", paper_bgcolor="#111111", margin=dict(l=10, r=10, t=10, b=10), height=450, showlegend=False)
             st.plotly_chart(fig_share, use_container_width=True, config={'displayModeBar': False})
-            st.caption("Right-click to 'Save Image As' and share!")
-
-    else:
-        # Zen mode active - single full dashboard
-        df_sorted = df.sort_values('Date')
-        st.plotly_chart(cached_mountain(df_sorted, st.session_state.accent_color), use_container_width=True)
-        diet = df.groupby('Skill')['Time Spent'].sum()
-        st.plotly_chart(cached_donut(diet, st.session_state.accent_color), use_container_width=True)
+            
+            # ONE-CLICK EXPORT (chosen idea)
+            col_exp1, col_exp2 = st.columns(2)
+            with col_exp1:
+                if st.button("📥 Download Certificate PNG", use_container_width=True):
+                    fig_share.write_image("certificate.png")
+                    with open("certificate.png", "rb") as f:
+                        st.download_button("Click to save PNG", f, file_name="english_pro_elite_certificate.png", mime="image/png")
+            with col_exp2:
+                if st.button("📥 Download Raw CSV", use_container_width=True):
+                    csv = df.to_csv(index=False)
+                    st.download_button("Click to save CSV", csv, file_name="study_data.csv", mime="text/csv")
 
 else: 
     st.info("👈 Enter Connection info in sidebar to begin.")
