@@ -40,7 +40,7 @@ def set_background(png_file):
 
 set_background('background.jpg')
 
-# --- CREDENTIALS & SESSION STATE (unchanged + new toggle key) ---
+# --- CREDENTIALS & SESSION STATE (unchanged + new toggle & persistence keys) ---
 CRED_FILE = "credentials.json"
 def load_credentials():
     if os.path.exists(CRED_FILE):
@@ -67,12 +67,12 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         if key == 'custom_skills': st.session_state[key] = ""
         if key == 'last_ai_rec': st.session_state[key] = ""
         if key == 'last_ai_time': st.session_state[key] = None
-        if key == 'ask_ai_auto': st.session_state[key] = False  # YOUR REQUEST: default OFF, no auto on open
+        if key == 'ask_ai_auto': st.session_state[key] = False  # DEFAULT OFF - NO AUTO ON OPEN
         if key == 'milestone_claimed_date': st.session_state[key] = ""
         if key in ['saved_token', 'saved_repo', 'gemini_key']:
             st.session_state[key] = local_creds.get(key, "")
 
-# --- AI COACH (EXACT SAME - now gated by YOUR TOGGLE) ---
+# --- AI COACH (EXACT SAME - now gated by toggle) ---
 def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
@@ -117,7 +117,7 @@ def cached_donut(diet, accent_color):
     fig.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
     return fig
 
-# --- GITHUB (enhanced with validation - chosen idea) ---
+# --- GITHUB (enhanced with validation) ---
 @st.cache_resource(show_spinner=False)
 def get_gh_client(token):
     return Github(token)
@@ -144,7 +144,7 @@ def load_data_from_github(_token, repo_name, file_path):
 
 def save_to_github(token, repo_name, file_path, df):
     try:
-        # AUTO-VALIDATION (chosen idea)
+        # AUTO-VALIDATION
         df_save = df.copy()
         required_cols = ['Date', 'Skill', 'Time Spent', 'Notes']
         for col in required_cols:
@@ -202,7 +202,7 @@ with st.sidebar:
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
     yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
     st.checkbox("🧘 Zen Mode (full focus)", value=st.session_state.zen_mode, key="zen_mode")
-    st.checkbox("🔄 Ask AI Coach Automatically", value=st.session_state.ask_ai_auto, key="ask_ai_auto")  # YOUR EXACT REQUEST
+    st.checkbox("🔄 Ask AI Coach Automatically", value=st.session_state.ask_ai_auto, key="ask_ai_auto")  # YOUR CONTROL - DEFAULT OFF
     with st.expander("⚙️ Advanced Settings"):
         st.session_state.custom_skills = st.text_input("Custom Skills", value=st.session_state.custom_skills)
         if st.session_state.df is not None:
@@ -240,7 +240,7 @@ if st.session_state.df is not None:
     m1.metric("Level", f"Lvl {level}"); m2.metric("Total", f"{total_hrs:.1f}h"); m3.metric("Streak", f"{streak} Days"); m4.metric("Pacer", f"{rem_min/60:.1f}h left")
     st.progress(xp_progress, text=f"XP to Level {level+1}")
 
-    # AI COACH - YOUR TOGGLE GATES THE AUTO (no longer fires on open)
+    # AI COACH - TOGGLE GATES AUTO (no longer fires on open)
     if st.session_state.ask_ai_auto and st.session_state.gemini_key and (st.session_state.last_ai_rec == "" or (st.session_state.last_ai_time and (now - st.session_state.last_ai_time).seconds > 3600)):
         st.session_state.last_ai_rec = get_ai_recommendation(st.session_state.gemini_key, df, now)
         st.session_state.last_ai_time = now
@@ -278,7 +278,7 @@ if st.session_state.df is not None:
                 if u: cols[i].success(f"🌟 **{n}**\n\n{d}")
                 else: cols[i].info(f"🔒 **{n}**\n\n{d}")
             
-            # MILESTONE REWARD (persisted + daily reset - chosen idea)
+            # MILESTONE REWARD (persisted + daily reset)
             st.subheader("🎁 Milestone Reward")
             today_str = now.date().isoformat()
             if st.session_state.milestone_claimed_date != today_str:
@@ -313,7 +313,7 @@ if st.session_state.df is not None:
             fig_share.update_layout(xaxis=dict(visible=False, range=[0,1]), yaxis=dict(visible=False, range=[0,1]), plot_bgcolor="#111111", paper_bgcolor="#111111", margin=dict(l=10, r=10, t=10, b=10), height=450, showlegend=False)
             st.plotly_chart(fig_share, use_container_width=True, config={'displayModeBar': False})
             
-            # ONE-CLICK EXPORT (chosen idea)
+            # ONE-CLICK EXPORT
             col_exp1, col_exp2 = st.columns(2)
             with col_exp1:
                 if st.button("📥 Download Certificate PNG", use_container_width=True):
