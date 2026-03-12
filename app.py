@@ -25,9 +25,8 @@ def get_ai_recommendation(api_key, dataframe):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        model = genai.GenerativeModel('gemini-2.0-flash-lite')
         
-        # Prepare a compact summary for the AI
         summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
         prompt = f"""
         Act as an expert English Study Coach. Here is my study data (Skill: Total Minutes): {summary}.
@@ -98,12 +97,6 @@ def get_streak(df):
         else: break
     return streak
 
-def add_visual_tags(note):
-    mapping = {'podcast':"🎧 ", 'listening':"🎧 ", 'bbc':"🎧 ", 'book':"📖 ", 'read':"📖 ", 'video':"📺 ", 'youtube':"📺 ", 'write':"✍️ "}
-    for word, emoji in mapping.items():
-        if word in str(note).lower(): return f"{emoji}{note}"
-    return note
-
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
@@ -124,7 +117,6 @@ with st.sidebar:
                 
     st.divider()
     
-    # FEATURE 6: Undo Safety System
     if st.session_state.df is not None and st.button("↩️ Undo Last Log", use_container_width=True):
         undo_df = st.session_state.df.iloc[:-1]
         new_sha = save_to_github(gh_token, gh_repo, "data.csv", undo_df, st.session_state.file_sha)
@@ -134,7 +126,6 @@ with st.sidebar:
             st.toast("Reverted last log!")
             st.rerun()
 
-    # FEATURE 1 (AI): Study Coach Card
     if st.session_state.df is not None:
         st.header("🤖 AI Study Coach")
         if st.button("Ask Coach"):
@@ -150,6 +141,7 @@ with st.sidebar:
     st.session_state.accent_color = theme_map[theme]
     
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
+    yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10) # FEATURE 5 Setup
 
 # --- MAIN UI ---
 if st.session_state.df is not None:
@@ -166,7 +158,6 @@ if st.session_state.df is not None:
     xp_progress = (total_hrs % 50) / 50
     streak = get_streak(df)
 
-    # Weekly Pacer
     curr_week_label = "Week " + str(((now - start_date).days // 7) + 1).zfill(2)
     this_week_min = df[df['Week_Label'] == curr_week_label]['Time Spent'].sum()
     remaining_min = max(0, (weekly_goal * 60) - this_week_min)
@@ -186,14 +177,24 @@ if st.session_state.df is not None:
 
     if not st.session_state.zen_mode:
         st.divider()
-        tab_dash, tab_insights, tab_trophy, tab_history = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History"])
+        tab_dash, tab_insights, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History", "📸 Share"])
 
         with tab_dash:
+            # FEATURE 5: Macro-Goals (Yearly Tracking)
+            df_year = df[df['Date'].dt.year == now.year]
+            ytd_hrs = df_year['Time Spent'].sum() / 60
+            day_of_year = now.timetuple().tm_yday
+            expected_ytd = (yearly_goal / 365) * day_of_year
+            diff = ytd_hrs - expected_ytd
+            
+            st.info(f"📅 **Yearly Goal Pacing:** You have studied {ytd_hrs:.1f}h out of your {yearly_goal}h goal for the year. "
+                    f"At this point in the year, you should be at {expected_ytd:.1f}h. "
+                    f"**({'+' if diff >= 0 else ''}{diff:.1f}h {'ahead of' if diff >= 0 else 'behind'} schedule)**")
+
             c1, c2 = st.columns([2, 1])
             with c1:
-                # FEATURE 7: GitHub Style Intensity Heatmap
                 st.subheader("🗓️ Study Intensity (GitHub Style)")
-                df_2026 = df[df['Date'].dt.year == 2026].copy()
+                df_2026 = df[df['Date'].dt.year == now.year].copy()
                 if not df_2026.empty:
                     df_2026['Day'] = df_2026['Date'].dt.day_name()
                     df_2026['Week_Num'] = df_2026['Date'].dt.isocalendar().week
@@ -203,18 +204,33 @@ if st.session_state.df is not None:
                     fig_gh.update_layout(height=250, margin=dict(l=0,r=0,t=0,b=0), coloraxis_showscale=False)
                     st.plotly_chart(fig_gh, use_container_width=True)
                 
-                # Learning Mountain
                 df_sorted = df.sort_values('Date')
                 df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
                 st.plotly_chart(px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color]), use_container_width=True)
             with c2:
-                # Skill Diet Balancer
                 radar_data = df.groupby('Skill')['Time Spent'].sum().reindex(all_skills).fillna(0)
                 fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
                 fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, title="Skill Diet Balancer", height=350)
                 st.plotly_chart(fig_radar, use_container_width=True)
 
         with tab_insights:
+            # FEATURE 6: Future Self Predictor
+            st.subheader("🔮 The 'Future Self' Predictor")
+            last_14 = now.date() - timedelta(days=14)
+            df_14 = df[df['Date'].dt.date >= last_14]
+            avg_14_daily = (df_14['Time Spent'].sum() / 60) / 14
+            next_level_hrs = level * 50
+            hrs_needed = next_level_hrs - total_hrs
+            
+            if avg_14_daily > 0:
+                days_needed = int(hrs_needed / avg_14_daily)
+                target_date = now.date() + timedelta(days=days_needed)
+                st.success(f"Based on your recent 14-day average ({avg_14_daily:.1f} hours/day), you will reach **Level {level+1}** on **{target_date.strftime('%B %d, %Y')}**!")
+            else:
+                st.warning("Study more in the last 14 days to generate a projection for your next level!")
+
+            st.divider()
+            
             i1, i2 = st.columns(2)
             with i1:
                 target_past = (now - timedelta(days=30)).date()
@@ -245,6 +261,32 @@ if st.session_state.df is not None:
                 filtered_save['Date'] = pd.to_datetime(filtered_save['Date'])
                 new_sha = save_to_github(gh_token, gh_repo, "data.csv", filtered_save, st.session_state.file_sha)
                 if new_sha: st.rerun()
+                
+        with tab_share:
+            # FEATURE 7: Plotly Share Card
+            st.subheader("📸 Your Share Card")
+            st.write("Hover over the image below and click the 📷 icon in the top right corner to download this as a PNG for social media!")
+            
+            fig_share = go.Figure()
+            # Add decorative background elements
+            fig_share.add_trace(go.Scatter(x=[0, 10], y=[0, 10], mode="markers", marker=dict(size=0.1, color="rgba(0,0,0,0)"), hoverinfo="none"))
+            
+            # Text Annotations for the Card
+            fig_share.add_annotation(text="🇬🇧 English Learning Journey", x=5, y=9, font=dict(size=24, color="gray"), showarrow=False)
+            fig_share.add_annotation(text=f"Level {level} Scholar", x=5, y=7.5, font=dict(size=36, color=st.session_state.accent_color, weight="bold"), showarrow=False)
+            fig_share.add_annotation(text=f"{total_hrs:.1f} Total Hours", x=5, y=5.5, font=dict(size=28), showarrow=False)
+            fig_share.add_annotation(text=f"{streak} Day Streak 🔥", x=5, y=3.5, font=dict(size=28), showarrow=False)
+            fig_share.add_annotation(text=f"Favorite Skill: {df.groupby('Skill')['Time Spent'].sum().idxmax()}", x=5, y=1.5, font=dict(size=20, color="gray"), showarrow=False)
+            
+            fig_share.update_layout(
+                xaxis=dict(visible=False, range=[0, 10]), 
+                yaxis=dict(visible=False, range=[0, 10]),
+                plot_bgcolor="white" if st.session_state.accent_color in ["#00CC96", "#0099FF"] else "#1E1E1E",
+                margin=dict(l=10, r=10, t=10, b=10),
+                height=500,
+                width=500
+            )
+            st.plotly_chart(fig_share, config={'displayModeBar': True, 'displaylogo': False})
 
     # LOG SESSION
     st.divider()
