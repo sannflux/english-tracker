@@ -44,7 +44,6 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         if key == 'custom_skills': st.session_state[key] = ""
         if key == 'last_ai_rec': st.session_state[key] = ""
         
-        # Load from JSON if available
         if key in ['saved_token', 'saved_repo', 'gemini_key']:
             st.session_state[key] = local_creds.get(key, "")
 
@@ -53,6 +52,7 @@ def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
         genai.configure(api_key=api_key)
+        # STRICT MODEL LOCK
         model = genai.GenerativeModel('gemini-2.5-flash-lite')
         
         all_time_summary = dataframe.groupby('Skill')['Time Spent'].sum().to_dict()
@@ -117,7 +117,7 @@ def save_to_github(token, repo_name, file_path, df):
         
         res = repo.update_file(
             path=file_path, 
-            message="Sync Elite Tracker", 
+            message="Sync Elite Tracker Update", 
             content=csv_buffer.getvalue(), 
             sha=latest_sha
         )
@@ -141,7 +141,6 @@ def get_streak(df):
         else: break
     return streak
 
-# --- DIALOG (POP-UP) LOGIC ---
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(current_date, available_skills, current_level):
     with st.form("new_entry", clear_on_submit=True):
@@ -166,7 +165,6 @@ def log_session_dialog(current_date, available_skills, current_level):
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
-    # Widgets directly bound to session_state using `key=`
     st.text_input("GitHub Token", type="password", key="saved_token")
     st.text_input("Repo", key="saved_repo")
     st.text_input("Gemini API Key", type="password", key="gemini_key")
@@ -216,6 +214,29 @@ with st.sidebar:
 
     with st.expander("⚙️ Advanced Settings"):
         st.session_state.custom_skills = st.text_input("Custom Skills (comma separated)", value=st.session_state.custom_skills)
+        
+        # --- NEW: SKILL RENAMING TOOL ---
+        if st.session_state.df is not None:
+            st.divider()
+            st.markdown("🛠️ **Skill Renaming Tool**")
+            current_skills = sorted(st.session_state.df['Skill'].unique().tolist())
+            old_skill = st.selectbox("Select Skill to Rename", options=current_skills)
+            new_skill_name = st.text_input("Enter New Name", placeholder="e.g., Reading Analysis")
+            
+            if st.button("🚀 Bulk Rename & Sync", use_container_width=True):
+                if new_skill_name.strip():
+                    with st.spinner("Refactoring data..."):
+                        updated_df = st.session_state.df.copy()
+                        updated_df['Skill'] = updated_df['Skill'].replace(old_skill, new_skill_name.strip())
+                        
+                        success_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", updated_df)
+                        if success_sha:
+                            st.session_state.df = updated_df
+                            st.session_state.file_sha = success_sha
+                            st.success(f"Renamed '{old_skill}' to '{new_skill_name}'!")
+                            st.rerun()
+                else:
+                    st.warning("Please enter a valid new name.")
 
 # --- MAIN UI ---
 if st.session_state.df is not None:
