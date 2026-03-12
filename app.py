@@ -227,12 +227,15 @@ with st.sidebar:
                     with st.spinner("Refactoring data..."):
                         updated_df = st.session_state.df.copy()
                         updated_df['Skill'] = updated_df['Skill'].replace(old_skill, new_skill_name.strip())
+                        
                         success_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", updated_df)
                         if success_sha:
                             st.session_state.df = updated_df
                             st.session_state.file_sha = success_sha
                             st.success(f"Renamed '{old_skill}' to '{new_skill_name}'!")
                             st.rerun()
+                else:
+                    st.warning("Please enter a valid new name.")
 
 # --- MAIN UI ---
 if st.session_state.df is not None:
@@ -268,6 +271,9 @@ if st.session_state.df is not None:
         if st.button("➕ Log Study Time", type="primary", use_container_width=True):
             log_session_dialog(now, all_skills, level)
 
+    with st.expander(f"🎁 Level Reward: {st.session_state.milestone_reward}", expanded=False):
+        st.session_state.milestone_reward = st.text_input("Reward", value=st.session_state.milestone_reward)
+
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Level", f"Lvl {level}")
     m2.metric("Total", f"{total_hrs:.1f}h")
@@ -277,12 +283,22 @@ if st.session_state.df is not None:
 
     if not st.session_state.zen_mode:
         st.divider()
-        tab_dash, tab_insights, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🧠 Insights", "🏆 Trophies", "📝 History", "📸 Share Profile"])
+        tab_dash, tab_insights, tab_trophy, tab_history, tab_share = st.tabs(["📈 Dashboard", "🧠 Deep Insights", "🏆 Trophies", "📝 History", "📸 Share"])
 
         with tab_dash:
+            df_year = df[df['Date'].dt.year == now.year]
+            ytd_hrs = df_year['Time Spent'].sum() / 60
+            day_of_year = now.timetuple().tm_yday
+            expected_ytd = (yearly_goal / 365) * day_of_year
+            diff = ytd_hrs - expected_ytd
+            
+            st.info(f"📅 **Yearly Goal Pacing:** You have studied {ytd_hrs:.1f}h out of your {yearly_goal}h goal for the year. "
+                    f"At this point in the year, you should be at {expected_ytd:.1f}h. "
+                    f"**({'+' if diff >= 0 else ''}{diff:.1f}h {'ahead of' if diff >= 0 else 'behind'} schedule)**")
+
             c1, c2 = st.columns([2, 1])
             with c1:
-                st.subheader("🗓️ Study Intensity")
+                st.subheader("🗓️ Study Intensity (GitHub Style)")
                 df_2026 = df[df['Date'].dt.year == now.year].copy()
                 if not df_2026.empty:
                     df_2026['Day'] = df_2026['Date'].dt.day_name()
@@ -296,13 +312,22 @@ if st.session_state.df is not None:
                 df_sorted = df.sort_values('Date')
                 df_sorted['Cumulative_Hrs'] = df_sorted['Time Spent'].cumsum() / 60
                 fig_mtn = px.area(df_sorted, x='Date', y='Cumulative_Hrs', title="Learning Mountain", color_discrete_sequence=[st.session_state.accent_color])
+                
+                start_of_year = pd.to_datetime(f"{now.year}-01-01")
+                end_of_year = pd.to_datetime(f"{now.year}-12-31")
+                cum_last_year = df[df['Date'].dt.year < now.year]['Time Spent'].sum() / 60
+                fig_mtn.add_trace(go.Scatter(
+                    x=[start_of_year, end_of_year], 
+                    y=[cum_last_year, cum_last_year + yearly_goal], 
+                    mode='lines', line=dict(color='gray', dash='dash'), name=f'{now.year} Pace Goal'
+                ))
                 st.plotly_chart(fig_mtn, use_container_width=True)
                 
             with c2:
                 st.subheader("Skill Diet")
                 if not df.empty:
                     diet_data = df.groupby('Skill')['Time Spent'].sum()
-                    fig_donut = px.pie(names=diet_data.index, values=diet_data.values, hole=0.5)
+                    fig_donut = px.pie(names=diet_data.index, values=diet_data.values, hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
                     fig_donut.update_traces(textinfo='label+percent', textposition='inside')
                     fig_donut.update_layout(showlegend=False, height=250, margin=dict(l=20,r=20,t=20,b=20))
                     st.plotly_chart(fig_donut, use_container_width=True)
@@ -311,67 +336,176 @@ if st.session_state.df is not None:
                     fig_radar = go.Figure(data=go.Scatterpolar(r=radar_data.values, theta=all_skills, fill='toself', line_color=st.session_state.accent_color))
                     fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False)), showlegend=False, height=250)
                     st.plotly_chart(fig_radar, use_container_width=True)
+                    
+                    st.markdown("##### ⚔️ RPG Skill Mastery (1 Lvl = 10h)")
+                    skill_levels = (diet_data / 600).astype(int) + 1 
+                    sk_cols = st.columns(3)
+                    for idx, (skill, sk_lvl) in enumerate(skill_levels.items()):
+                        sk_cols[idx % 3].metric(skill, f"Lvl {sk_lvl}")
+
+        with tab_insights:
+            st.subheader("🔮 The 'Future Self' Predictor")
+            last_14 = now.date() - timedelta(days=14)
+            df_14 = df[df['Date'].dt.date >= last_14]
+            avg_14_daily = (df_14['Time Spent'].sum() / 60) / 14
+            next_level_hrs = level * 50
+            hrs_needed = next_level_hrs - total_hrs
+            
+            if avg_14_daily > 0:
+                days_needed = int(hrs_needed / avg_14_daily)
+                target_date = now.date() + timedelta(days=days_needed)
+                st.success(f"Based on your recent 14-day average ({avg_14_daily:.1f} hours/day), you will reach **Level {level+1}** on **{target_date.strftime('%B %d, %Y')}**!")
+            else:
+                st.warning("Study more in the last 14 days to generate a projection for your next level!")
+
+            st.divider()
+            
+            i1, i2 = st.columns(2)
+            with i1:
+                target_past = (now - timedelta(days=30)).date()
+                past_data = df[df['Date'].dt.date == target_past]
+                st.subheader("🕰️ Time Machine")
+                if not past_data.empty:
+                    st.info(f"30 Days ago you studied **{past_data['Time Spent'].sum()}m**. Notes: *{past_data['Notes'].iloc[0]}*")
+                else: st.write("No data found for exactly 30 days ago.")
+            with i2:
+                df['Date_Only'] = df['Date'].dt.date
+                pivot = df.groupby(['Date_Only', 'Skill']).size().unstack(fill_value=0)
+                st.plotly_chart(px.imshow(pivot.corr().fillna(0), text_auto=True, title="Skill Pairing", color_continuous_scale="Purples"), use_container_width=True)
 
         with tab_trophy:
             st.subheader("🏆 Dynamic Trophy Room")
-            badges = [("Scholar", "10h total", total_hrs >= 10), ("Elite", "Level 10", level >= 10), ("King", "30-day streak", streak >= 30)]
+            skill_sums_min = df.groupby('Skill')['Time Spent'].sum()
+            has_specialist = any(skill_sums_min >= 3000) 
+            has_generalist = sum([1 for s in base_skills if skill_sums_min.get(s, 0) >= 600]) == len(base_skills) 
+            has_weekend = any(df['Date'].dt.dayofweek >= 5) 
+            
+            badges = [
+                ("First Step", "Log your 1st session", total_hrs > 0), 
+                ("Novice Scholar", "Reach 10h total", total_hrs >= 10), 
+                ("Dedication", "Reach 100h total", total_hrs >= 100),
+                ("Halfway There", "Reach Level 5", level >= 5),
+                ("Master Scholar", "Reach Level 10", level >= 10),
+                ("Streak Initiate", "Hit a 7-day streak", streak >= 7),
+                ("Streak Master", "Hit a 30-day streak", streak >= 30),
+                ("Weekend Warrior", "Log a session on a weekend", has_weekend),
+                ("The Specialist", "Spend 50 hours on a single skill", has_specialist),
+                ("The Generalist", "Spend 10 hours on every core skill", has_generalist)
+            ]
+            
             cols = st.columns(3)
             for i, (name, desc, unlocked) in enumerate(badges):
-                if unlocked: cols[i].success(f"🌟 **{name}**\n\n{desc}")
-                else: cols[i].info(f"🔒 **{name}**\n\n{desc}")
+                if unlocked: 
+                    cols[i % 3].success(f"🌟 **{name}**\n\n{desc}")
+                else: 
+                    cols[i % 3].info(f"🔒 **{name}**\n\n{desc}")
 
         with tab_history:
+            col_title, col_btn = st.columns([3, 1])
+            col_title.subheader("📝 Session History")
+            if col_btn.button("🧹 Merge Duplicate Days"):
+                with st.spinner("Merging..."):
+                    merge_df = df.copy()
+                    merge_df['Date_Str'] = merge_df['Date'].dt.strftime('%Y-%m-%d')
+                    grouped = merge_df.groupby(['Date_Str', 'Skill']).agg({
+                        'Time Spent': 'sum',
+                        'Notes': lambda x: ' | '.join(set([str(i) for i in x if str(i).strip()]))
+                    }).reset_index()
+                    grouped['Date'] = pd.to_datetime(grouped['Date_Str'])
+                    grouped = grouped.drop(columns=['Date_Str']).sort_values('Date', ascending=False)
+                    new_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", grouped)
+                    if new_sha:
+                        st.session_state.df = grouped
+                        st.session_state.file_sha = new_sha
+                        st.success("Duplicates Merged!")
+                        st.rerun()
+
             display_df = df.copy().sort_values("Date", ascending=False)
             display_df['Delete'] = False
-            edited_hist = st.data_editor(display_df[['Delete', 'Date', 'Skill', 'Time Spent', 'Notes']], use_container_width=True, hide_index=True)
+            
+            edited_hist = st.data_editor(
+                display_df[['Delete', 'Date', 'Skill', 'Time Spent', 'Notes']],
+                column_config={
+                    "Date": st.column_config.DateColumn("Date", required=True),
+                    "Skill": st.column_config.SelectboxColumn("Skill", options=all_skills, required=True),
+                    "Time Spent": st.column_config.NumberColumn("Min", min_value=1),
+                    "Delete": st.column_config.CheckboxColumn("🗑️")
+                },
+                use_container_width=True,
+                hide_index=True
+            )
+            
             if st.button("🗑️ Commit Changes", type="primary"):
                 filtered_save = edited_hist[edited_hist['Delete'] == False].drop(columns=['Delete'])
                 new_sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", filtered_save)
-                if new_sha: st.session_state.df = filtered_save; st.rerun()
+                if new_sha: 
+                    st.session_state.df = filtered_save
+                    st.rerun()
 
         with tab_share:
-            st.subheader("📸 Your Scholar Profile Card")
-            
-            # Archetype Logic
-            fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
-            archetype_map = {
-                "Reading": "The Sage", "Listening": "The Observer", 
-                "Speaking": "The Orator", "Writing": "The Scribe",
-                "Grammar": "The Architect", "Vocabulary": "The Wordsmith"
-            }
-            archetype = archetype_map.get(fav_skill, "The Scholar")
-            
-            # --- COMPOSITE CARD DESIGN ---
-            fig_share = go.Figure()
+            c1, c2 = st.columns([1, 1])
+            with c1:
+                st.subheader("📸 Your Share Card")
+                
+                # --- NEW DARK GLASS SHARE CARD ---
+                fav_skill = df.groupby('Skill')['Time Spent'].sum().idxmax() if not df.empty else "N/A"
+                archetype_map = {
+                    "Reading": "The Sage", "Listening": "The Observer", 
+                    "Speaking": "The Orator", "Writing": "The Scribe",
+                    "Grammar": "The Architect", "Vocabulary": "The Wordsmith"
+                }
+                archetype = archetype_map.get(fav_skill, "The Scholar")
+                
+                fig_share = go.Figure()
+                
+                # Dark Glass Background
+                fig_share.add_shape(type="rect", x0=0, y0=0, x1=1, y1=1, xref="paper", yref="paper", fillcolor="#111111", line_width=0)
+                
+                # Subtle Center Glow (using accent color)
+                fig_share.add_trace(go.Scatter(x=[0.5], y=[0.55], mode="markers", 
+                                             marker=dict(size=250, color=st.session_state.accent_color, opacity=0.15), 
+                                             hoverinfo="skip"))
+                
+                # Typography Layer
+                fig_share.add_annotation(text="ENGLISH PRO ELITE", xref="paper", yref="paper", x=0.5, y=0.9, showarrow=False, 
+                                         font=dict(size=14, color="#AAAAAA", letterspacing=2))
+                
+                fig_share.add_annotation(text=f'"{archetype}"', xref="paper", yref="paper", x=0.5, y=0.75, showarrow=False, 
+                                         font=dict(size=32, color=st.session_state.accent_color, family="serif", style="italic"))
+                
+                fig_share.add_annotation(text=f"LEVEL {level}", xref="paper", yref="paper", x=0.5, y=0.55, showarrow=False, 
+                                         font=dict(size=64, color="#FFFFFF", weight="bold"))
+                
+                fig_share.add_annotation(text=f"{total_hrs:.1f} HOURS STUDIED", xref="paper", yref="paper", x=0.5, y=0.35, showarrow=False, 
+                                         font=dict(size=18, color="#FFFFFF"))
+                fig_share.add_annotation(text=f"{streak} DAY STREAK 🔥", xref="paper", yref="paper", x=0.5, y=0.25, showarrow=False, 
+                                         font=dict(size=18, color="#FFFFFF"))
+                
+                # XP Bar Background & Fill
+                fig_share.add_shape(type="rect", x0=0.15, y0=0.1, x1=0.85, y1=0.12, xref="paper", yref="paper", fillcolor="#333333", line_width=0)
+                fig_share.add_shape(type="rect", x0=0.15, y0=0.1, x1=0.15 + (0.7 * xp_progress), y1=0.12, xref="paper", yref="paper", fillcolor=st.session_state.accent_color, line_width=0)
 
-            # Background Color / Tint
-            fig_share.add_shape(type="rect", x0=0, y0=0, x1=1, y1=1, xref="paper", yref="paper", 
-                               fillcolor=st.session_state.accent_color, opacity=0.05, line_width=0)
+                # Layout Cleanup
+                fig_share.update_layout(xaxis=dict(visible=False, range=[0,1]), yaxis=dict(visible=False, range=[0,1]), 
+                                      plot_bgcolor="#111111", paper_bgcolor="#111111",
+                                      margin=dict(l=10, r=10, t=10, b=10), height=450, showlegend=False)
+                
+                st.plotly_chart(fig_share, use_container_width=True, config={'displayModeBar': False})
+                st.caption("Right-click the image above and select 'Save Image As' to share!")
 
-            # Archetype & Header
-            fig_share.add_annotation(text="ENGLISH PRO ELITE", xref="paper", yref="paper", x=0.5, y=0.92, showarrow=False, 
-                                     font=dict(size=16, color="gray", variant="small-caps"))
-            fig_share.add_annotation(text=archetype, xref="paper", yref="paper", x=0.5, y=0.8, showarrow=False, 
-                                     font=dict(size=38, color=st.session_state.accent_color, family="serif", weight="bold"))
-
-            # Level Circle Visual (Simulated with text)
-            fig_share.add_annotation(text=f"LEVEL", xref="paper", yref="paper", x=0.5, y=0.62, showarrow=False, font=dict(size=14, color="gray"))
-            fig_share.add_annotation(text=str(level), xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(size=90, weight="bold"))
-
-            # Stats Row
-            fig_share.add_annotation(text=f"<b>{total_hrs:.1f}</b> Hours Total  •  <b>{streak}</b> Day Streak", 
-                                     xref="paper", yref="paper", x=0.5, y=0.32, showarrow=False, font=dict(size=22))
-
-            # Progress Bar on Card
-            fig_share.add_shape(type="rect", x0=0.2, y0=0.2, x1=0.8, y1=0.24, xref="paper", yref="paper", line_color="lightgray", fillcolor="white")
-            fig_share.add_shape(type="rect", x0=0.2, y0=0.2, x1=0.2 + (0.6 * xp_progress), y1=0.24, xref="paper", yref="paper", fillcolor=st.session_state.accent_color, line_width=0)
-            fig_share.add_annotation(text="XP to Next Level", xref="paper", yref="paper", x=0.5, y=0.15, showarrow=False, font=dict(size=12, color="gray"))
-
-            fig_share.update_layout(xaxis=dict(visible=False), yaxis=dict(visible=False), plot_bgcolor="white", 
-                                  margin=dict(l=0, r=0, t=0, b=0), height=550)
-            
-            st.plotly_chart(fig_share, use_container_width=True, config={'displayModeBar': False})
-            st.info("💡 **Tip:** Right-click the image to 'Save Image As' and share your progress!")
+            with c2:
+                st.subheader(f"🎧 Your {now.year} Wrapped")
+                if st.button("✨ Reveal My Wrapped ✨", use_container_width=True):
+                    st.balloons()
+                    df_year = df[df['Date'].dt.year == now.year]
+                    if df_year.empty:
+                        st.warning(f"No data logged yet for {now.year}!")
+                    else:
+                        tot_min = df_year['Time Spent'].sum()
+                        top_month = df_year['Date'].dt.month_name().mode()[0]
+                        active_days = df_year['Date'].nunique()
+                        best_skill = df_year.groupby('Skill')['Time Spent'].sum().idxmax()
+                        st.success(f"### 🎉 The {now.year} Wrap-Up\n> *\"Consistency is the key to mastery.\"*\n* ⏳ **Time Invested:** You spent **{tot_min:,.0f} minutes** ({tot_min/60:.1f} hours) learning English!\n* 🏆 **The Obsession:** Your most practiced skill was **{best_skill}**.\n* 📅 **The Prime Time:** Your busiest study month was **{top_month}**.\n* 🔥 **The Grind:** You showed up and studied on **{active_days} different days**.\n\n**You are crushing it. Bring on {now.year + 1}!** 🚀")
 
 else:
     st.info("👈 Enter Connection info in sidebar to begin.")
