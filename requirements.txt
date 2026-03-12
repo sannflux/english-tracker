@@ -2,7 +2,5 @@ streamlit
 pandas
 PyGithub
 plotly
-google-generativeai
 numpy
-requests
-pytz
+google-generativeai
