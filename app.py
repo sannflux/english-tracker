@@ -13,7 +13,7 @@ import base64
 
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
 
-# --- BACKGROUND (LAZY CACHED - unchanged) ---
+# --- BACKGROUND (LAZY CACHED) ---
 @st.cache_resource(show_spinner=False)
 def get_base64_of_bin_file(bin_file):
     if not os.path.exists(bin_file):
@@ -40,23 +40,45 @@ def set_background(png_file):
 
 set_background('background.jpg')
 
-# --- CREDENTIALS & SESSION STATE (unchanged + new toggle & persistence keys) ---
+# --- CREDENTIALS & SESSION STATE (UPGRADED for st.secrets) ---
 CRED_FILE = "credentials.json"
+
 def load_credentials():
+    creds = {}
+    using_secrets = False
+    
+    # 1. Prefer Streamlit Secrets (Best for Cloud/Production)
+    try:
+        if "GITHUB_TOKEN" in st.secrets:
+            creds["saved_token"] = st.secrets["GITHUB_TOKEN"]
+            using_secrets = True
+        if "GITHUB_REPO" in st.secrets:
+            creds["saved_repo"] = st.secrets["GITHUB_REPO"]
+            using_secrets = True
+        if "GEMINI_API_KEY" in st.secrets:
+            creds["gemini_key"] = st.secrets["GEMINI_API_KEY"]
+            using_secrets = True
+    except Exception:
+        pass
+        
+    if using_secrets:
+        return creds, True
+
+    # 2. Fallback to local JSON (Best for local dev)
     if os.path.exists(CRED_FILE):
         try:
             with open(CRED_FILE, "r") as f:
-                return json.load(f)
+                return json.load(f), False
         except:
-            return {}
-    return {}
+            pass
+    return {}, False
 
 def save_credentials_to_disk():
     creds = {"saved_token": st.session_state.saved_token, "saved_repo": st.session_state.saved_repo, "gemini_key": st.session_state.gemini_key}
     with open(CRED_FILE, "w") as f:
         json.dump(creds, f)
 
-local_creds = load_credentials()
+local_creds, using_secrets = load_credentials()
 
 for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills', 'last_ai_rec', 'last_ai_time', 'ask_ai_auto', 'milestone_claimed_date']:
     if key not in st.session_state:
@@ -67,12 +89,12 @@ for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent
         if key == 'custom_skills': st.session_state[key] = ""
         if key == 'last_ai_rec': st.session_state[key] = ""
         if key == 'last_ai_time': st.session_state[key] = None
-        if key == 'ask_ai_auto': st.session_state[key] = False  # DEFAULT OFF - NO AUTO ON OPEN
+        if key == 'ask_ai_auto': st.session_state[key] = False  
         if key == 'milestone_claimed_date': st.session_state[key] = ""
         if key in ['saved_token', 'saved_repo', 'gemini_key']:
             st.session_state[key] = local_creds.get(key, "")
 
-# --- AI COACH (EXACT SAME - now gated by toggle) ---
+# --- AI COACH ---
 def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key in the sidebar."
     try:
@@ -87,7 +109,7 @@ def get_ai_recommendation(api_key, dataframe, current_date):
     except Exception as e:
         return f"AI Error: {str(e)}"
 
-# --- CACHED HELPERS (unchanged) ---
+# --- CACHED HELPERS ---
 @st.cache_data(ttl=300, show_spinner=False)
 def cached_get_streak(_df):
     if _df is None or _df.empty: return 0
@@ -117,7 +139,7 @@ def cached_donut(diet, accent_color):
     fig.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
     return fig
 
-# --- GITHUB (enhanced with validation) ---
+# --- GITHUB ---
 @st.cache_resource(show_spinner=False)
 def get_gh_client(token):
     return Github(token)
@@ -144,7 +166,6 @@ def load_data_from_github(_token, repo_name, file_path):
 
 def save_to_github(token, repo_name, file_path, df):
     try:
-        # AUTO-VALIDATION
         df_save = df.copy()
         required_cols = ['Date', 'Skill', 'Time Spent', 'Notes']
         for col in required_cols:
@@ -185,11 +206,18 @@ def log_session_dialog(current_date, available_skills, current_level):
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
-    st.text_input("GitHub Token", type="password", key="saved_token")
-    st.text_input("Repo", key="saved_repo")
-    st.text_input("Gemini API Key", type="password", key="gemini_key")
-    if st.button("💾 Save Credentials", use_container_width=True):
-        save_credentials_to_disk(); st.success("Locked!")
+    
+    st.text_input("GitHub Token", type="password", key="saved_token", disabled=using_secrets)
+    st.text_input("Repo", key="saved_repo", disabled=using_secrets)
+    st.text_input("Gemini API Key", type="password", key="gemini_key", disabled=using_secrets)
+    
+    if using_secrets:
+        st.info("🔐 Secured via Streamlit Secrets")
+    else:
+        if st.button("💾 Save Credentials (Local)", use_container_width=True):
+            save_credentials_to_disk()
+            st.success("Saved locally! (Note: Wipes on cloud restart)")
+            
     if st.button("🔄 Force Sync", use_container_width=True):
         load_data_from_github.clear()
         df, sha, status = load_data_from_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv")
@@ -202,7 +230,7 @@ with st.sidebar:
     weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
     yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
     st.checkbox("🧘 Zen Mode (full focus)", value=st.session_state.zen_mode, key="zen_mode")
-    st.checkbox("🔄 Ask AI Coach Automatically", value=st.session_state.ask_ai_auto, key="ask_ai_auto")  # YOUR CONTROL - DEFAULT OFF
+    st.checkbox("🔄 Ask AI Coach Automatically", value=st.session_state.ask_ai_auto, key="ask_ai_auto")
     with st.expander("⚙️ Advanced Settings"):
         st.session_state.custom_skills = st.text_input("Custom Skills", value=st.session_state.custom_skills)
         if st.session_state.df is not None:
@@ -240,7 +268,7 @@ if st.session_state.df is not None:
     m1.metric("Level", f"Lvl {level}"); m2.metric("Total", f"{total_hrs:.1f}h"); m3.metric("Streak", f"{streak} Days"); m4.metric("Pacer", f"{rem_min/60:.1f}h left")
     st.progress(xp_progress, text=f"XP to Level {level+1}")
 
-    # AI COACH - TOGGLE GATES AUTO (no longer fires on open)
+    # AI COACH
     if st.session_state.ask_ai_auto and st.session_state.gemini_key and (st.session_state.last_ai_rec == "" or (st.session_state.last_ai_time and (now - st.session_state.last_ai_time).seconds > 3600)):
         st.session_state.last_ai_rec = get_ai_recommendation(st.session_state.gemini_key, df, now)
         st.session_state.last_ai_time = now
@@ -251,9 +279,18 @@ if st.session_state.df is not None:
             st.session_state.last_ai_time = now
             st.rerun()
 
-    # ZEN MODE (now truly full-screen)
+    # ZEN MODE (Patched crash)
     if st.session_state.zen_mode:
-        st.set_page_config(initial_sidebar_state="collapsed", page_title="English Pro Elite - Zen")
+        st.markdown("""
+            <style>
+                [data-testid="stSidebar"] {display: none;}
+                header {display: none;}
+            </style>
+        """, unsafe_allow_html=True)
+        if st.button("❌ Exit Zen Mode", use_container_width=True):
+            st.session_state.zen_mode = False
+            st.rerun()
+            
         df_sorted = df.sort_values('Date')
         st.plotly_chart(cached_mountain(df_sorted, st.session_state.accent_color), use_container_width=True)
         diet = df.groupby('Skill')['Time Spent'].sum()
@@ -278,7 +315,6 @@ if st.session_state.df is not None:
                 if u: cols[i].success(f"🌟 **{n}**\n\n{d}")
                 else: cols[i].info(f"🔒 **{n}**\n\n{d}")
             
-            # MILESTONE REWARD (persisted + daily reset)
             st.subheader("🎁 Milestone Reward")
             today_str = now.date().isoformat()
             if st.session_state.milestone_claimed_date != today_str:
@@ -313,13 +349,15 @@ if st.session_state.df is not None:
             fig_share.update_layout(xaxis=dict(visible=False, range=[0,1]), yaxis=dict(visible=False, range=[0,1]), plot_bgcolor="#111111", paper_bgcolor="#111111", margin=dict(l=10, r=10, t=10, b=10), height=450, showlegend=False)
             st.plotly_chart(fig_share, use_container_width=True, config={'displayModeBar': False})
             
-            # ONE-CLICK EXPORT
             col_exp1, col_exp2 = st.columns(2)
             with col_exp1:
                 if st.button("📥 Download Certificate PNG", use_container_width=True):
-                    fig_share.write_image("certificate.png")
-                    with open("certificate.png", "rb") as f:
-                        st.download_button("Click to save PNG", f, file_name="english_pro_elite_certificate.png", mime="image/png")
+                    try:
+                        fig_share.write_image("certificate.png")
+                        with open("certificate.png", "rb") as f:
+                            st.download_button("Click to save PNG", f, file_name="english_pro_elite_certificate.png", mime="image/png")
+                    except Exception as e:
+                        st.error("Missing 'kaleido' dependency for PNG export on cloud. Use CSV export instead.")
             with col_exp2:
                 if st.button("📥 Download Raw CSV", use_container_width=True):
                     csv = df.to_csv(index=False)
