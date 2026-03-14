@@ -40,14 +40,14 @@ def set_background(png_file):
 
 set_background('background.jpg')
 
-# --- CREDENTIALS & SESSION STATE (UPGRADED for st.secrets) ---
+# --- CREDENTIALS & SESSION STATE (UPGRADED FOR GOAL PERSISTENCE) ---
 CRED_FILE = "credentials.json"
 
 def load_credentials():
     creds = {}
     using_secrets = False
     
-    # 1. Prefer Streamlit Secrets (Best for Cloud/Production)
+    # 1. Check Streamlit Secrets
     try:
         if "GITHUB_TOKEN" in st.secrets:
             creds["saved_token"] = st.secrets["GITHUB_TOKEN"]
@@ -61,38 +61,54 @@ def load_credentials():
     except Exception:
         pass
         
-    if using_secrets:
-        return creds, True
-
-    # 2. Fallback to local JSON (Best for local dev)
+    # 2. Load/Merge with Local JSON (for goals and non-secret keys)
     if os.path.exists(CRED_FILE):
         try:
             with open(CRED_FILE, "r") as f:
-                return json.load(f), False
+                local_data = json.load(f)
+                # Only overwrite if not already provided by secrets
+                for k, v in local_data.items():
+                    if k not in creds:
+                        creds[k] = v
         except:
             pass
-    return {}, False
+    return creds, using_secrets
 
 def save_credentials_to_disk():
-    creds = {"saved_token": st.session_state.saved_token, "saved_repo": st.session_state.saved_repo, "gemini_key": st.session_state.gemini_key}
+    # Save EVERYTHING that needs to persist
+    creds = {
+        "saved_token": st.session_state.saved_token,
+        "saved_repo": st.session_state.saved_repo,
+        "gemini_key": st.session_state.gemini_key,
+        "weekly_goal": st.session_state.weekly_goal,
+        "yearly_goal": st.session_state.yearly_goal,
+        "custom_skills": st.session_state.custom_skills,
+        "milestone_reward": st.session_state.milestone_reward
+    }
     with open(CRED_FILE, "w") as f:
         json.dump(creds, f)
 
-local_creds, using_secrets = load_credentials()
+persisted_data, using_secrets = load_credentials()
 
-for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills', 'last_ai_rec', 'last_ai_time', 'ask_ai_auto', 'milestone_claimed_date']:
+# Initialize Session State
+for key in ['df', 'file_sha', 'prev_level', 'saved_token', 'saved_repo', 'accent_color', 'zen_mode', 'milestone_reward', 'gemini_key', 'custom_skills', 'last_ai_rec', 'last_ai_time', 'ask_ai_auto', 'milestone_claimed_date', 'weekly_goal', 'yearly_goal']:
     if key not in st.session_state:
-        st.session_state[key] = None if key not in ['prev_level'] else 0
+        # Default Logic
         if key == 'accent_color': st.session_state[key] = "#00CC96"
-        if key == 'zen_mode': st.session_state[key] = False
-        if key == 'milestone_reward': st.session_state[key] = "Treat myself to coffee"
-        if key == 'custom_skills': st.session_state[key] = ""
-        if key == 'last_ai_rec': st.session_state[key] = ""
-        if key == 'last_ai_time': st.session_state[key] = None
-        if key == 'ask_ai_auto': st.session_state[key] = False  
-        if key == 'milestone_claimed_date': st.session_state[key] = ""
-        if key in ['saved_token', 'saved_repo', 'gemini_key']:
-            st.session_state[key] = local_creds.get(key, "")
+        elif key == 'zen_mode': st.session_state[key] = False
+        elif key == 'milestone_reward': st.session_state[key] = persisted_data.get(key, "Treat myself to coffee")
+        elif key == 'custom_skills': st.session_state[key] = persisted_data.get(key, "")
+        elif key == 'last_ai_rec': st.session_state[key] = ""
+        elif key == 'last_ai_time': st.session_state[key] = None
+        elif key == 'ask_ai_auto': st.session_state[key] = False  
+        elif key == 'milestone_claimed_date': st.session_state[key] = ""
+        elif key == 'weekly_goal': st.session_state[key] = persisted_data.get(key, 5)
+        elif key == 'yearly_goal': st.session_state[key] = persisted_data.get(key, 200)
+        elif key == 'prev_level': st.session_state[key] = 0
+        elif key in ['saved_token', 'saved_repo', 'gemini_key']:
+            st.session_state[key] = persisted_data.get(key, "")
+        else:
+            st.session_state[key] = None
 
 # --- AI COACH ---
 def get_ai_recommendation(api_key, dataframe, current_date):
@@ -206,33 +222,35 @@ def log_session_dialog(current_date, available_skills, current_level):
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Connection")
-    
     st.text_input("GitHub Token", type="password", key="saved_token", disabled=using_secrets)
     st.text_input("Repo", key="saved_repo", disabled=using_secrets)
     st.text_input("Gemini API Key", type="password", key="gemini_key", disabled=using_secrets)
     
-    if using_secrets:
-        st.info("🔐 Secured via Streamlit Secrets")
-    else:
-        if st.button("💾 Save Credentials (Local)", use_container_width=True):
-            save_credentials_to_disk()
-            st.success("Saved locally! (Note: Wipes on cloud restart)")
-            
+    if st.button("💾 Save Settings & Goals", use_container_width=True):
+        save_credentials_to_disk()
+        st.success("Preferences Saved!")
+
     if st.button("🔄 Force Sync", use_container_width=True):
         load_data_from_github.clear()
         df, sha, status = load_data_from_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv")
         if status == "success": st.session_state.df, st.session_state.file_sha = df, sha; st.success("Synced!")
         else: st.error(status)
+    
     st.divider()
     theme = st.selectbox("Theme", ["Emerald City", "Ocean Deep", "Sunset Orange", "Royal Purple"])
     theme_map = {"Emerald City": "#00CC96", "Ocean Deep": "#0099FF", "Sunset Orange": "#FF5733", "Royal Purple": "#8E44AD"}
     st.session_state.accent_color = theme_map[theme]
-    weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
-    yearly_goal = st.slider("Yearly Goal (Hours)", 50, 1000, 200, step=10)
+    
+    # GOALS (Now linked to session_state keys)
+    st.slider("Weekly Goal (Hours)", 1, 40, key="weekly_goal")
+    st.slider("Yearly Goal (Hours)", 50, 1000, step=10, key="yearly_goal")
+    
     st.checkbox("🧘 Zen Mode (full focus)", value=st.session_state.zen_mode, key="zen_mode")
     st.checkbox("🔄 Ask AI Coach Automatically", value=st.session_state.ask_ai_auto, key="ask_ai_auto")
+    
     with st.expander("⚙️ Advanced Settings"):
-        st.session_state.custom_skills = st.text_input("Custom Skills", value=st.session_state.custom_skills)
+        st.text_input("Custom Skills (comma separated)", key="custom_skills")
+        st.text_input("Milestone Reward", key="milestone_reward")
         if st.session_state.df is not None:
             old_sk = st.selectbox("Select Skill to Rename", options=sorted(st.session_state.df['Skill'].unique().tolist()))
             new_sk = st.text_input("Enter New Name")
@@ -256,7 +274,7 @@ if st.session_state.df is not None:
     elif st.session_state.prev_level == 0: st.session_state.prev_level = level
 
     this_week_min = df[df['Date'] >= (now - timedelta(days=now.weekday()))]['Time Spent'].sum()
-    rem_min = max(0, (weekly_goal * 60) - this_week_min)
+    rem_min = max(0, (st.session_state.weekly_goal * 60) - this_week_min)
 
     c_title, c_btn = st.columns([3, 1])
     with c_title: st.title("🇬🇧 English Pro Elite")
@@ -281,16 +299,10 @@ if st.session_state.df is not None:
 
     # ZEN MODE (Patched crash)
     if st.session_state.zen_mode:
-        st.markdown("""
-            <style>
-                [data-testid="stSidebar"] {display: none;}
-                header {display: none;}
-            </style>
-        """, unsafe_allow_html=True)
+        st.markdown("<style>[data-testid='stSidebar'] {display: none;} header {display: none;}</style>", unsafe_allow_html=True)
         if st.button("❌ Exit Zen Mode", use_container_width=True):
             st.session_state.zen_mode = False
             st.rerun()
-            
         df_sorted = df.sort_values('Date')
         st.plotly_chart(cached_mountain(df_sorted, st.session_state.accent_color), use_container_width=True)
         diet = df.groupby('Skill')['Time Spent'].sum()
@@ -356,8 +368,7 @@ if st.session_state.df is not None:
                         fig_share.write_image("certificate.png")
                         with open("certificate.png", "rb") as f:
                             st.download_button("Click to save PNG", f, file_name="english_pro_elite_certificate.png", mime="image/png")
-                    except Exception as e:
-                        st.error("Missing 'kaleido' dependency for PNG export on cloud. Use CSV export instead.")
+                    except: st.error("Missing dependency for PNG export on cloud.")
             with col_exp2:
                 if st.button("📥 Download Raw CSV", use_container_width=True):
                     csv = df.to_csv(index=False)
