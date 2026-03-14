@@ -49,7 +49,6 @@ def load_credentials():
             creds["saved_token"] = st.secrets["GITHUB_TOKEN"]
             creds["saved_repo"] = st.secrets["GITHUB_REPO"]
             creds["gemini_key"] = st.secrets["GEMINI_API_KEY"]
-            creds["weekly_goal"] = st.secrets.get("WEEKLY_GOAL", 5)
             return creds, True
     except: pass
     if os.path.exists(CRED_FILE):
@@ -60,29 +59,19 @@ def load_credentials():
 
 local_creds, using_secrets = load_credentials()
 
-# Initialize State Keys
+# Initialize Core State Keys
 for key, val in {
-    'df': None, 'file_sha': None, 'prev_level': 0, 'accent_color': "#00CC96",
+    'df': None, 'file_sha': None, 'prev_level': 0, 
     'zen_mode': False, 'milestone_reward': "Treat myself to coffee",
-    'custom_skills': "", 'last_ai_rec': "", 'last_ai_time': None,
-    'ask_ai_auto': False, 'milestone_claimed_date': "",
+    'last_ai_rec': "", 'last_ai_time': None, 'milestone_claimed_date': "",
     'saved_token': local_creds.get('saved_token', ""),
     'saved_repo': local_creds.get('saved_repo', ""),
     'gemini_key': local_creds.get('gemini_key', ""),
-    'weekly_goal': local_creds.get('weekly_goal', 5)
+    'weekly_goal': 5, 'theme_selector': "Emerald City", 'ask_ai_auto': False
 }.items():
     if key not in st.session_state: st.session_state[key] = val
 
-def save_credentials_to_disk():
-    creds = {
-        "saved_token": st.session_state.saved_token, 
-        "saved_repo": st.session_state.saved_repo, 
-        "gemini_key": st.session_state.gemini_key,
-        "weekly_goal": st.session_state.weekly_goal
-    }
-    with open(CRED_FILE, "w") as f: json.dump(creds, f)
-
-# --- GITHUB LOGIC (HIGH PERFORMANCE) ---
+# --- GITHUB LOGIC (DATA & CONFIG) ---
 @st.cache_resource(show_spinner=False)
 def get_gh_client(token): return Github(token)
 
@@ -118,7 +107,40 @@ def load_data_from_github(_token, repo_name, file_path):
         return df, contents.sha, "success"
     except Exception as e: return None, None, str(e)
 
-# --- AUTO-SYNC HANDLER ---
+# REMOTE CONFIG SYNC LOGIC
+@st.cache_data(ttl=300, show_spinner=False)
+def load_config_from_github(_token, repo_name, file_path="config.json"):
+    try:
+        g = get_gh_client(_token)
+        repo = g.get_repo(repo_name)
+        contents = repo.get_contents(file_path)
+        return json.loads(contents.decoded_content.decode('utf-8'))
+    except: return {}
+
+def save_config_to_github(token, repo_name, config_dict, file_path="config.json"):
+    try:
+        g = get_gh_client(token)
+        repo = g.get_repo(repo_name)
+        content_str = json.dumps(config_dict, indent=4)
+        try:
+            contents = repo.get_contents(file_path)
+            repo.update_file(file_path, "Update Settings", content_str, contents.sha)
+        except:
+            repo.create_file(file_path, "Init Settings", content_str)
+    except Exception as e:
+        st.sidebar.error(f"Config Save Error: {e}")
+
+def sync_config_to_github():
+    """Triggered by widgets to save settings directly to GitHub."""
+    if st.session_state.saved_token and st.session_state.saved_repo:
+        config_dict = {
+            "weekly_goal": st.session_state.weekly_goal,
+            "theme": st.session_state.theme_selector,
+            "ask_ai_auto": st.session_state.ask_ai_auto
+        }
+        save_config_to_github(st.session_state.saved_token, st.session_state.saved_repo, config_dict)
+
+# --- AUTO-SYNC HANDLERS ---
 def handle_editor_change():
     """Triggered automatically when the data editor is edited."""
     if "editor_key" in st.session_state:
@@ -127,13 +149,21 @@ def handle_editor_change():
             sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", st.session_state.df)
             if sha: st.session_state.file_sha = sha
 
-# --- AUTO-LOAD TRIGGER ---
+# --- GHOST AUTO-LOAD TRIGGER ---
 if st.session_state.df is None and st.session_state.saved_token and st.session_state.saved_repo:
+    # 1. Fetch Data
     df, sha, status = load_data_from_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv")
+    # 2. Fetch Remote Config
+    remote_config = load_config_from_github(st.session_state.saved_token, st.session_state.saved_repo)
+    
     if status == "success":
         st.session_state.df, st.session_state.file_sha = df, sha
+        # Apply remote settings to session state
+        if "weekly_goal" in remote_config: st.session_state.weekly_goal = remote_config["weekly_goal"]
+        if "theme" in remote_config: st.session_state.theme_selector = remote_config["theme"]
+        if "ask_ai_auto" in remote_config: st.session_state.ask_ai_auto = remote_config["ask_ai_auto"]
 
-# --- AI COACH (STASIS MAINTAINED) ---
+# --- AI COACH ---
 def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key."
     try:
@@ -180,25 +210,24 @@ with st.sidebar:
     st.text_input("Repo", key="saved_repo", disabled=using_secrets)
     st.text_input("Gemini API Key", type="password", key="gemini_key", disabled=using_secrets)
     
-    if not using_secrets:
-        if st.button("💾 Save Settings Locally", use_container_width=True):
-            save_credentials_to_disk()
-            st.success("Saved!")
-
-    if st.button("🔄 Refresh Data", use_container_width=True):
+    if st.button("🔄 Refresh Application", use_container_width=True):
         load_data_from_github.clear()
+        load_config_from_github.clear()
         st.rerun()
         
     st.divider()
-    theme = st.selectbox("Theme", ["Emerald City", "Ocean Deep", "Sunset Orange", "Royal Purple"])
+    
+    # Theme Selection with Remote Sync
+    st.selectbox("Theme", ["Emerald City", "Ocean Deep", "Sunset Orange", "Royal Purple"], key="theme_selector", on_change=sync_config_to_github)
     theme_map = {"Emerald City": "#00CC96", "Ocean Deep": "#0099FF", "Sunset Orange": "#FF5733", "Royal Purple": "#8E44AD"}
-    st.session_state.accent_color = theme_map[theme]
+    st.session_state.accent_color = theme_map[st.session_state.theme_selector]
     
-    # FIXED: Added key="weekly_goal" for state persistence
-    st.slider("Weekly Goal (Hours)", 1, 40, key="weekly_goal")
+    # Goal Selection with Remote Sync
+    st.slider("Weekly Goal (Hours)", 1, 40, key="weekly_goal", on_change=sync_config_to_github)
     
+    # Toggles
     st.checkbox("🧘 Zen Mode", key="zen_mode")
-    st.checkbox("🔄 Auto AI Coach", key="ask_ai_auto")
+    st.checkbox("🔄 Auto AI Coach", key="ask_ai_auto", on_change=sync_config_to_github)
 
 # --- MAIN UI ---
 if st.session_state.df is not None:
