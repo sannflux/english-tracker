@@ -49,6 +49,7 @@ def load_credentials():
             creds["saved_token"] = st.secrets["GITHUB_TOKEN"]
             creds["saved_repo"] = st.secrets["GITHUB_REPO"]
             creds["gemini_key"] = st.secrets["GEMINI_API_KEY"]
+            creds["weekly_goal"] = st.secrets.get("WEEKLY_GOAL", 5)
             return creds, True
     except: pass
     if os.path.exists(CRED_FILE):
@@ -67,9 +68,19 @@ for key, val in {
     'ask_ai_auto': False, 'milestone_claimed_date': "",
     'saved_token': local_creds.get('saved_token', ""),
     'saved_repo': local_creds.get('saved_repo', ""),
-    'gemini_key': local_creds.get('gemini_key', "")
+    'gemini_key': local_creds.get('gemini_key', ""),
+    'weekly_goal': local_creds.get('weekly_goal', 5)
 }.items():
     if key not in st.session_state: st.session_state[key] = val
+
+def save_credentials_to_disk():
+    creds = {
+        "saved_token": st.session_state.saved_token, 
+        "saved_repo": st.session_state.saved_repo, 
+        "gemini_key": st.session_state.gemini_key,
+        "weekly_goal": st.session_state.weekly_goal
+    }
+    with open(CRED_FILE, "w") as f: json.dump(creds, f)
 
 # --- GITHUB LOGIC (HIGH PERFORMANCE) ---
 @st.cache_resource(show_spinner=False)
@@ -113,10 +124,6 @@ def handle_editor_change():
     if "editor_key" in st.session_state:
         changes = st.session_state["editor_key"]
         if changes['edited_rows'] or changes['added_rows'] or changes['deleted_rows']:
-            # Apply changes to local df first
-            updated_df = st.session_state.df.copy()
-            # This is a simplified application for performance
-            # In a real sync we'd map indices, but for speed we'll let the user commit or we auto-save the full state
             sha = save_to_github(st.session_state.saved_token, st.session_state.saved_repo, "data.csv", st.session_state.df)
             if sha: st.session_state.file_sha = sha
 
@@ -126,7 +133,7 @@ if st.session_state.df is None and st.session_state.saved_token and st.session_s
     if status == "success":
         st.session_state.df, st.session_state.file_sha = df, sha
 
-# --- AI COACH ---
+# --- AI COACH (STASIS MAINTAINED) ---
 def get_ai_recommendation(api_key, dataframe, current_date):
     if not api_key: return "Please provide a Gemini API key."
     try:
@@ -137,14 +144,12 @@ def get_ai_recommendation(api_key, dataframe, current_date):
         return model.generate_content(prompt).text
     except Exception as e: return f"AI Error: {str(e)}"
 
-# --- CALCULATED STATS (SPEED OPTIMIZED) ---
+# --- CALCULATED STATS ---
 def get_dashboard_stats(df):
     if df is None or df.empty: return 0, 1, 0, 0
     total_hrs = df['Time Spent'].sum() / 60
     level = int(total_hrs // 50) + 1
     xp = (total_hrs % 50) / 50
-    
-    # Streak Logic
     dates = sorted(df['Date'].dt.date.dropna().unique(), reverse=True)
     streak, today = 0, datetime.now().date()
     if dates and (dates[0] == today or dates[0] == today - timedelta(days=1)):
@@ -175,6 +180,11 @@ with st.sidebar:
     st.text_input("Repo", key="saved_repo", disabled=using_secrets)
     st.text_input("Gemini API Key", type="password", key="gemini_key", disabled=using_secrets)
     
+    if not using_secrets:
+        if st.button("💾 Save Settings Locally", use_container_width=True):
+            save_credentials_to_disk()
+            st.success("Saved!")
+
     if st.button("🔄 Refresh Data", use_container_width=True):
         load_data_from_github.clear()
         st.rerun()
@@ -183,7 +193,10 @@ with st.sidebar:
     theme = st.selectbox("Theme", ["Emerald City", "Ocean Deep", "Sunset Orange", "Royal Purple"])
     theme_map = {"Emerald City": "#00CC96", "Ocean Deep": "#0099FF", "Sunset Orange": "#FF5733", "Royal Purple": "#8E44AD"}
     st.session_state.accent_color = theme_map[theme]
-    weekly_goal = st.slider("Weekly Goal (Hours)", 1, 40, 5)
+    
+    # FIXED: Added key="weekly_goal" for state persistence
+    st.slider("Weekly Goal (Hours)", 1, 40, key="weekly_goal")
+    
     st.checkbox("🧘 Zen Mode", key="zen_mode")
     st.checkbox("🔄 Auto AI Coach", key="ask_ai_auto")
 
@@ -206,10 +219,9 @@ if st.session_state.df is not None:
     m2.metric("Total", f"{total_hrs:.1f}h")
     m3.metric("Streak", f"{streak} Days")
     this_week = st.session_state.df[st.session_state.df['Date'] >= (datetime.now() - timedelta(days=datetime.now().weekday()))]['Time Spent'].sum() / 60
-    m4.metric("This Week", f"{this_week:.1f}/{weekly_goal}h")
+    m4.metric("This Week", f"{this_week:.1f}/{st.session_state.weekly_goal}h")
     st.progress(xp, text=f"Progress to Level {level+1}")
 
-    # Optimized AI Coach
     if st.session_state.ask_ai_auto and st.session_state.gemini_key:
         if not st.session_state.last_ai_time or (datetime.now() - st.session_state.last_ai_time).seconds > 3600:
             st.session_state.last_ai_rec = get_ai_recommendation(st.session_state.gemini_key, st.session_state.df, datetime.now())
@@ -219,7 +231,6 @@ if st.session_state.df is not None:
         with st.expander("💡 Coach's Insight", expanded=True):
             st.write(st.session_state.last_ai_rec)
 
-    # UI Content
     if st.session_state.zen_mode:
         st.markdown("<style>[data-testid='stSidebar'] {display: none;} header {display: none;}</style>", unsafe_allow_html=True)
         if st.button("❌ Exit Zen"): st.session_state.zen_mode = False; st.rerun()
@@ -237,7 +248,7 @@ if st.session_state.df is not None:
 
         with tab_history:
             st.info("💡 Changes made below are auto-synced to GitHub.")
-            edited_df = st.data_editor(
+            st.session_state.df = st.data_editor(
                 st.session_state.df.sort_values("Date", ascending=False),
                 column_config={"Date": st.column_config.DateColumn(), "Skill": st.column_config.SelectboxColumn(options=all_skills)},
                 use_container_width=True,
@@ -245,8 +256,6 @@ if st.session_state.df is not None:
                 key="editor_key",
                 on_change=handle_editor_change
             )
-            # Update state so charts reflect edits immediately
-            st.session_state.df = edited_df
 
         with tab_trophy:
             st.subheader("🎁 Today's Milestone Reward")
@@ -256,6 +265,5 @@ if st.session_state.df is not None:
                     st.session_state.milestone_claimed_date = datetime.now().date().isoformat()
                     st.balloons()
             else: st.success("Reward claimed for today!")
-
 else:
     st.warning("👈 Provide GitHub credentials in the sidebar to auto-load your data.")
