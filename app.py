@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from github import Github
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, date
 import io
 import plotly.express as px
 import plotly.graph_objects as go
@@ -12,6 +12,21 @@ import os
 import base64
 import time
 import hashlib
+
+# ═══════════════════════════════════════════════════════════════
+# 🌏 TIMEZONE — WIB (Waktu Indonesia Barat) = UTC+7
+# All "now" calls go through now_wib() so the app always thinks
+# in Indonesian time, regardless of where the server lives.
+# ═══════════════════════════════════════════════════════════════
+_WIB = timezone(timedelta(hours=7))
+
+def now_wib() -> datetime:
+    """Current datetime in WIB (UTC+7)."""
+    return datetime.now(_WIB)
+
+def today_wib() -> date:
+    """Current date in WIB."""
+    return now_wib().date()
 
 # ═══════════════════════════════════════════════════════════════
 # ⚡ PERF INSTRUMENTATION
@@ -437,7 +452,7 @@ def _compute_streak_vectorized(date_series: pd.Series) -> int:
     dates = date_series.dt.date.dropna().unique()
     if len(dates) == 0:
         return 0
-    today        = datetime.now().date()
+    today        = today_wib()          # WIB — Indonesian midnight
     dates_sorted = sorted(dates, reverse=True)
     if dates_sorted[0] not in (today, today - timedelta(days=1)):
         return 0
@@ -480,8 +495,10 @@ def get_or_compute_derived(df: pd.DataFrame):
 
     diet = df.groupby("Skill")["Time Spent"].sum()
 
-    week_start = pd.Timestamp(datetime.now() - timedelta(days=datetime.now().weekday()))
-    this_week  = df.loc[df["Date"] >= week_start, "Time Spent"].sum() / 60
+    # Week starts at WIB midnight on Monday
+    _today      = today_wib()
+    week_start  = pd.Timestamp(_today - timedelta(days=_today.weekday()))
+    this_week   = df.loc[df["Date"] >= week_start, "Time Spent"].sum() / 60
 
     st.session_state.cached_all_skills = all_skills
     st.session_state.cached_diet       = diet
@@ -529,7 +546,7 @@ def build_pie_chart(skill_names: tuple, skill_values: tuple):
 
 @st.cache_data(show_spinner=False)
 def build_heatmap(df: pd.DataFrame, accent_color: str):
-    cutoff = pd.Timestamp(datetime.now() - timedelta(days=90))
+    cutoff = pd.Timestamp(today_wib() - timedelta(days=90))
     daily  = (
         df[df["Date"] >= cutoff]
         .groupby(df["Date"].dt.date)["Time Spent"]
@@ -602,8 +619,9 @@ def _diet_hash(diet_dict: dict) -> str:
 
 def _check_ai_rate_limit() -> tuple:
     """Returns (allowed: bool, reason: str, wait_secs: float).
-    A7: uses session-state cap instead of hard constant."""
-    now       = datetime.now()
+    A7: uses session-state cap instead of hard constant.
+    All times are in WIB (UTC+7)."""
+    now       = now_wib()
     today_str = now.date().isoformat()
     cap       = int(st.session_state.get("ai_daily_cap_setting", AI_DAILY_CAP))
 
@@ -612,17 +630,25 @@ def _check_ai_rate_limit() -> tuple:
         st.session_state.ai_calls_today = 0
 
     if st.session_state.ai_calls_today >= cap:
-        # A4: exact reset countdown
-        midnight  = datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
+        # A4: exact reset countdown to WIB midnight
+        midnight  = datetime.combine(
+            now.date() + timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=_WIB,
+        )
         secs_left = int((midnight - now).total_seconds())
         hrs       = secs_left // 3600
         mins      = (secs_left % 3600) // 60
         return False, f"Daily limit reached ({cap}/day). Resets in {hrs}h {mins}m.", 0.0
 
     last = st.session_state.last_ai_time
-    if last and (now - last).total_seconds() < AI_MIN_INTERVAL:
-        wait = AI_MIN_INTERVAL - (now - last).total_seconds()
-        return False, f"Cooling down — ready in {wait:.0f}s.", float(wait)
+    if last:
+        # last_ai_time may be naive — make it WIB-aware for comparison
+        last_aware = last if last.tzinfo else last.replace(tzinfo=_WIB)
+        elapsed    = (now - last_aware).total_seconds()
+        if elapsed < AI_MIN_INTERVAL:
+            wait = AI_MIN_INTERVAL - elapsed
+            return False, f"Cooling down — ready in {wait:.0f}s.", float(wait)
 
     return True, "", 0.0
 
@@ -712,7 +738,7 @@ def get_ai_recommendation(
             )
 
         result_text = model.generate_content(prompt).text
-        st.session_state.last_ai_time    = datetime.now()
+        st.session_state.last_ai_time    = now_wib()   # WIB-aware timestamp
         st.session_state.ai_calls_today += 1
         return _parse_ai_json(result_text)
     except Exception as e:
@@ -739,7 +765,7 @@ def evaluate_achievements(total_hrs: float, streak: int, unique_skills: int) -> 
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(available_skills):
     with st.form("new_entry", clear_on_submit=True):
-        d = st.date_input("Date", datetime.now())
+        d = st.date_input("Date", today_wib())
         # D7: emoji displayed in dropdown but plain name saved to CSV
         s = st.selectbox("Skill", available_skills, format_func=add_emoji)
         t = st.number_input("Minutes", min_value=1, max_value=600, value=30)
@@ -815,7 +841,7 @@ with st.sidebar:
     st.divider()
 
     # ── A2: Fuel Gauge ──────────────────────────────────────
-    _today_str    = datetime.now().date().isoformat()
+    _today_str    = today_wib().isoformat()    # WIB date
     _cap          = int(st.session_state.get("ai_daily_cap_setting", AI_DAILY_CAP))
     display_calls = (
         st.session_state.ai_calls_today
@@ -840,11 +866,15 @@ with st.sidebar:
                   transition:width 0.4s ease"></div>
     </div>""", unsafe_allow_html=True)
 
-    # ── A4: Reset countdown ──────────────────────────────────
-    _now_sb      = datetime.now()
-    _midnight_sb = datetime.combine(_now_sb.date() + timedelta(days=1), datetime.min.time())
-    _sl          = int((_midnight_sb - _now_sb).total_seconds())
-    st.caption(f"⏰ Resets in {_sl // 3600}h {(_sl % 3600) // 60}m")
+    # ── A4: Reset countdown — WIB midnight ──────────────────
+    _now_sb      = now_wib()
+    _midnight_sb = datetime.combine(
+        _now_sb.date() + timedelta(days=1),
+        datetime.min.time(),
+        tzinfo=_WIB,
+    )
+    _sl = int((_midnight_sb - _now_sb).total_seconds())
+    st.caption(f"⏰ Resets in {_sl // 3600}h {(_sl % 3600) // 60}m (WIB)")
 
     if display_calls >= _cap:
         st.warning("Daily AI limit reached.")
@@ -889,7 +919,7 @@ def render_ai_coach(
     level:      int   = 1,
     this_week:  float = 0.0,
 ):
-    _today_local  = datetime.now().date().isoformat()
+    _today_local  = today_wib().isoformat()    # WIB date
     _cap_local    = int(st.session_state.get("ai_daily_cap_setting", AI_DAILY_CAP))
     display_calls = (
         st.session_state.ai_calls_today
@@ -934,10 +964,10 @@ def render_ai_coach(
         st.session_state.last_diet_snapshot = dict(diet_dict)   # A9 snapshot
 
         if monthly_review:
-            st.session_state.last_monthly_review = datetime.now().date().isoformat()
+            st.session_state.last_monthly_review = today_wib().isoformat()
 
         entry = {
-            "time":     datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "time":     now_wib().strftime("%Y-%m-%d %H:%M WIB"),
             "skill":    st.session_state.ai_target_skill,
             "tip":      resp.get("tip", ""),
             "exercise": resp.get("exercise", ""),
@@ -995,7 +1025,7 @@ def render_ai_coach(
         with col_monthly:
             _last_mr   = st.session_state.get("last_monthly_review", "")
             _can_review = (not _last_mr) or (
-                (datetime.now().date()
+                (today_wib()
                  - datetime.fromisoformat(_last_mr).date()).days >= 30
             )
             if st.button(
@@ -1120,7 +1150,7 @@ def render_tab_history(df: pd.DataFrame, all_skills: list):
     st.download_button(
         label="⬇️ Export CSV",
         data=csv_bytes,
-        file_name=f"english_pro_{datetime.now().strftime('%Y%m%d')}.csv",
+        file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.csv",
         mime="text/csv",
     )
 
@@ -1132,6 +1162,7 @@ def render_tab_history(df: pd.DataFrame, all_skills: list):
         },
         use_container_width=True,
         hide_index=True,
+        num_rows="dynamic",   # BUG FIX: enables the ✕ delete button per row
         key="editor_key",
         on_change=handle_editor_change,
     )
@@ -1164,7 +1195,7 @@ def render_tab_trophies(
         st.session_state.milestone_reward = new_reward
         sync_config_to_github()
 
-    today_iso = datetime.now().date().isoformat()
+    today_iso = today_wib().isoformat()
     if st.session_state.milestone_claimed_date != today_iso:
         if st.button(f"🎉 Claim: {st.session_state.milestone_reward}", use_container_width=True):
             st.success("Claimed! Enjoy your reward. 🎊")
@@ -1365,7 +1396,7 @@ if st.session_state.df is not None:
     if st.session_state.prev_level == 0 or level > st.session_state.prev_level:
         st.session_state.prev_level = level
 
-    today_date = pd.Timestamp(datetime.now().date())
+    today_date = pd.Timestamp(today_wib())
     today_mins = float(df.loc[df["Date"] >= today_date, "Time Spent"].sum())
 
     # Title row
