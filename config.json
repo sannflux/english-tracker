@@ -6,7 +6,7 @@
     "light_mode": false,
     "milestone_reward": "Treat myself to coffee",
     "custom_skills": [],
-    "eco_mode": false,
+    "eco_mode": true,
     "ai_daily_cap_setting": 1,
     "mobile_mode": false
 }
