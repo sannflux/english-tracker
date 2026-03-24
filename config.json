@@ -1,12 +1,12 @@
 {
-    "weekly_goal": 14,
-    "daily_goal_mins": 60,
+    "weekly_goal": 37,
+    "daily_goal_mins": 10,
     "theme": "Emerald City",
     "ask_ai_auto": false,
     "light_mode": false,
     "milestone_reward": "Treat myself to coffee",
     "custom_skills": [],
-    "eco_mode": true,
+    "eco_mode": false,
     "ai_daily_cap_setting": 1,
     "mobile_mode": false
 }
