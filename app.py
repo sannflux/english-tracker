@@ -32,7 +32,7 @@ _APP_T0 = time.perf_counter()
 def perf_log(label: str, t0: float) -> float:
     elapsed_ms = (time.perf_counter() - t0) * 1000
     if st.session_state.get("debug_perf", False):
-        st.sidebar.caption(f"⏱ {label}: {elapsed_ms:.1f}ms")
+        st.caption(f"⏱ {label}: {elapsed_ms:.1f}ms")
     return elapsed_ms
 
 # ═══════════════════════════════════════════════════════════════
@@ -41,8 +41,6 @@ def perf_log(label: str, t0: float) -> float:
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
 
 # ── ① JS HEARTBEAT ────────────────────────────────────────────
-# Fires a synthetic mousemove every 25 s to keep the WebSocket
-# alive for users who leave the tab open but don't interact.
 def inject_keepalive(interval_ms: int = 25_000):
     st.markdown(
         f"""
@@ -650,18 +648,6 @@ def log_session_dialog(available_skills):
             st.warning("⚠️ Entry NOT saved. Fix the error above and try again.")
 
 # ═══════════════════════════════════════════════════════════════
-# ② KEEP-ALIVE STATUS FRAGMENT
-# run_every="60s" re-renders this fragment every 60 seconds,
-# keeping the server-side session alive and refreshing the clock.
-# This is lightweight — only this fragment re-runs, not the page.
-# ═══════════════════════════════════════════════════════════════
-@st.fragment(run_every="60s")
-def render_keepalive_status():
-    st.sidebar.caption(
-        f"🟢 Live · {now_wib().strftime('%H:%M:%S')} WIB"
-    )
-
-# ═══════════════════════════════════════════════════════════════
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════
 with st.sidebar:
@@ -676,8 +662,8 @@ with st.sidebar:
         _invalidate_derived_cache()
         st.rerun()
 
-    # ── ② Live clock / keep-alive indicator ──────────────────
-    render_keepalive_status()
+    # ── Live clock (plain caption, no fragment) ───────────────
+    st.sidebar.caption(f"🟢 Live · {now_wib().strftime('%H:%M:%S')} WIB")
 
     st.divider()
 
@@ -726,7 +712,7 @@ with st.sidebar:
     if display_calls >= _cap:
         st.warning("Daily AI limit reached.")
 
-    # ── ③ External ping reminder (shown once, dismissible) ───
+    # ── External ping reminder (shown once, dismissible) ─────
     if not st.session_state.get("ping_tip_dismissed", False):
         with st.expander("💡 Keep app awake on Cloud", expanded=False):
             st.caption(
