@@ -32,33 +32,13 @@ _APP_T0 = time.perf_counter()
 def perf_log(label: str, t0: float) -> float:
     elapsed_ms = (time.perf_counter() - t0) * 1000
     if st.session_state.get("debug_perf", False):
-        st.caption(f"⏱ {label}: {elapsed_ms:.1f}ms")
+        st.sidebar.caption(f"⏱ {label}: {elapsed_ms:.1f}ms")
     return elapsed_ms
 
 # ═══════════════════════════════════════════════════════════════
 # CONFIG & CONSTANTS
 # ═══════════════════════════════════════════════════════════════
 st.set_page_config(page_title="English Pro Elite", layout="wide", page_icon="🇬🇧")
-
-# ── ① JS HEARTBEAT ────────────────────────────────────────────
-def inject_keepalive(interval_ms: int = 25_000):
-    st.markdown(
-        f"""
-        <script>
-        (function keepAlive() {{
-            setInterval(() => {{
-                const el = window.parent.document.querySelector(
-                    '[data-testid="stApp"]'
-                );
-                if (el) el.dispatchEvent(new Event('mousemove', {{bubbles: true}}));
-            }}, {interval_ms});
-        }})();
-        </script>
-        """,
-        unsafe_allow_html=True,
-    )
-
-inject_keepalive(interval_ms=25_000)
 
 CRED_FILE       = "credentials.json"
 AI_MIN_INTERVAL = 12
@@ -197,8 +177,11 @@ set_background("background.jpg", light_mode=st.session_state.light_mode)
 
 # ═══════════════════════════════════════════════════════════════
 # DATE NORMALIZATION HELPERS
+# FIX: always strip timezone before any comparison so tz-naive
+#      CSV dates and tz-aware WIB dates never conflict.
 # ═══════════════════════════════════════════════════════════════
 def _naive_dates(series: pd.Series) -> pd.Series:
+    """Return a tz-naive copy of a datetime Series."""
     if pd.api.types.is_datetime64_any_dtype(series):
         try:
             if series.dt.tz is not None:
@@ -208,6 +191,7 @@ def _naive_dates(series: pd.Series) -> pd.Series:
     return series
 
 def _naive_ts(d) -> pd.Timestamp:
+    """Return a tz-naive Timestamp from a date or datetime."""
     ts = pd.Timestamp(d)
     if ts.tzinfo is not None:
         ts = ts.tz_localize(None)
@@ -236,6 +220,7 @@ def load_data_from_github(_token, repo_name, file_path, _schema_ver=SCHEMA_VERSI
         df.columns = df.columns.str.strip()
         if "Date" in df.columns:
             df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+            # Ensure tz-naive
             try:
                 if df["Date"].dt.tz is not None:
                     df["Date"] = df["Date"].dt.tz_localize(None)
@@ -293,7 +278,12 @@ def sync_config_to_github():
             },
         )
 
+# ── BUG FIX: save_to_github with auto-retry on SHA conflict ─────────────────
 def save_to_github(token: str, repo_name: str, file_path: str, df: pd.DataFrame):
+    """
+    Returns new SHA on success, None on failure.
+    Retries once with a fresh SHA if the cached SHA causes a 409/422 conflict.
+    """
     t0 = time.perf_counter()
     try:
         if pd.api.types.is_datetime64_any_dtype(df["Date"]):
@@ -315,6 +305,7 @@ def save_to_github(token: str, repo_name: str, file_path: str, df: pd.DataFrame)
                 content=content_str, sha=sha,
             )
         except Exception:
+            # SHA stale — fetch fresh and retry once
             sha = repo.get_contents(file_path).sha
             st.session_state.file_sha = sha
             res = repo.update_file(
@@ -328,7 +319,7 @@ def save_to_github(token: str, repo_name: str, file_path: str, df: pd.DataFrame)
         return new_sha
 
     except Exception as e:
-        st.session_state.file_sha = None
+        st.session_state.file_sha = None  # force fresh fetch next time
         st.error(f"❌ GitHub Sync Error: {e}")
         return None
 
@@ -402,6 +393,7 @@ def get_dashboard_stats(df: pd.DataFrame):
 
 # ═══════════════════════════════════════════════════════════════
 # DERIVED STATE CACHE
+# FIX: _naive_dates + _naive_ts on both sides of >= comparison
 # ═══════════════════════════════════════════════════════════════
 def get_or_compute_derived(df: pd.DataFrame):
     if st.session_state.cached_all_skills is not None:
@@ -419,6 +411,7 @@ def get_or_compute_derived(df: pd.DataFrame):
 
     diet = df.groupby("Skill")["Time Spent"].sum()
 
+    # Both sides normalized to tz-naive
     _today     = today_wib()
     week_start = _naive_ts(_today - timedelta(days=_today.weekday()))
     dates_col  = _naive_dates(df["Date"])
@@ -569,7 +562,7 @@ def get_ai_recommendation(api_key, skill_totals, target_skill="All Skills",
         return {"tip": "Please provide a Gemini API key.", "exercise": "", "resource": ""}
     try:
         genai.configure(api_key=api_key)
-        model   = genai.GenerativeModel("gemini-2.5-flash-lite")
+        model   = genai.GenerativeModel("gemini-2.5-flash-lite")  # MODEL STASIS LOCKED
         compact = json.dumps(skill_totals, separators=(",", ":"))
         weakest = min(skill_totals, key=skill_totals.get) if skill_totals else "General"
         ctx_parts = [f"Skills(mins):{compact}"]
@@ -609,7 +602,18 @@ def evaluate_achievements(total_hrs, streak, unique_skills) -> set:
     return unlocked
 
 # ═══════════════════════════════════════════════════════════════
-# LOG DIALOG
+# LOG DIALOG  ── BUG FIX ─────────────────────────────────────
+#
+# Root cause of old bug:
+#   save_to_github() failing → st.error() rendered →
+#   st.rerun() immediately fires and wipes the error →
+#   user sees nothing, row never written.
+#
+# Fix:
+#   1. clear_on_submit=False  (form stays filled if save fails)
+#   2. Save FIRST, update session state ONLY on confirmed success
+#   3. st.rerun() ONLY on success; error stays visible on failure
+#   4. save_to_github() now auto-retries with fresh SHA on conflict
 # ═══════════════════════════════════════════════════════════════
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(available_skills):
@@ -622,7 +626,7 @@ def log_session_dialog(available_skills):
 
     if submitted:
         new_row    = pd.DataFrame({
-            "Date":       [pd.Timestamp(d)],
+            "Date":       [pd.Timestamp(d)],   # tz-naive Timestamp
             "Skill":      [s],
             "Time Spent": [int(t)],
             "Notes":      [n],
@@ -638,13 +642,16 @@ def log_session_dialog(available_skills):
             )
 
         if sha:
+            # Commit to session state ONLY after confirmed save
             st.session_state.df       = updated_df
             st.session_state.file_sha = sha
             _invalidate_derived_cache()
             load_data_from_github.clear()
             st.toast(f"✅ {int(t)} min of {add_emoji(s)} logged!", icon="📚")
-            st.rerun()
+            st.rerun()   # close dialog, refresh UI
         else:
+            # save_to_github already shows st.error()
+            # Do NOT rerun — keep dialog open so user can read the error
             st.warning("⚠️ Entry NOT saved. Fix the error above and try again.")
 
 # ═══════════════════════════════════════════════════════════════
@@ -661,9 +668,6 @@ with st.sidebar:
         load_config_from_github.clear()
         _invalidate_derived_cache()
         st.rerun()
-
-    # ── Live clock (plain caption, no fragment) ───────────────
-    st.sidebar.caption(f"🟢 Live · {now_wib().strftime('%H:%M:%S')} WIB")
 
     st.divider()
 
@@ -711,20 +715,6 @@ with st.sidebar:
     st.caption(f"⏰ Resets in {_sl//3600}h {(_sl%3600)//60}m (WIB)")
     if display_calls >= _cap:
         st.warning("Daily AI limit reached.")
-
-    # ── External ping reminder (shown once, dismissible) ─────
-    if not st.session_state.get("ping_tip_dismissed", False):
-        with st.expander("💡 Keep app awake on Cloud", expanded=False):
-            st.caption(
-                "To prevent Streamlit Cloud from sleeping this app, "
-                "add your app URL to a free ping service:\n\n"
-                "• [UptimeRobot](https://uptimerobot.com) — set interval **5 min**\n"
-                "• [cron-job.org](https://cron-job.org) — free, no sign-in required"
-            )
-            if st.button("✅ Got it, hide this", use_container_width=True):
-                st.session_state.ping_tip_dismissed = True
-                st.rerun()
-
     st.checkbox("🛠 Debug Timings", key="debug_perf")
 
 # ═══════════════════════════════════════════════════════════════
@@ -917,11 +907,22 @@ def render_tab_dashboard(df, diet, accent_color, today_mins, daily_goal_mins):
         st.plotly_chart(build_skill_bars(diet, accent_color), use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════════
-# FRAGMENT: History Tab
+# FRAGMENT: History Tab  ── BUG FIX ──────────────────────────
+#
+# Root causes of old bugs:
+#   1. on_change handler applied changes to stale fragment-arg df,
+#      then return value overwrote it — race condition.
+#   2. Fragment arg `df` went stale after first parent render.
+#
+# Fix:
+#   • No `df` argument — always reads st.session_state.df fresh
+#   • No on_change — return value from st.data_editor is the truth
+#   • Explicit "Save Changes" button — user controls when to sync
+#   • num_rows="dynamic" stays → ✕ delete button works
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
 def render_tab_history(all_skills: list):
-    current_df = st.session_state.df
+    current_df = st.session_state.df   # always fresh
 
     st.info("💡 Edit or delete rows, then press **💾 Save Changes** to sync to GitHub.")
 
@@ -943,11 +944,12 @@ def render_tab_history(all_skills: list):
         },
         use_container_width=True,
         hide_index=True,
-        num_rows="dynamic",
+        num_rows="dynamic",       # ← enables ✕ delete button
         key="history_editor",
     )
 
     if st.button("💾 Save Changes to GitHub", type="primary", use_container_width=True):
+        # Coerce types
         if "Date" in edited_df.columns:
             edited_df["Date"] = pd.to_datetime(edited_df["Date"], errors="coerce")
         if "Time Spent" in edited_df.columns:
@@ -955,6 +957,7 @@ def render_tab_history(all_skills: list):
                 pd.to_numeric(edited_df["Time Spent"], errors="coerce")
                 .fillna(0).astype(int)
             )
+        # Drop empty rows that "dynamic" mode can add
         edited_df = edited_df.dropna(subset=["Date"]).reset_index(drop=True)
 
         with st.spinner("Saving…"):
@@ -1158,6 +1161,7 @@ if st.session_state.df is not None:
     if st.session_state.prev_level == 0 or level > st.session_state.prev_level:
         st.session_state.prev_level = level
 
+    # FIX: tz-naive comparison for today's minutes
     today_ts   = _naive_ts(today_wib())
     dates_norm = _naive_dates(df["Date"])
     today_mins = float(df.loc[dates_norm >= today_ts, "Time Spent"].sum())
@@ -1192,7 +1196,7 @@ if st.session_state.df is not None:
             render_tab_dashboard(df, diet, st.session_state.accent_color,
                                  today_mins, st.session_state.daily_goal_mins)
         with tab_history:
-            render_tab_history(all_skills)
+            render_tab_history(all_skills)   # no df arg — reads session state directly
         with tab_trophy:
             render_tab_trophies(total_hrs, streak, unique_skills,
                                 level, st.session_state.accent_color)
