@@ -8,5 +8,6 @@
     "custom_skills": [],
     "eco_mode": false,
     "ai_daily_cap_setting": 1,
-    "mobile_mode": true
+    "mobile_mode": false,
+    "study_schedule": []
 }
