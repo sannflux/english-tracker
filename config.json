@@ -9,5 +9,12 @@
     "eco_mode": false,
     "ai_daily_cap_setting": 1,
     "mobile_mode": false,
-    "study_schedule": []
+    "study_schedule": [
+        {
+            "id": "b22de3b2",
+            "day": 0,
+            "skill": "Vocabulary",
+            "minutes": 8
+        }
+    ]
 }
