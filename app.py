@@ -194,6 +194,9 @@ _DEFAULTS = {
     "schedule_checked_today": {},  # {item_id: True} - resets daily
     "schedule_check_date": "",     # date string for daily reset
     "log_rows": None,              # multi-skill log rows state
+    # ── NEW: Free-form AI chat ───────────────────────────────
+    "ai_chat_history": [],         # list of {"role": "user"/"assistant", "content": str}
+    "edit_schedule_id": None,      # ID of schedule item being edited
 }
 for k, v in _DEFAULTS.items():
     if k not in st.session_state:
@@ -615,6 +618,234 @@ def evaluate_achievements(total_hrs, streak, unique_skills) -> set:
         except Exception:
             pass
     return unlocked
+
+# ═══════════════════════════════════════════════════════════════
+# ✨ NEW: EDIT SCHEDULE DIALOG
+#
+# Opens when user clicks ✏️ next to a schedule item.
+# Lets them change day, skill, and planned minutes.
+# Saves back to GitHub config on confirm.
+# ═══════════════════════════════════════════════════════════════
+@st.dialog("✏️ Edit Schedule Item")
+def edit_schedule_dialog(item_id: str, all_skills: list):
+    schedule = st.session_state.study_schedule
+    item     = next((s for s in schedule if s.get("id") == item_id), None)
+
+    if not item:
+        st.error("Schedule item not found.")
+        if st.button("Close"):
+            st.rerun()
+        return
+
+    current_day   = item.get("day", 0)
+    current_skill = item.get("skill", all_skills[0] if all_skills else "Listening")
+    current_mins  = item.get("minutes", 30)
+
+    new_day = st.selectbox(
+        "Day", SCHEDULE_DAYS,
+        index=current_day,
+        key="edit_sched_day",
+    )
+    skill_idx = (all_skills.index(current_skill)
+                 if current_skill in all_skills else 0)
+    new_skill = st.selectbox(
+        "Skill", all_skills,
+        index=skill_idx,
+        format_func=add_emoji,
+        key="edit_sched_skill",
+    )
+    new_mins = st.number_input(
+        "Minutes", min_value=5, max_value=300,
+        value=current_mins,
+        key="edit_sched_mins",
+    )
+
+    cs, cc = st.columns(2)
+    with cs:
+        if st.button("💾 Save", type="primary", use_container_width=True):
+            for s in schedule:
+                if s.get("id") == item_id:
+                    s["day"]     = SCHEDULE_DAYS.index(new_day)
+                    s["skill"]   = new_skill
+                    s["minutes"] = int(new_mins)
+                    break
+            st.session_state.study_schedule = schedule
+            sync_config_to_github()
+            st.toast(f"✅ Updated: {add_emoji(new_skill)} on {new_day}", icon="📅")
+            st.rerun()
+    with cc:
+        if st.button("Cancel", use_container_width=True):
+            st.rerun()
+
+
+# ═══════════════════════════════════════════════════════════════
+# ✨ NEW: FREE-FORM AI CHAT
+#
+# Tab "💬 Chat" — user types any question in natural language.
+# Their full tracker context (skills, level, streak, etc.)
+# is injected as a system prompt so answers are personalised.
+# Maintains a short multi-turn history for follow-up questions.
+# Respects the same rate-limit as the recommendation coach.
+# ═══════════════════════════════════════════════════════════════
+def _build_tracker_context(diet_dict: dict, streak: int, level: int,
+                            this_week: float, weekly_goal: float,
+                            today_mins: float, daily_goal_mins: int) -> str:
+    """Summarise user's tracker state into a compact string for AI context."""
+    total_mins = sum(diet_dict.values())
+    total_hrs  = total_mins / 60
+    xp_pct     = int((total_hrs % 50) / 50 * 100)
+
+    top_skills = sorted(diet_dict.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_str    = ", ".join(f"{k}={v}m" for k, v in top_skills) if top_skills else "none"
+
+    weakest    = min(diet_dict, key=diet_dict.get) if diet_dict else "unknown"
+    weak_mins  = diet_dict.get(weakest, 0)
+
+    hrs_to_next = 50 - (total_hrs % 50)
+
+    lines = [
+        f"English tracker data (use this to answer the user's question):",
+        f"• Total: {total_hrs:.1f}h | Level {level} ({xp_pct}% to next, ~{hrs_to_next:.1f}h away)",
+        f"• Streak: {streak} days",
+        f"• This week: {this_week:.1f}/{weekly_goal}h",
+        f"• Today: {today_mins:.0f}/{daily_goal_mins} min",
+        f"• Top skills: {top_str}",
+        f"• Weakest skill: {weakest} ({weak_mins}m total)",
+        f"• Full breakdown (mins): {json.dumps(diet_dict, separators=(',', ':'))}",
+    ]
+    return "\n".join(lines)
+
+
+@st.fragment
+def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
+                   this_week: float = 0.0, today_mins: float = 0.0):
+    """Free-form chat tab — user asks anything, AI answers in context."""
+
+    accent = st.session_state.accent_color
+
+    # ── Header + clear button ─────────────────────────────────
+    hcol, bcol = st.columns([4, 1])
+    with hcol:
+        st.markdown("### 💬 Chat with Your AI Coach")
+        st.caption(
+            "Ask anything — your full tracker data is shared with the AI. "
+            "Multi-turn conversation supported."
+        )
+    with bcol:
+        if st.session_state.ai_chat_history:
+            if st.button("🗑️ Clear", use_container_width=True,
+                         help="Clear chat history"):
+                st.session_state.ai_chat_history = []
+                st.rerun()
+
+    # ── Gemini key check ─────────────────────────────────────
+    if not st.session_state.gemini_key:
+        st.info("💡 Add your Gemini API key in the sidebar to use this feature.")
+        return
+
+    # ── Render existing messages ─────────────────────────────
+    for msg in st.session_state.ai_chat_history:
+        with st.chat_message(msg["role"],
+                             avatar="🧑" if msg["role"] == "user" else "🤖"):
+            st.markdown(msg["content"])
+
+    # ── Suggested starter questions ──────────────────────────
+    if not st.session_state.ai_chat_history:
+        st.markdown(
+            f'<div style="opacity:0.6;font-size:0.84rem;margin-bottom:8px">'
+            f'💡 Try asking:</div>',
+            unsafe_allow_html=True,
+        )
+        suggestions = [
+            "What should I focus on this week?",
+            "How many hours until my next level?",
+            "Give me a 7-day study plan",
+            "Why is my grammar weak and how do I fix it?",
+        ]
+        scols = st.columns(2)
+        for i, s in enumerate(suggestions):
+            if scols[i % 2].button(s, key=f"suggest_{i}",
+                                   use_container_width=True):
+                st.session_state["_chat_prefill"] = s
+                st.rerun()
+
+    # ── Chat input ───────────────────────────────────────────
+    prefill    = st.session_state.pop("_chat_prefill", "")
+    user_input = st.chat_input(
+        "Ask your coach anything…",
+        key="ai_chat_input",
+    )
+    # Allow suggestion clicks to submit as if typed
+    if not user_input and prefill:
+        user_input = prefill
+
+    if not user_input:
+        return
+
+    # ── Rate limit check ─────────────────────────────────────
+    allowed, reason, _ = _check_ai_rate_limit()
+    if not allowed:
+        st.toast(f"⏳ {reason}", icon="🚦")
+        return
+
+    # ── Append user message ──────────────────────────────────
+    st.session_state.ai_chat_history.append(
+        {"role": "user", "content": user_input}
+    )
+
+    # ── Build prompt ─────────────────────────────────────────
+    tracker_ctx = _build_tracker_context(
+        diet_dict, streak, level, this_week,
+        float(st.session_state.weekly_goal),
+        today_mins, int(st.session_state.daily_goal_mins),
+    )
+
+    # Last N turns for multi-turn context (keep tokens low)
+    history_window = st.session_state.ai_chat_history[-9:-1]  # up to 4 turns
+    history_str = ""
+    if history_window:
+        history_str = "Previous conversation:\n" + "\n".join(
+            f"{'User' if m['role']=='user' else 'Coach'}: {m['content']}"
+            for m in history_window
+        ) + "\n\n"
+
+    full_prompt = (
+        f"You are a helpful English learning coach. "
+        f"Answer concisely (≤150 words unless a study plan is requested). "
+        f"Be encouraging and specific.\n\n"
+        f"{tracker_ctx}\n\n"
+        f"{history_str}"
+        f"User: {user_input}\n"
+        f"Coach:"
+    )
+
+    # ── Call Gemini ───────────────────────────────────────────
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("Thinking…"):
+            try:
+                genai.configure(api_key=st.session_state.gemini_key)
+                model    = genai.GenerativeModel("gemini-2.5-flash-lite")
+                response = model.generate_content(full_prompt)
+                reply    = response.text.strip()
+
+                st.session_state.last_ai_time    = now_wib()
+                st.session_state.ai_calls_today += 1
+
+            except Exception as e:
+                reply = f"⚠️ Error: {e}"
+
+        st.markdown(reply)
+
+    st.session_state.ai_chat_history.append(
+        {"role": "assistant", "content": reply}
+    )
+
+    # Keep history manageable (last 20 messages)
+    st.session_state.ai_chat_history = st.session_state.ai_chat_history[-20:]
+
+    # Partial rerun to show new message without losing scroll position
+    st.rerun()
+
 
 # ═══════════════════════════════════════════════════════════════
 # ✨ NEW: MULTI-SKILL LOG DIALOG
@@ -1354,10 +1585,13 @@ def render_tab_settings(all_skills: list):
             st.markdown(f"**{day_name}**{today_badge}")
 
             for item in day_items:
-                ic1, ic2 = st.columns([5, 1])
+                ic1, ic2, ic3 = st.columns([5, 1, 1])
                 ic1.write(f"{add_emoji(item['skill'])} · {item['minutes']} min")
-                if ic2.button("🗑️", key=f"del_sched_{item['id']}",
-                              help=f"Remove this session"):
+                if ic2.button("✏️", key=f"edit_sched_{item['id']}",
+                              help="Edit this session"):
+                    edit_schedule_dialog(item["id"], all_skills)
+                if ic3.button("🗑️", key=f"del_sched_{item['id']}",
+                              help="Remove this session"):
                     schedule = [s for s in schedule if s.get("id") != item.get("id")]
                     st.session_state.study_schedule = schedule
                     sync_config_to_github()
@@ -1475,8 +1709,8 @@ if st.session_state.df is not None:
             use_container_width=True,
         )
     else:
-        tab_dash, tab_history, tab_trophy, tab_settings = st.tabs([
-            "📈 Dashboard", "📝 History", "🏆 Trophies", "⚙️ Settings"
+        tab_dash, tab_history, tab_trophy, tab_settings, tab_chat = st.tabs([
+            "📈 Dashboard", "📝 History", "🏆 Trophies", "⚙️ Settings", "💬 Chat"
         ])
         with tab_dash:
             render_tab_dashboard(df, diet, st.session_state.accent_color,
@@ -1488,6 +1722,13 @@ if st.session_state.df is not None:
                                 level, st.session_state.accent_color)
         with tab_settings:
             render_tab_settings(all_skills)   # ← passes all_skills for schedule mgmt
+        with tab_chat:
+            render_ai_chat(
+                diet_dict=diet.to_dict(),
+                streak=streak, level=level,
+                this_week=this_week,
+                today_mins=today_mins,
+            )
 
     perf_log("full_main_render", t_main)
 
