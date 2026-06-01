@@ -41,6 +41,12 @@
             "day": 1,
             "skill": "Shadowing",
             "minutes": 7
+        },
+        {
+            "id": "f3c8674a",
+            "day": 1,
+            "skill": "Speaking",
+            "minutes": 5
         }
     ]
 }
