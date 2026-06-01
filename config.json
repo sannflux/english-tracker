@@ -29,6 +29,12 @@
             "day": 0,
             "skill": "Review",
             "minutes": 5
+        },
+        {
+            "id": "5cc88786",
+            "day": 1,
+            "skill": "Listening",
+            "minutes": 8
         }
     ]
 }
