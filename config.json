@@ -53,6 +53,12 @@
             "day": 2,
             "skill": "Vocabulary",
             "minutes": 8
+        },
+        {
+            "id": "298e5ff7",
+            "day": 2,
+            "skill": "Writing",
+            "minutes": 7
         }
     ]
 }
