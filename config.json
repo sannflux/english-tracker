@@ -47,6 +47,12 @@
             "day": 1,
             "skill": "Speaking",
             "minutes": 5
+        },
+        {
+            "id": "7ef5bba7",
+            "day": 2,
+            "skill": "Vocabulary",
+            "minutes": 8
         }
     ]
 }
