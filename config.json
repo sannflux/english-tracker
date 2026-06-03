@@ -65,6 +65,12 @@
             "day": 2,
             "skill": "Review",
             "minutes": 5
+        },
+        {
+            "id": "0094aacc",
+            "day": 3,
+            "skill": "Listening",
+            "minutes": 8
         }
     ]
 }
