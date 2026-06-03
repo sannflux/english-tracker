@@ -71,6 +71,12 @@
             "day": 3,
             "skill": "Listening",
             "minutes": 8
+        },
+        {
+            "id": "ea1ba97a",
+            "day": 3,
+            "skill": "Shadowing",
+            "minutes": 7
         }
     ]
 }
