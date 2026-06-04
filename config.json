@@ -83,6 +83,12 @@
             "day": 3,
             "skill": "Speaking",
             "minutes": 5
+        },
+        {
+            "id": "958d29a4",
+            "day": 4,
+            "skill": "Vocabulary",
+            "minutes": 8
         }
     ]
 }
