@@ -95,6 +95,12 @@
             "day": 4,
             "skill": "Writing",
             "minutes": 7
+        },
+        {
+            "id": "075a20a1",
+            "day": 4,
+            "skill": "Review",
+            "minutes": 5
         }
     ]
 }
