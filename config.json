@@ -89,6 +89,12 @@
             "day": 4,
             "skill": "Vocabulary",
             "minutes": 8
+        },
+        {
+            "id": "f896e23f",
+            "day": 4,
+            "skill": "Writing",
+            "minutes": 7
         }
     ]
 }
