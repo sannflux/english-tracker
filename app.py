@@ -12,7 +12,7 @@ import os
 import base64
 import time
 import hashlib
-import uuid  # ← NEW: for schedule item IDs
+import uuid
 
 # ═══════════════════════════════════════════════════════════════
 # 🌏 TIMEZONE — WIB (UTC+7)
@@ -46,7 +46,6 @@ AI_MIN_INTERVAL = 12
 AI_DAILY_CAP    = 18
 SCHEMA_VERSION  = "v1"
 
-# ── NEW: Schedule day names ──────────────────────────────────
 SCHEDULE_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 SKILL_EMOJI = {
@@ -147,8 +146,6 @@ def set_background(png_file: str, light_mode: bool = False):
     .ai-card{{background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 14px;
         margin:6px 0;border-left:3px solid var(--accent-col,#00CC96);}}
     .cooldown-label{{font-size:0.82rem;opacity:0.85;margin-bottom:2px;}}
-
-    /* ── NEW: Schedule card styles ────────────────────────── */
     .sched-card{{
         background:rgba(255,255,255,0.06);
         border-radius:12px;padding:14px 18px;
@@ -189,14 +186,10 @@ _DEFAULTS = {
     "custom_skills": [],
     "eco_mode": False, "ai_daily_cap_setting": AI_DAILY_CAP,
     "mobile_mode": False, "prev_achievements": [],
-    # ── NEW: Schedule & multi-log ────────────────────────────
-    "study_schedule": [],          # list of schedule items
-    "schedule_checked_today": {},  # {item_id: True} - resets daily
-    "schedule_check_date": "",     # date string for daily reset
-    "log_rows": None,              # multi-skill log rows state
-    # ── NEW: Free-form AI chat ───────────────────────────────
-    "ai_chat_history": [],         # list of {"role": "user"/"assistant", "content": str}
-    "edit_schedule_id": None,      # ID of schedule item being edited
+    "study_schedule": [],
+    "log_rows": None,
+    "ai_chat_history": [],
+    "edit_schedule_id": None,
 }
 for k, v in _DEFAULTS.items():
     if k not in st.session_state:
@@ -299,7 +292,7 @@ def sync_config_to_github():
                 "eco_mode":             st.session_state.eco_mode,
                 "ai_daily_cap_setting": st.session_state.ai_daily_cap_setting,
                 "mobile_mode":          st.session_state.mobile_mode,
-                "study_schedule":       st.session_state.study_schedule,   # ← NEW
+                "study_schedule":       st.session_state.study_schedule,
             },
         )
 
@@ -374,7 +367,7 @@ if (
             "eco_mode":             "eco_mode",
             "ai_daily_cap_setting": "ai_daily_cap_setting",
             "mobile_mode":          "mobile_mode",
-            "study_schedule":       "study_schedule",  # ← NEW
+            "study_schedule":       "study_schedule",
         }
         for cfg_key, ss_key in _cfg_map.items():
             if cfg_key in _remote_cfg:
@@ -570,7 +563,7 @@ def _parse_ai_json(text: str) -> dict:
     return {"tip": text.strip(), "exercise": "", "resource": ""}
 
 # ═══════════════════════════════════════════════════════════════
-# AI COACH  ── MODEL STASIS LOCKED: gemini-2.5-flash-lite ──
+# AI COACH
 # ═══════════════════════════════════════════════════════════════
 def get_ai_recommendation(api_key, skill_totals, target_skill="All Skills",
                           streak=0, level=1, last_tip="",
@@ -580,7 +573,7 @@ def get_ai_recommendation(api_key, skill_totals, target_skill="All Skills",
         return {"tip": "Please provide a Gemini API key.", "exercise": "", "resource": ""}
     try:
         genai.configure(api_key=api_key)
-        model   = genai.GenerativeModel("gemini-3.1-flash-lite")
+        model   = genai.GenerativeModel("gemini-2.5-flash-lite")
         compact = json.dumps(skill_totals, separators=(",", ":"))
         weakest = min(skill_totals, key=skill_totals.get) if skill_totals else "General"
         ctx_parts = [f"Skills(mins):{compact}"]
@@ -620,11 +613,39 @@ def evaluate_achievements(total_hrs, streak, unique_skills) -> set:
     return unlocked
 
 # ═══════════════════════════════════════════════════════════════
-# ✨ NEW: EDIT SCHEDULE DIALOG
+# ✅ FIX #3: Derive done-state dari data aktual (persistent)
 #
-# Opens when user clicks ✏️ next to a schedule item.
-# Lets them change day, skill, and planned minutes.
-# Saves back to GitHub config on confirm.
+# Notes format baru: "📅 Auto-logged: {item_id}"
+# Sehingga setelah page refresh pun, status centang tetap ada
+# karena kita cek dari data CSV, bukan session state.
+# ═══════════════════════════════════════════════════════════════
+def _get_schedule_done_from_data(today_items: list, today_date) -> set:
+    """
+    Kembalikan set of item_id yang sudah di-log hari ini.
+    Baca dari df aktual, bukan session state — jadi persistent
+    melewati page refresh / rerun apapun.
+    """
+    df = st.session_state.df
+    if df is None or df.empty:
+        return set()
+    dates_norm = _naive_dates(df["Date"])
+    today_data = df[dates_norm.dt.date == today_date]
+    if today_data.empty:
+        return set()
+    done_ids = set()
+    for item in today_items:
+        item_id = item.get("id", "")
+        if not item_id:
+            continue
+        # Cari marker unik di kolom Notes
+        marker = f"📅 Auto-logged: {item_id}"
+        if today_data["Notes"].str.contains(item_id, na=False, regex=False).any():
+            done_ids.add(item_id)
+    return done_ids
+
+
+# ═══════════════════════════════════════════════════════════════
+# EDIT SCHEDULE DIALOG
 # ═══════════════════════════════════════════════════════════════
 @st.dialog("✏️ Edit Schedule Item")
 def edit_schedule_dialog(item_id: str, all_skills: list):
@@ -637,9 +658,18 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
             st.rerun()
         return
 
+    current_name  = item.get("name", "")
     current_day   = item.get("day", 0)
     current_skill = item.get("skill", all_skills[0] if all_skills else "Listening")
     current_mins  = item.get("minutes", 30)
+
+    # ── FIX #2: Nama jadwal ──────────────────────────────────
+    new_name = st.text_input(
+        "Session Name (opsional)",
+        value=current_name,
+        placeholder=f"e.g. Morning {current_skill} Practice",
+        key="edit_sched_name",
+    )
 
     new_day = st.selectbox(
         "Day", SCHEDULE_DAYS,
@@ -655,7 +685,7 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
         key="edit_sched_skill",
     )
     new_mins = st.number_input(
-        "Minutes", min_value=5, max_value=300,
+        "Minutes (planned)", min_value=5, max_value=300,
         value=current_mins,
         key="edit_sched_mins",
     )
@@ -665,13 +695,15 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
         if st.button("💾 Save", type="primary", use_container_width=True):
             for s in schedule:
                 if s.get("id") == item_id:
+                    s["name"]    = new_name.strip()
                     s["day"]     = SCHEDULE_DAYS.index(new_day)
                     s["skill"]   = new_skill
                     s["minutes"] = int(new_mins)
                     break
             st.session_state.study_schedule = schedule
             sync_config_to_github()
-            st.toast(f"✅ Updated: {add_emoji(new_skill)} on {new_day}", icon="📅")
+            display = new_name.strip() or add_emoji(new_skill)
+            st.toast(f"✅ Updated: {display} on {new_day}", icon="📅")
             st.rerun()
     with cc:
         if st.button("Cancel", use_container_width=True):
@@ -679,18 +711,11 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
 
 
 # ═══════════════════════════════════════════════════════════════
-# ✨ NEW: FREE-FORM AI CHAT
-#
-# Tab "💬 Chat" — user types any question in natural language.
-# Their full tracker context (skills, level, streak, etc.)
-# is injected as a system prompt so answers are personalised.
-# Maintains a short multi-turn history for follow-up questions.
-# Respects the same rate-limit as the recommendation coach.
+# FREE-FORM AI CHAT
 # ═══════════════════════════════════════════════════════════════
 def _build_tracker_context(diet_dict: dict, streak: int, level: int,
                             this_week: float, weekly_goal: float,
                             today_mins: float, daily_goal_mins: int) -> str:
-    """Summarise user's tracker state into a compact string for AI context."""
     total_mins = sum(diet_dict.values())
     total_hrs  = total_mins / 60
     xp_pct     = int((total_hrs % 50) / 50 * 100)
@@ -700,7 +725,6 @@ def _build_tracker_context(diet_dict: dict, streak: int, level: int,
 
     weakest    = min(diet_dict, key=diet_dict.get) if diet_dict else "unknown"
     weak_mins  = diet_dict.get(weakest, 0)
-
     hrs_to_next = 50 - (total_hrs % 50)
 
     lines = [
@@ -719,11 +743,8 @@ def _build_tracker_context(diet_dict: dict, streak: int, level: int,
 @st.fragment
 def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
                    this_week: float = 0.0, today_mins: float = 0.0):
-    """Free-form chat tab — user asks anything, AI answers in context."""
-
     accent = st.session_state.accent_color
 
-    # ── Header + clear button ─────────────────────────────────
     hcol, bcol = st.columns([4, 1])
     with hcol:
         st.markdown("### 💬 Chat with Your AI Coach")
@@ -738,18 +759,15 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
                 st.session_state.ai_chat_history = []
                 st.rerun()
 
-    # ── Gemini key check ─────────────────────────────────────
     if not st.session_state.gemini_key:
         st.info("💡 Add your Gemini API key in the sidebar to use this feature.")
         return
 
-    # ── Render existing messages ─────────────────────────────
     for msg in st.session_state.ai_chat_history:
         with st.chat_message(msg["role"],
                              avatar="🧑" if msg["role"] == "user" else "🤖"):
             st.markdown(msg["content"])
 
-    # ── Suggested starter questions ──────────────────────────
     if not st.session_state.ai_chat_history:
         st.markdown(
             f'<div style="opacity:0.6;font-size:0.84rem;margin-bottom:8px">'
@@ -769,39 +787,28 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
                 st.session_state["_chat_prefill"] = s
                 st.rerun()
 
-    # ── Chat input ───────────────────────────────────────────
     prefill    = st.session_state.pop("_chat_prefill", "")
-    user_input = st.chat_input(
-        "Ask your coach anything…",
-        key="ai_chat_input",
-    )
-    # Allow suggestion clicks to submit as if typed
+    user_input = st.chat_input("Ask your coach anything…", key="ai_chat_input")
     if not user_input and prefill:
         user_input = prefill
 
     if not user_input:
         return
 
-    # ── Rate limit check ─────────────────────────────────────
     allowed, reason, _ = _check_ai_rate_limit()
     if not allowed:
         st.toast(f"⏳ {reason}", icon="🚦")
         return
 
-    # ── Append user message ──────────────────────────────────
-    st.session_state.ai_chat_history.append(
-        {"role": "user", "content": user_input}
-    )
+    st.session_state.ai_chat_history.append({"role": "user", "content": user_input})
 
-    # ── Build prompt ─────────────────────────────────────────
     tracker_ctx = _build_tracker_context(
         diet_dict, streak, level, this_week,
         float(st.session_state.weekly_goal),
         today_mins, int(st.session_state.daily_goal_mins),
     )
 
-    # Last N turns for multi-turn context (keep tokens low)
-    history_window = st.session_state.ai_chat_history[-9:-1]  # up to 4 turns
+    history_window = st.session_state.ai_chat_history[-9:-1]
     history_str = ""
     if history_window:
         history_str = "Previous conversation:\n" + "\n".join(
@@ -819,7 +826,6 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
         f"Coach:"
     )
 
-    # ── Call Gemini ───────────────────────────────────────────
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Thinking…"):
             try:
@@ -827,38 +833,22 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
                 model    = genai.GenerativeModel("gemini-2.5-flash-lite")
                 response = model.generate_content(full_prompt)
                 reply    = response.text.strip()
-
                 st.session_state.last_ai_time    = now_wib()
                 st.session_state.ai_calls_today += 1
-
             except Exception as e:
                 reply = f"⚠️ Error: {e}"
-
         st.markdown(reply)
 
-    st.session_state.ai_chat_history.append(
-        {"role": "assistant", "content": reply}
-    )
-
-    # Keep history manageable (last 20 messages)
+    st.session_state.ai_chat_history.append({"role": "assistant", "content": reply})
     st.session_state.ai_chat_history = st.session_state.ai_chat_history[-20:]
-
-    # Partial rerun to show new message without losing scroll position
     st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════
-# ✨ NEW: MULTI-SKILL LOG DIALOG
-#
-# Changes from original:
-#   • Users can add multiple skill rows before saving
-#   • All rows saved in a single GitHub call (atomic)
-#   • "Add Skill" / "🗑️" buttons work outside form context
-#   • log_rows state persists within dialog session, resets on success
+# MULTI-SKILL LOG DIALOG
 # ═══════════════════════════════════════════════════════════════
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(available_skills):
-    # ── Init rows if first open ──────────────────────────────
     if st.session_state.log_rows is None:
         st.session_state.log_rows = [
             {"skill": available_skills[0], "minutes": 30}
@@ -869,7 +859,6 @@ def log_session_dialog(available_skills):
 
     st.markdown("**Skills to log:**")
 
-    # Column headers
     hc1, hc2, hc3 = st.columns([3, 2, 1])
     hc1.caption("Skill")
     hc2.caption("Minutes")
@@ -906,7 +895,6 @@ def log_session_dialog(available_skills):
         st.session_state.log_rows.pop(delete_idx)
         st.rerun()
 
-    # ── Action buttons ───────────────────────────────────────
     ba, br, bs = st.columns([1, 1, 2])
 
     with ba:
@@ -925,7 +913,6 @@ def log_session_dialog(available_skills):
 
     with bs:
         if st.button("💾 Log & Sync", type="primary", use_container_width=True):
-            # Read widget values from session_state by key
             new_rows_data = []
             for i in range(len(st.session_state.log_rows)):
                 skill   = st.session_state.get(f"log_skill_{i}", available_skills[0])
@@ -951,7 +938,7 @@ def log_session_dialog(available_skills):
             if sha:
                 st.session_state.df       = updated_df
                 st.session_state.file_sha = sha
-                st.session_state.log_rows = None   # reset for next dialog open
+                st.session_state.log_rows = None
                 _invalidate_derived_cache()
                 load_data_from_github.clear()
                 total_logged = sum(r["Time Spent"] for r in new_rows_data)
@@ -964,7 +951,6 @@ def log_session_dialog(available_skills):
             else:
                 st.warning("⚠️ Entry NOT saved. Fix the error above and try again.")
 
-    # ── Summary preview ──────────────────────────────────────
     if len(rows) > 1:
         total_preview = sum(
             int(st.session_state.get(f"log_mins_{i}", row["minutes"]))
@@ -974,35 +960,27 @@ def log_session_dialog(available_skills):
 
 
 # ═══════════════════════════════════════════════════════════════
-# ✨ NEW: STUDY SCHEDULE WIDGET
+# ✅ UPDATED: STUDY SCHEDULE WIDGET
 #
-# Shows today's schedule items as checkboxes.
-# Checking one → auto-logs that skill/duration to GitHub.
-# Checked state resets each new day (WIB).
+# Fix #3: done-state dari data aktual → persistent lintas refresh
+# Fix #4: number input override menit per item sebelum centang
+#         (tidak mengubah nilai jadwal yang tersimpan)
 # ═══════════════════════════════════════════════════════════════
 def render_schedule_widget(all_skills: list):
     schedule = st.session_state.study_schedule
     if not schedule:
-        return  # nothing configured, skip silently
+        return
 
     today     = today_wib()
     today_day = today.weekday()   # 0=Mon … 6=Sun
-    today_str = today.isoformat()
-
-    # Reset daily check marks
-    if st.session_state.schedule_check_date != today_str:
-        st.session_state.schedule_checked_today = {}
-        st.session_state.schedule_check_date    = today_str
-
     today_items = [item for item in schedule if item.get("day") == today_day]
     if not today_items:
-        return  # nothing scheduled today
+        return
 
-    accent = st.session_state.accent_color
-    done_count = sum(
-        1 for item in today_items
-        if st.session_state.schedule_checked_today.get(item.get("id"), False)
-    )
+    # ── FIX #3: Baca done-state dari data CSV, bukan session state ──
+    done_ids   = _get_schedule_done_from_data(today_items, today)
+    done_count = len(done_ids)
+    accent     = st.session_state.accent_color
 
     with st.expander(
         f"📅 Today's Schedule — {SCHEDULE_DAYS[today_day]}  "
@@ -1011,57 +989,93 @@ def render_schedule_widget(all_skills: list):
     ):
         for item in today_items:
             item_id    = item.get("id", "")
-            is_done    = st.session_state.schedule_checked_today.get(item_id, False)
+            is_done    = item_id in done_ids
             skill_name = item.get("skill", "General")
             plan_mins  = item.get("minutes", 30)
+            # Tampilkan nama custom jika ada, fallback ke emoji+skill
+            item_label = item.get("name", "").strip() or add_emoji(skill_name)
 
-            label = (
-                f"~~{add_emoji(skill_name)} — {plan_mins} min~~ ✅"
-                if is_done
-                else f"{add_emoji(skill_name)} — {plan_mins} min"
-            )
-
-            checked = st.checkbox(
-                label,
-                value=is_done,
-                disabled=is_done,
-                key=f"sched_chk_{item_id}",
-            )
-
-            if checked and not is_done:
-                # ── Auto-log ─────────────────────────────────
-                new_row = pd.DataFrame({
-                    "Date":       [pd.Timestamp(today)],
-                    "Skill":      [skill_name],
-                    "Time Spent": [int(plan_mins)],
-                    "Notes":      ["📅 Auto-logged from schedule"],
-                })
-                updated_df = pd.concat(
-                    [st.session_state.df, new_row], ignore_index=True
+            if is_done:
+                # Item sudah dicentang hari ini — tampil strikethrough, tidak bisa diubah
+                st.markdown(
+                    f'<div style="opacity:0.55;text-decoration:line-through;'
+                    f'padding:8px 4px;">✅ {item_label} — {plan_mins} min</div>',
+                    unsafe_allow_html=True,
                 )
-                with st.spinner(f"Logging {add_emoji(skill_name)}…"):
-                    sha = save_to_github(
-                        st.session_state.saved_token,
-                        st.session_state.saved_repo,
-                        "data.csv",
-                        updated_df,
-                    )
-                if sha:
-                    st.session_state.df       = updated_df
-                    st.session_state.file_sha = sha
-                    st.session_state.schedule_checked_today[item_id] = True
-                    _invalidate_derived_cache()
-                    load_data_from_github.clear()
-                    st.toast(
-                        f"✅ {add_emoji(skill_name)} {plan_mins} min logged!",
-                        icon="📅",
-                    )
-                    st.rerun()
-                else:
-                    st.error("❌ Failed to save. Check GitHub settings.")
+            else:
+                # ── FIX #4: Number input override menit (tidak ubah jadwal) ──
+                col_chk, col_label, col_mins = st.columns([1, 5, 2])
 
-        # ── Progress bar for today's schedule ────────────────
-        if len(today_items) > 0:
+                with col_chk:
+                    # value=False agar checkbox selalu mulai unchecked saat belum done
+                    checked = st.checkbox(
+                        "",
+                        value=False,
+                        key=f"sched_chk_{item_id}",
+                        label_visibility="collapsed",
+                    )
+
+                with col_label:
+                    sub = f"*{add_emoji(skill_name)}*" if item.get("name") else ""
+                    st.markdown(
+                        f"**{item_label}**"
+                        + (f"  \n<span style='font-size:0.78rem;opacity:0.6'>"
+                           f"{add_emoji(skill_name)}</span>" if item.get("name") else ""),
+                        unsafe_allow_html=True,
+                    )
+
+                with col_mins:
+                    override_mins = st.number_input(
+                        "min",
+                        min_value=1,
+                        max_value=600,
+                        value=plan_mins,
+                        key=f"sched_override_{item_id}",
+                        label_visibility="collapsed",
+                        help=f"Planned: {plan_mins} min — ubah untuk hari ini saja",
+                    )
+
+                if checked:
+                    # Baca override dari widget state
+                    actual_mins = int(
+                        st.session_state.get(f"sched_override_{item_id}", plan_mins)
+                    )
+                    # ── Notes menyertakan item_id sebagai marker persisten ──
+                    new_row = pd.DataFrame({
+                        "Date":       [pd.Timestamp(today)],
+                        "Skill":      [skill_name],
+                        "Time Spent": [actual_mins],
+                        "Notes":      [f"📅 Auto-logged: {item_id}"],
+                    })
+                    updated_df = pd.concat(
+                        [st.session_state.df, new_row], ignore_index=True
+                    )
+                    with st.spinner(f"Logging {item_label}…"):
+                        sha = save_to_github(
+                            st.session_state.saved_token,
+                            st.session_state.saved_repo,
+                            "data.csv",
+                            updated_df,
+                        )
+                    if sha:
+                        st.session_state.df       = updated_df
+                        st.session_state.file_sha = sha
+                        _invalidate_derived_cache()
+                        load_data_from_github.clear()
+                        diff_note = (
+                            f" (override dari {plan_mins} min)"
+                            if actual_mins != plan_mins else ""
+                        )
+                        st.toast(
+                            f"✅ {item_label} — {actual_mins} min logged!{diff_note}",
+                            icon="📅",
+                        )
+                        st.rerun()
+                    else:
+                        st.error("❌ Gagal menyimpan. Cek pengaturan GitHub.")
+
+        # ── Progress bar ─────────────────────────────────────
+        if today_items:
             prog = done_count / len(today_items)
             st.markdown(
                 f"""<div style="margin-top:8px">
@@ -1076,7 +1090,7 @@ def render_schedule_widget(all_skills: list):
                 </div></div>""",
                 unsafe_allow_html=True,
             )
-            if done_count == len(today_items):
+            if done_count == len(today_items) and len(today_items) > 0:
                 st.success("🎉 All done for today! Great work!")
 
 
@@ -1445,9 +1459,10 @@ def render_tab_trophies(total_hrs, streak, unique_skills, level, accent_color):
                 unsafe_allow_html=True,
             )
 
+
 # ═══════════════════════════════════════════════════════════════
 # FRAGMENT: Settings Tab
-# ── MODIFIED: now accepts all_skills for schedule management ──
+# ── Includes all 4 schedule fixes ──
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
 def render_tab_settings(all_skills: list):
@@ -1523,44 +1538,53 @@ def render_tab_settings(all_skills: list):
                "✍️ Writing, 📝 Grammar, 💬 Vocabulary.")
 
     # ════════════════════════════════════════════════════════
-    # ✨ NEW: Study Schedule Manager
+    # 📅 Study Schedule Manager
     # ════════════════════════════════════════════════════════
     st.divider()
     st.subheader("📅 Study Schedule")
     st.caption(
-        "Build your weekly study plan. "
-        "Each session appears as a checkbox on your dashboard — tick it to auto-log."
+        "Buat jadwal belajar mingguan. Setiap sesi muncul sebagai checkbox di dashboard — "
+        "centang untuk auto-log. Override menit hanya berlaku untuk hari itu."
     )
 
     schedule = list(st.session_state.study_schedule)
     accent   = st.session_state.accent_color
+    today_day = today_wib().weekday()
 
-    # ── Add new item form ─────────────────────────────────
-    st.markdown("**Add a session:**")
-    na, nb, nc, nd = st.columns([2, 2, 1, 1])
+    # ── FIX #2: Tambah field Nama di form ────────────────────
+    st.markdown("**➕ Tambah sesi baru:**")
+    na, nb, nc, nd, ne = st.columns([2, 2, 2, 1, 1])
     with na:
+        new_sched_name = st.text_input(
+            "Nama sesi",
+            placeholder="e.g. Morning Practice",
+            key="sched_new_name",
+            label_visibility="collapsed",
+        )
+    with nb:
         new_day = st.selectbox(
             "Day", SCHEDULE_DAYS,
             key="sched_new_day",
             label_visibility="collapsed",
         )
-    with nb:
+    with nc:
         new_sched_skill = st.selectbox(
             "Skill", all_skills,
             key="sched_new_skill",
             format_func=add_emoji,
             label_visibility="collapsed",
         )
-    with nc:
+    with nd:
         new_sched_mins = st.number_input(
             "Min", min_value=5, max_value=300, value=30,
             key="sched_new_mins",
             label_visibility="collapsed",
         )
-    with nd:
+    with ne:
         if st.button("➕ Add", use_container_width=True, key="sched_add_btn"):
             new_item = {
                 "id":      str(uuid.uuid4())[:8],
+                "name":    new_sched_name.strip(),
                 "day":     SCHEDULE_DAYS.index(new_day),
                 "skill":   new_sched_skill,
                 "minutes": int(new_sched_mins),
@@ -1568,13 +1592,15 @@ def render_tab_settings(all_skills: list):
             schedule.append(new_item)
             st.session_state.study_schedule = schedule
             sync_config_to_github()
-            st.toast(f"✅ Added {add_emoji(new_sched_skill)} on {new_day}", icon="📅")
+            display = new_sched_name.strip() or add_emoji(new_sched_skill)
+            st.toast(f"✅ Added: {display} on {new_day}", icon="📅")
             st.rerun()
 
-    # ── Show schedule grouped by day ─────────────────────
+    st.markdown("---")
+
+    # ── Show schedule grouped by day ─────────────────────────
     if schedule:
-        st.markdown("**Your weekly schedule:**")
-        today_day = today_wib().weekday()
+        st.markdown("**Jadwal mingguan kamu:**")
 
         for day_idx, day_name in enumerate(SCHEDULE_DAYS):
             day_items = [item for item in schedule if item.get("day") == day_idx]
@@ -1582,24 +1608,101 @@ def render_tab_settings(all_skills: list):
                 continue
 
             today_badge = " 📍 *Today*" if day_idx == today_day else ""
-            st.markdown(f"**{day_name}**{today_badge}")
+            day_total   = sum(i.get("minutes", 0) for i in day_items)
+
+            st.markdown(
+                f"**{day_name}**{today_badge} "
+                f"<span style='font-size:0.8rem;opacity:0.6'>— {len(day_items)} sesi · {day_total} min total</span>",
+                unsafe_allow_html=True,
+            )
 
             for item in day_items:
-                ic1, ic2, ic3 = st.columns([5, 1, 1])
-                ic1.write(f"{add_emoji(item['skill'])} · {item['minutes']} min")
-                if ic2.button("✏️", key=f"edit_sched_{item['id']}",
-                              help="Edit this session"):
-                    edit_schedule_dialog(item["id"], all_skills)
-                if ic3.button("🗑️", key=f"del_sched_{item['id']}",
-                              help="Remove this session"):
-                    schedule = [s for s in schedule if s.get("id") != item.get("id")]
-                    st.session_state.study_schedule = schedule
-                    sync_config_to_github()
-                    st.rerun()
-    else:
-        st.info("No schedule yet. Add your first session above ↑")
+                item_name  = item.get("name", "").strip()
+                display    = item_name or add_emoji(item["skill"])
+                sub_label  = f"{add_emoji(item['skill'])} · {item['minutes']} min"
+                if item_name:
+                    sub_label = f"{add_emoji(item['skill'])} · {item['minutes']} min"
 
-    # ── Week overview summary ─────────────────────────────
+                ic1, ic2, ic3 = st.columns([6, 1, 1])
+                with ic1:
+                    st.markdown(
+                        f"**{display}**  \n"
+                        f"<span style='font-size:0.78rem;opacity:0.65'>{sub_label}</span>",
+                        unsafe_allow_html=True,
+                    )
+                with ic2:
+                    if st.button("✏️", key=f"edit_sched_{item['id']}",
+                                 help="Edit sesi ini"):
+                        edit_schedule_dialog(item["id"], all_skills)
+                with ic3:
+                    if st.button("🗑️", key=f"del_sched_{item['id']}",
+                                 help="Hapus sesi ini"):
+                        schedule = [s for s in schedule if s.get("id") != item.get("id")]
+                        st.session_state.study_schedule = schedule
+                        sync_config_to_github()
+                        st.rerun()
+
+            # ── FIX #1: Copy day ke hari lain ────────────────
+            with st.expander(f"📋 Copy semua sesi {day_name} ke hari lain…", expanded=False):
+                copy_targets = [d for d in SCHEDULE_DAYS if d != day_name]
+                cc1, cc2 = st.columns([3, 1])
+                with cc1:
+                    copy_target = st.selectbox(
+                        "Copy to",
+                        copy_targets,
+                        key=f"copy_target_{day_idx}",
+                        label_visibility="collapsed",
+                    )
+                with cc2:
+                    if st.button(
+                        f"📋 Copy → {copy_target[:3]}",
+                        key=f"copy_day_{day_idx}",
+                        use_container_width=True,
+                    ):
+                        target_idx     = SCHEDULE_DAYS.index(copy_target)
+                        already_exists = [
+                            (s["skill"], s.get("minutes"), s.get("name",""))
+                            for s in schedule if s.get("day") == target_idx
+                        ]
+                        copied_count = 0
+                        for src_item in day_items:
+                            # Hindari duplikat persis (skill + menit + nama sama)
+                            duplicate = any(
+                                e[0] == src_item["skill"]
+                                and e[1] == src_item.get("minutes")
+                                and e[2] == src_item.get("name","")
+                                for e in already_exists
+                            )
+                            if duplicate:
+                                continue
+                            new_copy = {
+                                "id":      str(uuid.uuid4())[:8],
+                                "name":    src_item.get("name", ""),
+                                "day":     target_idx,
+                                "skill":   src_item["skill"],
+                                "minutes": src_item["minutes"],
+                            }
+                            schedule.append(new_copy)
+                            already_exists.append((new_copy["skill"], new_copy["minutes"], new_copy.get("name","")))
+                            copied_count += 1
+
+                        st.session_state.study_schedule = schedule
+                        sync_config_to_github()
+                        if copied_count > 0:
+                            st.toast(
+                                f"✅ {copied_count} sesi di-copy ke {copy_target}",
+                                icon="📋",
+                            )
+                        else:
+                            st.info("Semua sesi sudah ada di hari itu (tidak ada duplikat yang di-copy).")
+                        st.rerun()
+
+            st.markdown("")  # spacer antar hari
+
+    else:
+        st.info("Belum ada jadwal. Tambahkan sesi pertama di atas ↑")
+
+    # ── Week overview summary ─────────────────────────────────
     if schedule:
         st.markdown("**Week at a glance:**")
         week_data = []
@@ -1608,7 +1711,7 @@ def render_tab_settings(all_skills: list):
             total_min = sum(item.get("minutes", 0) for item in day_items)
             skills    = [add_emoji(item["skill"]) for item in day_items]
             week_data.append({
-                "Day":     day_name[:3],
+                "Day":      day_name[:3],
                 "Sessions": len(day_items),
                 "Minutes":  total_min,
                 "Skills":   ", ".join(skills) if skills else "—",
@@ -1618,6 +1721,7 @@ def render_tab_settings(all_skills: list):
             use_container_width=True,
             hide_index=True,
         )
+
 
 # ═══════════════════════════════════════════════════════════════
 # ONBOARDING
@@ -1648,6 +1752,7 @@ def render_onboarding():
         st.success("🎉 All set! Click **🔄 Refresh Application** in the sidebar to load your data.")
     else:
         st.info(f"👈 Complete **{3-completed} more step(s)** in the sidebar to continue.")
+
 
 # ═══════════════════════════════════════════════════════════════
 # MAIN UI
@@ -1690,10 +1795,7 @@ if st.session_state.df is not None:
             log_session_dialog(all_skills)
 
     render_metrics(total_hrs, level, xp, this_week, streak)
-
-    # ✨ NEW: Schedule widget — shown between metrics and AI coach
     render_schedule_widget(all_skills)
-
     render_ai_coach(diet.to_dict(), all_skills, streak=streak, level=level, this_week=this_week)
 
     if st.session_state.zen_mode:
@@ -1721,7 +1823,7 @@ if st.session_state.df is not None:
             render_tab_trophies(total_hrs, streak, unique_skills,
                                 level, st.session_state.accent_color)
         with tab_settings:
-            render_tab_settings(all_skills)   # ← passes all_skills for schedule mgmt
+            render_tab_settings(all_skills)
         with tab_chat:
             render_ai_chat(
                 diet_dict=diet.to_dict(),
