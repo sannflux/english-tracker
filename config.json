@@ -81,6 +81,20 @@
             "day": 4,
             "skill": "Speaking",
             "minutes": 10
+        },
+        {
+            "id": "a3e3ea90",
+            "name": "",
+            "day": 5,
+            "skill": "Reading",
+            "minutes": 20
+        },
+        {
+            "id": "fd79c607",
+            "name": "",
+            "day": 5,
+            "skill": "Writing",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
