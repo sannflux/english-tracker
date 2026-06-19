@@ -18,6 +18,13 @@
             "day": 0,
             "skill": "Reading",
             "minutes": 20
+        },
+        {
+            "id": "c08869e9",
+            "name": "",
+            "day": 0,
+            "skill": "Speaking",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
