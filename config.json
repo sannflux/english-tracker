@@ -13,12 +13,6 @@
     "mobile_mode": false,
     "study_schedule": [
         {
-            "id": "8bedcf78",
-            "day": 0,
-            "skill": "Writing",
-            "minutes": 7
-        },
-        {
             "id": "ac4d4232",
             "day": 0,
             "skill": "Review",
