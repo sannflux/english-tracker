@@ -120,5 +120,121 @@
             "skill": "Speaking",
             "minutes": 5
         }
+    ],
+    "schedule_presets": [
+        {
+            "id": "5f807750",
+            "name": "20 Menit",
+            "items": [
+                {
+                    "id": "b22de3b2",
+                    "day": 0,
+                    "skill": "Vocabulary",
+                    "minutes": 8
+                },
+                {
+                    "id": "bd4d3848",
+                    "day": 0,
+                    "skill": "Writing",
+                    "minutes": 7
+                },
+                {
+                    "id": "85be3c5e",
+                    "day": 0,
+                    "skill": "Review",
+                    "minutes": 5
+                },
+                {
+                    "id": "5cc88786",
+                    "day": 1,
+                    "skill": "Listening",
+                    "minutes": 8
+                },
+                {
+                    "id": "daaf0cc0",
+                    "day": 1,
+                    "skill": "Shadowing",
+                    "minutes": 7
+                },
+                {
+                    "id": "f3c8674a",
+                    "day": 1,
+                    "skill": "Speaking",
+                    "minutes": 5
+                },
+                {
+                    "id": "7ef5bba7",
+                    "day": 2,
+                    "skill": "Vocabulary",
+                    "minutes": 8
+                },
+                {
+                    "id": "298e5ff7",
+                    "day": 2,
+                    "skill": "Writing",
+                    "minutes": 7
+                },
+                {
+                    "id": "c017ea6d",
+                    "day": 2,
+                    "skill": "Review",
+                    "minutes": 5
+                },
+                {
+                    "id": "0094aacc",
+                    "day": 3,
+                    "skill": "Listening",
+                    "minutes": 8
+                },
+                {
+                    "id": "ea1ba97a",
+                    "day": 3,
+                    "skill": "Shadowing",
+                    "minutes": 7
+                },
+                {
+                    "id": "b50af44a",
+                    "day": 3,
+                    "skill": "Speaking",
+                    "minutes": 5
+                },
+                {
+                    "id": "958d29a4",
+                    "day": 4,
+                    "skill": "Vocabulary",
+                    "minutes": 8
+                },
+                {
+                    "id": "f896e23f",
+                    "day": 4,
+                    "skill": "Writing",
+                    "minutes": 7
+                },
+                {
+                    "id": "075a20a1",
+                    "day": 4,
+                    "skill": "Review",
+                    "minutes": 5
+                },
+                {
+                    "id": "5949bdfb",
+                    "day": 5,
+                    "skill": "Listening",
+                    "minutes": 8
+                },
+                {
+                    "id": "b5575877",
+                    "day": 5,
+                    "skill": "Shadowing",
+                    "minutes": 7
+                },
+                {
+                    "id": "f767293c",
+                    "day": 5,
+                    "skill": "Speaking",
+                    "minutes": 5
+                }
+            ]
+        }
     ]
 }
