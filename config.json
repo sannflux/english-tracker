@@ -11,7 +11,15 @@
     "eco_mode": false,
     "ai_daily_cap_setting": 18,
     "mobile_mode": false,
-    "study_schedule": [],
+    "study_schedule": [
+        {
+            "id": "380c6c1e",
+            "name": "",
+            "day": 0,
+            "skill": "Reading",
+            "minutes": 20
+        }
+    ],
     "schedule_presets": [
         {
             "id": "5f807750",
