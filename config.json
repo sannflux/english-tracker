@@ -32,6 +32,13 @@
             "day": 0,
             "skill": "Listening",
             "minutes": 20
+        },
+        {
+            "id": "be99b659",
+            "name": "",
+            "day": 0,
+            "skill": "Shadowing",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
