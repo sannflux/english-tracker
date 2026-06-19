@@ -13,12 +13,6 @@
     "mobile_mode": false,
     "study_schedule": [
         {
-            "id": "92030512",
-            "day": 1,
-            "skill": "Listening",
-            "minutes": 8
-        },
-        {
             "id": "10a8ff94",
             "day": 1,
             "skill": "Shadowing",
