@@ -67,6 +67,20 @@
             "day": 3,
             "skill": "Vocabulary",
             "minutes": 10
+        },
+        {
+            "id": "cb096b06",
+            "name": "",
+            "day": 4,
+            "skill": "Reading",
+            "minutes": 20
+        },
+        {
+            "id": "5e6b4c69",
+            "name": "",
+            "day": 4,
+            "skill": "Speaking",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
