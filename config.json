@@ -25,6 +25,13 @@
             "day": 0,
             "skill": "Speaking",
             "minutes": 10
+        },
+        {
+            "id": "735b921a",
+            "name": "",
+            "day": 0,
+            "skill": "Listening",
+            "minutes": 20
         }
     ],
     "schedule_presets": [
