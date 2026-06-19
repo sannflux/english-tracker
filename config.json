@@ -39,6 +39,20 @@
             "day": 1,
             "skill": "Shadowing",
             "minutes": 10
+        },
+        {
+            "id": "d11c15ae",
+            "name": "",
+            "day": 2,
+            "skill": "Listening",
+            "minutes": 20
+        },
+        {
+            "id": "c6d1f0ba",
+            "name": "",
+            "day": 2,
+            "skill": "Shadowing",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
