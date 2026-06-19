@@ -11,14 +11,7 @@
     "eco_mode": false,
     "ai_daily_cap_setting": 18,
     "mobile_mode": false,
-    "study_schedule": [
-        {
-            "id": "0efea67f",
-            "day": 5,
-            "skill": "Speaking",
-            "minutes": 5
-        }
-    ],
+    "study_schedule": [],
     "schedule_presets": [
         {
             "id": "5f807750",
