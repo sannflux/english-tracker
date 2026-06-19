@@ -95,6 +95,13 @@
             "day": 5,
             "skill": "Writing",
             "minutes": 10
+        },
+        {
+            "id": "463567f0",
+            "name": "",
+            "day": 6,
+            "skill": "Review",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
