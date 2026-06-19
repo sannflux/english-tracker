@@ -13,109 +13,109 @@
     "mobile_mode": false,
     "study_schedule": [
         {
-            "id": "b22de3b2",
+            "id": "b1b3b1e4",
             "day": 0,
             "skill": "Vocabulary",
             "minutes": 8
         },
         {
-            "id": "bd4d3848",
+            "id": "8bedcf78",
             "day": 0,
             "skill": "Writing",
             "minutes": 7
         },
         {
-            "id": "85be3c5e",
+            "id": "ac4d4232",
             "day": 0,
             "skill": "Review",
             "minutes": 5
         },
         {
-            "id": "5cc88786",
+            "id": "92030512",
             "day": 1,
             "skill": "Listening",
             "minutes": 8
         },
         {
-            "id": "daaf0cc0",
+            "id": "10a8ff94",
             "day": 1,
             "skill": "Shadowing",
             "minutes": 7
         },
         {
-            "id": "f3c8674a",
+            "id": "132321e2",
             "day": 1,
             "skill": "Speaking",
             "minutes": 5
         },
         {
-            "id": "7ef5bba7",
+            "id": "90e2b301",
             "day": 2,
             "skill": "Vocabulary",
             "minutes": 8
         },
         {
-            "id": "298e5ff7",
+            "id": "18c5b26d",
             "day": 2,
             "skill": "Writing",
             "minutes": 7
         },
         {
-            "id": "c017ea6d",
+            "id": "95a7283b",
             "day": 2,
             "skill": "Review",
             "minutes": 5
         },
         {
-            "id": "0094aacc",
+            "id": "67532a87",
             "day": 3,
             "skill": "Listening",
             "minutes": 8
         },
         {
-            "id": "ea1ba97a",
+            "id": "07d66d78",
             "day": 3,
             "skill": "Shadowing",
             "minutes": 7
         },
         {
-            "id": "b50af44a",
+            "id": "97e2a1b6",
             "day": 3,
             "skill": "Speaking",
             "minutes": 5
         },
         {
-            "id": "958d29a4",
+            "id": "a52c4e70",
             "day": 4,
             "skill": "Vocabulary",
             "minutes": 8
         },
         {
-            "id": "f896e23f",
+            "id": "976a927e",
             "day": 4,
             "skill": "Writing",
             "minutes": 7
         },
         {
-            "id": "075a20a1",
+            "id": "0bb76d93",
             "day": 4,
             "skill": "Review",
             "minutes": 5
         },
         {
-            "id": "5949bdfb",
+            "id": "f15d6cc9",
             "day": 5,
             "skill": "Listening",
             "minutes": 8
         },
         {
-            "id": "b5575877",
+            "id": "d1dd7671",
             "day": 5,
             "skill": "Shadowing",
             "minutes": 7
         },
         {
-            "id": "f767293c",
+            "id": "0efea67f",
             "day": 5,
             "skill": "Speaking",
             "minutes": 5
