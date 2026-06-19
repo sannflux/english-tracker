@@ -53,6 +53,20 @@
             "day": 2,
             "skill": "Writing",
             "minutes": 10
+        },
+        {
+            "id": "547e058d",
+            "name": "",
+            "day": 3,
+            "skill": "Listening",
+            "minutes": 20
+        },
+        {
+            "id": "3ae7b6a4",
+            "name": "",
+            "day": 3,
+            "skill": "Shadowing",
+            "minutes": 10
         }
     ],
     "schedule_presets": [
