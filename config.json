@@ -109,6 +109,13 @@
             "day": 1,
             "skill": "Vocabulary",
             "minutes": 5
+        },
+        {
+            "id": "0e35e08d",
+            "name": "",
+            "day": 5,
+            "skill": "Vocabulary",
+            "minutes": 5
         }
     ],
     "schedule_presets": [
