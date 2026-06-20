@@ -102,6 +102,13 @@
             "day": 6,
             "skill": "Review",
             "minutes": 10
+        },
+        {
+            "id": "8ac0bd28",
+            "name": "",
+            "day": 1,
+            "skill": "Vocabulary",
+            "minutes": 5
         }
     ],
     "schedule_presets": [
