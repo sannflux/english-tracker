@@ -218,6 +218,103 @@
                     "minutes": 5
                 }
             ]
+        },
+        {
+            "id": "4904f9a5",
+            "name": "30 Menit",
+            "items": [
+                {
+                    "id": "380c6c1e",
+                    "name": "",
+                    "day": 0,
+                    "skill": "Reading",
+                    "minutes": 20
+                },
+                {
+                    "id": "c08869e9",
+                    "name": "",
+                    "day": 0,
+                    "skill": "Speaking",
+                    "minutes": 10
+                },
+                {
+                    "id": "735b921a",
+                    "name": "",
+                    "day": 1,
+                    "skill": "Listening",
+                    "minutes": 20
+                },
+                {
+                    "id": "be99b659",
+                    "name": "",
+                    "day": 1,
+                    "skill": "Shadowing",
+                    "minutes": 10
+                },
+                {
+                    "id": "d11c15ae",
+                    "name": "",
+                    "day": 2,
+                    "skill": "Reading",
+                    "minutes": 20
+                },
+                {
+                    "id": "c6d1f0ba",
+                    "name": "",
+                    "day": 2,
+                    "skill": "Writing",
+                    "minutes": 10
+                },
+                {
+                    "id": "547e058d",
+                    "name": "",
+                    "day": 3,
+                    "skill": "Listening",
+                    "minutes": 20
+                },
+                {
+                    "id": "3ae7b6a4",
+                    "name": "",
+                    "day": 3,
+                    "skill": "Vocabulary",
+                    "minutes": 10
+                },
+                {
+                    "id": "cb096b06",
+                    "name": "",
+                    "day": 4,
+                    "skill": "Reading",
+                    "minutes": 20
+                },
+                {
+                    "id": "5e6b4c69",
+                    "name": "",
+                    "day": 4,
+                    "skill": "Speaking",
+                    "minutes": 10
+                },
+                {
+                    "id": "a3e3ea90",
+                    "name": "",
+                    "day": 5,
+                    "skill": "Reading",
+                    "minutes": 20
+                },
+                {
+                    "id": "fd79c607",
+                    "name": "",
+                    "day": 5,
+                    "skill": "Writing",
+                    "minutes": 10
+                },
+                {
+                    "id": "463567f0",
+                    "name": "",
+                    "day": 6,
+                    "skill": "Review",
+                    "minutes": 10
+                }
+            ]
         }
     ]
 }
