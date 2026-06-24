@@ -568,7 +568,7 @@ def get_ai_recommendation(api_key, skill_totals, target_skill="All Skills",
         return {"tip": "Please provide a Gemini API key.", "exercise": "", "resource": ""}
     try:
         genai.configure(api_key=api_key)
-        model   = genai.GenerativeModel("gemini-2.5-flash-lite")
+        model   = genai.GenerativeModel("gemini-3.1-flash-lite")
         compact = json.dumps(skill_totals, separators=(",", ":"))
         weakest = min(skill_totals, key=skill_totals.get) if skill_totals else "General"
         ctx_parts = [f"Skills(mins):{compact}"]
@@ -773,7 +773,7 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
         with st.spinner("Thinking…"):
             try:
                 genai.configure(api_key=st.session_state.gemini_key)
-                model    = genai.GenerativeModel("gemini-2.5-flash-lite")
+                model    = genai.GenerativeModel("gemini-3.1-flash-lite")
                 response = model.generate_content(full_prompt)
                 reply    = response.text.strip()
                 st.session_state.last_ai_time    = now_wib()
