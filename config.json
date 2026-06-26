@@ -8,7 +8,7 @@
     "custom_skills": [
         "Review"
     ],
-    "eco_mode": false,
+    "eco_mode": true,
     "ai_daily_cap_setting": 18,
     "mobile_mode": false,
     "study_schedule": [
