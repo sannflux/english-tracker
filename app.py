@@ -286,7 +286,8 @@ def sync_config_to_github():
                 "ai_daily_cap_setting": st.session_state.ai_daily_cap_setting,
                 "mobile_mode":          st.session_state.mobile_mode,
                 "study_schedule":       st.session_state.study_schedule,
-                "schedule_presets":     st.session_state.schedule_presets,  # ← NEW
+                "schedule_presets":     st.session_state.schedule_presets,
+                "ai_chat_history":      st.session_state.ai_chat_history[-10:],  # ← persist last 10
             },
         )
 
@@ -363,6 +364,7 @@ if (
             "mobile_mode":          "mobile_mode",
             "study_schedule":       "study_schedule",
             "schedule_presets":     "schedule_presets",   # ← NEW
+            "ai_chat_history":      "ai_chat_history",    # ← persist chat
         }
         for cfg_key, ss_key in _cfg_map.items():
             if cfg_key in _remote_cfg:
@@ -826,6 +828,8 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
 
     st.session_state.ai_chat_history.append({"role": "assistant", "content": reply})
     st.session_state.ai_chat_history = st.session_state.ai_chat_history[-20:]
+    # Persist last 10 messages to GitHub config
+    sync_config_to_github()
     st.rerun()
 
 # ═══════════════════════════════════════════════════════════════
@@ -1067,12 +1071,15 @@ with st.sidebar:
 # FRAGMENT: Metrics
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
-def render_metrics(total_hrs, level, xp, this_week, streak):
+def render_metrics(total_hrs, level, xp, this_week, streak, today_mins=0.0):
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Level",     f"Lvl {level}")
-    m2.metric("Total",     f"{total_hrs:.1f}h")
-    m3.metric("Streak",    f"{streak} Days")
+    m1.metric("Level",  f"Lvl {level}")
+    m2.metric("Total",  f"{total_hrs:.1f}h",
+              delta=f"+{int(today_mins)} min today" if today_mins > 0 else None,
+              delta_color="normal")
+    m3.metric("Streak", f"{streak} Days")
     m4.metric("This Week", f"{this_week:.1f}/{st.session_state.weekly_goal}h")
+
     pct    = int(xp * 100)
     accent = st.session_state.accent_color
     st.markdown(f"""
@@ -1084,6 +1091,47 @@ def render_metrics(total_hrs, level, xp, this_week, streak):
         <div class="xp-bar-inner" style="width:{pct}%;background:{accent};"></div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ── Streak recovery warning ───────────────────────────────
+    if streak > 0 and today_mins == 0:
+        st.warning(
+            f"⚠️ Belum ada log hari ini — streak **{streak} hari** kamu akan putus! "
+            f"Log sekarang sebelum tengah malam."
+        )
+    elif streak == 0 and today_mins == 0:
+        st.info("💡 Mulai streak kamu — log sesi pertama hari ini!")
+
+    # ── Weekly goal breakdown bar ─────────────────────────────
+    weekly_goal = float(st.session_state.weekly_goal)
+    if weekly_goal > 0:
+        _today_wd      = today_wib().weekday()        # 0=Mon, 6=Sun
+        days_remaining = max(0, 6 - _today_wd)        # hari setelah hari ini
+        hrs_remaining  = max(0.0, weekly_goal - this_week)
+        week_pct       = min(1.0, this_week / weekly_goal)
+
+        if hrs_remaining <= 0:
+            note = "🎉 **Goal minggu ini tercapai!**"
+        elif days_remaining == 0:
+            note = f"⚡ Hari terakhir — butuh **{hrs_remaining:.1f}h** lagi!"
+        else:
+            need_per_day = hrs_remaining / days_remaining
+            note = f"butuh **{need_per_day:.1f}h/hari** · {days_remaining} hari tersisa"
+
+        st.markdown(
+            f'<div style="font-size:0.80rem;opacity:0.8;margin-top:10px">'
+            f'📅 Weekly: **{this_week:.1f} / {weekly_goal:.0f}h** — {note}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"""<div style="background:rgba(255,255,255,0.12);border-radius:999px;
+                        height:6px;overflow:hidden;margin-top:4px;">
+                <div style="width:{week_pct*100:.0f}%;height:100%;
+                            background:{accent};border-radius:999px;
+                            transition:width 0.4s ease;opacity:0.75"></div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
 
 # ═══════════════════════════════════════════════════════════════
 # FRAGMENT: AI Coach
@@ -1250,6 +1298,174 @@ def render_tab_dashboard(df, diet, accent_color, today_mins, daily_goal_mins):
         st.plotly_chart(build_skill_bars(diet, accent_color), use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════════
+# PDF REPORT GENERATOR
+# Uses matplotlib — no extra dependencies needed.
+# Generates a multi-page A4 PDF: stats summary, skill chart,
+# 90-day activity chart, and recent sessions table.
+# ═══════════════════════════════════════════════════════════════
+def generate_pdf_report(df: pd.DataFrame, diet: pd.Series,
+                         total_hrs: float, level: int, streak: int,
+                         this_week: float, accent_color: str) -> bytes:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import io as _io
+
+    # Parse accent hex → RGB 0-1
+    h = accent_color.lstrip("#")
+    accent_rgb = tuple(int(h[i:i+2], 16) / 255 for i in (0, 2, 4))
+    bg   = "#1a1a2e"
+    fg   = "white"
+    sub  = "#999999"
+
+    buf = _io.BytesIO()
+    with PdfPages(buf) as pdf:
+
+        # ── Page 1: Summary stats ─────────────────────────────
+        fig = plt.figure(figsize=(8.27, 11.69))
+        fig.patch.set_facecolor(bg)
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_facecolor(bg)
+        ax.axis("off")
+
+        today_str   = today_wib().strftime("%d %B %Y")
+        xp_pct      = (total_hrs % 50) / 50
+        hrs_to_next = 50 - (total_hrs % 50)
+
+        ax.text(0.5, 0.96, "🇬🇧  English Pro Elite", ha="center", va="top",
+                fontsize=24, color=fg, fontweight="bold", transform=ax.transAxes)
+        ax.text(0.5, 0.92, f"Progress Report  ·  {today_str}", ha="center", va="top",
+                fontsize=13, color=sub, transform=ax.transAxes)
+
+        # Divider line
+        ax.axhline(0.89, xmin=0.05, xmax=0.95, color="#444455", linewidth=0.8,
+                   transform=ax.transAxes)
+
+        stats = [
+            ("Level",           f"Lvl {level}"),
+            ("Total Study",     f"{total_hrs:.1f} hours"),
+            ("Current Streak",  f"{streak} days"),
+            ("This Week",       f"{this_week:.1f} / {0} h"),
+            ("To Next Level",   f"{hrs_to_next:.1f} h remaining"),
+        ]
+        y = 0.84
+        for label, value in stats:
+            ax.text(0.28, y, label + ":", ha="right", fontsize=12,
+                    color=sub, transform=ax.transAxes)
+            ax.text(0.31, y, value, ha="left", fontsize=13,
+                    color=fg, fontweight="bold", transform=ax.transAxes)
+            y -= 0.065
+
+        # XP progress bar
+        bar_top = y - 0.01
+        ax.text(0.5, bar_top, f"Progress to Level {level+1}  ·  {int(xp_pct*100)}%",
+                ha="center", fontsize=10, color=sub, transform=ax.transAxes)
+        bar_y = bar_top - 0.025
+        # background bar
+        bar_bg = plt.Rectangle((0.05, bar_y), 0.90, 0.018,
+                                transform=ax.transAxes, color="#333344",
+                                clip_on=False)
+        # fill bar
+        bar_fill = plt.Rectangle((0.05, bar_y), 0.90 * xp_pct, 0.018,
+                                  transform=ax.transAxes, color=accent_rgb,
+                                  clip_on=False)
+        ax.add_patch(bar_bg)
+        ax.add_patch(bar_fill)
+
+        pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+        # ── Page 2: Skill breakdown bar chart ────────────────
+        fig, ax = plt.subplots(figsize=(8.27, 5.5))
+        fig.patch.set_facecolor(bg)
+        ax.set_facecolor(bg)
+
+        df_bar = diet.reset_index()
+        df_bar.columns = ["Skill", "Minutes"]
+        df_bar = df_bar.sort_values("Minutes", ascending=True)
+        hours  = df_bar["Minutes"] / 60
+
+        bars = ax.barh(df_bar["Skill"], hours, color=accent_rgb, alpha=0.85)
+        ax.set_xlabel("Hours", color=fg, fontsize=11)
+        ax.set_title("Skill Breakdown", color=fg, fontsize=15, pad=12, loc="left")
+        ax.tick_params(colors=fg, labelsize=10)
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#444455")
+        for bar, val in zip(bars, hours):
+            ax.text(val + max(hours) * 0.01, bar.get_y() + bar.get_height() / 2,
+                    f"{val:.1f}h", va="center", color=fg, fontsize=9)
+        ax.set_xlim(right=hours.max() * 1.15)
+        fig.tight_layout(pad=2.5)
+        pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+        # ── Page 3: 90-day daily activity area chart ─────────
+        fig, ax = plt.subplots(figsize=(8.27, 4.5))
+        fig.patch.set_facecolor(bg)
+        ax.set_facecolor(bg)
+
+        cutoff    = _naive_ts(today_wib() - timedelta(days=90))
+        dates_col = _naive_dates(df["Date"])
+        daily = (df[dates_col >= cutoff]
+                 .groupby(dates_col.dt.date)["Time Spent"]
+                 .sum().reset_index())
+        daily.columns = ["Date", "Minutes"]
+        daily["Date"]  = pd.to_datetime(daily["Date"])
+        daily          = daily.sort_values("Date")
+        daily_hrs      = daily["Minutes"] / 60
+
+        ax.fill_between(daily["Date"], daily_hrs, alpha=0.45, color=accent_rgb)
+        ax.plot(daily["Date"], daily_hrs, color=accent_rgb, linewidth=1.8)
+        ax.set_title("Daily Study — Last 90 Days", color=fg, fontsize=15, pad=12, loc="left")
+        ax.set_ylabel("Hours", color=fg, fontsize=11)
+        ax.tick_params(colors=fg, labelsize=9, rotation=25)
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#444455")
+        fig.tight_layout(pad=2.5)
+        pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+        # ── Page 4: Recent sessions table ────────────────────
+        recent = df.head(25).copy()
+        if pd.api.types.is_datetime64_any_dtype(recent["Date"]):
+            recent["Date"] = recent["Date"].dt.strftime("%Y-%m-%d")
+        recent["Time Spent"] = recent["Time Spent"].astype(int).astype(str) + " min"
+        recent = recent[["Date", "Skill", "Time Spent", "Notes"]].fillna("").copy()
+        recent["Notes"] = recent["Notes"].str[:35]
+
+        fig, ax = plt.subplots(figsize=(8.27, 11.69))
+        fig.patch.set_facecolor(bg)
+        ax.set_facecolor(bg)
+        ax.axis("off")
+        ax.text(0.0, 1.01, "Recent Sessions (last 25)", ha="left", va="bottom",
+                fontsize=14, color=fg, fontweight="bold", transform=ax.transAxes)
+
+        tbl = ax.table(
+            cellText=recent.values,
+            colLabels=list(recent.columns),
+            cellLoc="left", loc="upper center",
+            bbox=[0, 0, 1, 0.97],
+        )
+        tbl.auto_set_font_size(False)
+        tbl.set_fontsize(8)
+        for (row, col), cell in tbl.get_celld().items():
+            if row == 0:
+                cell.set_facecolor("#2a2a4e")
+                cell.set_text_props(color=accent_rgb, fontweight="bold")
+            else:
+                cell.set_facecolor("#1e1e32" if row % 2 == 0 else "#252538")
+                cell.set_text_props(color=fg)
+            cell.set_edgecolor("#3a3a55")
+        fig.tight_layout(pad=1.5)
+        pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+    buf.seek(0)
+    return buf.read()
+
+
+# ═══════════════════════════════════════════════════════════════
 # FRAGMENT: History Tab
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
@@ -1257,14 +1473,47 @@ def render_tab_history(all_skills: list):
     current_df = st.session_state.df
     st.info("💡 Edit or delete rows, then press **💾 Save Changes** to sync to GitHub.")
 
+    # ── Export buttons ────────────────────────────────────────
+    ex1, ex2 = st.columns(2)
+
     _date_col = (current_df["Date"].dt.strftime("%Y-%m-%d")
                  if pd.api.types.is_datetime64_any_dtype(current_df["Date"])
                  else current_df["Date"])
     csv_bytes = current_df.assign(Date=_date_col).to_csv(index=False).encode("utf-8")
-    st.download_button(label="⬇️ Export CSV", data=csv_bytes,
-                       file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.csv",
-                       mime="text/csv")
+    with ex1:
+        st.download_button(
+            label="⬇️ Export CSV", data=csv_bytes,
+            file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.csv",
+            mime="text/csv", use_container_width=True,
+        )
+    with ex2:
+        if st.button("📄 Generate PDF Report", use_container_width=True):
+            total_hrs_pdf, level_pdf, _, streak_pdf = get_dashboard_stats(current_df)
+            _, diet_pdf, this_week_pdf              = get_or_compute_derived(current_df)
+            with st.spinner("Generating PDF… (4 halaman)"):
+                try:
+                    pdf_bytes = generate_pdf_report(
+                        df=current_df, diet=diet_pdf,
+                        total_hrs=total_hrs_pdf, level=level_pdf,
+                        streak=streak_pdf, this_week=this_week_pdf,
+                        accent_color=st.session_state.accent_color,
+                    )
+                    st.session_state["_pdf_bytes"] = pdf_bytes
+                    st.toast("✅ PDF siap — klik Save PDF di bawah!", icon="📄")
+                except Exception as e:
+                    st.error(f"❌ PDF error: {e}")
 
+    if st.session_state.get("_pdf_bytes"):
+        st.download_button(
+            label="💾 Save PDF Report",
+            data=st.session_state["_pdf_bytes"],
+            file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            key="pdf_dl_btn",
+        )
+
+    # ── Data editor ───────────────────────────────────────────
     edited_df = st.data_editor(
         current_df,
         column_config={
@@ -1727,7 +1976,7 @@ if st.session_state.df is not None:
         if st.button("➕ Log Time", type="primary", use_container_width=True):
             log_session_dialog(all_skills)
 
-    render_metrics(total_hrs, level, xp, this_week, streak)
+    render_metrics(total_hrs, level, xp, this_week, streak, today_mins)
     render_schedule_widget(all_skills)
     render_ai_coach(diet.to_dict(), all_skills, streak=streak, level=level, this_week=this_week)
 
