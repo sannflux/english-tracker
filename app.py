@@ -690,6 +690,7 @@ def _build_tracker_context(diet_dict, streak, level, this_week,
     weakest     = min(diet_dict, key=diet_dict.get) if diet_dict else "unknown"
     weak_mins   = diet_dict.get(weakest, 0)
     hrs_to_next = 50 - (total_hrs % 50)
+
     lines = [
         "English tracker data (use this to answer the user's question):",
         f"• Total: {total_hrs:.1f}h | Level {level} ({xp_pct}% to next, ~{hrs_to_next:.1f}h away)",
@@ -700,6 +701,47 @@ def _build_tracker_context(diet_dict, streak, level, this_week,
         f"• Weakest skill: {weakest} ({weak_mins}m total)",
         f"• Full breakdown (mins): {json.dumps(diet_dict, separators=(',', ':'))}",
     ]
+
+    # ── Jadwal mingguan ──────────────────────────────────────
+    schedule = st.session_state.get("study_schedule", [])
+    if schedule:
+        week_lines = []
+        for day_idx, day_name in enumerate(SCHEDULE_DAYS):
+            day_items = [s for s in schedule if s.get("day") == day_idx]
+            if day_items:
+                items_str = ", ".join(
+                    f"{(s.get('name') or s.get('skill', '?'))} {s.get('minutes', 0)}m"
+                    for s in day_items
+                )
+                week_lines.append(f"  {day_name[:3]}: {items_str}")
+        if week_lines:
+            lines.append("• Weekly schedule:\n" + "\n".join(week_lines))
+
+        # ── Status jadwal hari ini ────────────────────────────
+        today       = today_wib()
+        today_day   = today.weekday()
+        today_sched = [s for s in schedule if s.get("day") == today_day]
+        if today_sched:
+            done_ids     = _get_schedule_done_from_data(today_sched, today)
+            status_parts = []
+            for s in today_sched:
+                label  = s.get("name") or s.get("skill", "?")
+                mins   = s.get("minutes", 0)
+                status = "done" if s.get("id", "") in done_ids else "pending"
+                status_parts.append(f"{label} {mins}m [{status}]")
+            lines.append(
+                f"• Today's schedule ({SCHEDULE_DAYS[today_day]}): "
+                + " | ".join(status_parts)
+            )
+
+    # ── Nama preset tersimpan ────────────────────────────────
+    presets = st.session_state.get("schedule_presets", [])
+    if presets:
+        lines.append(
+            f"• Saved schedule presets: "
+            + ", ".join(p["name"] for p in presets)
+        )
+
     return "\n".join(lines)
 
 @st.fragment
