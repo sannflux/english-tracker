@@ -344,5 +344,15 @@
                 }
             ]
         }
+    ],
+    "ai_chat_history": [
+        {
+            "role": "user",
+            "content": "Gw ga ada ide mau review apa di fase review, gmn? "
+        },
+        {
+            "role": "assistant",
+            "content": "Wah, semangat ya! Kamu sudah di 90% Level 5, tinggal 4,8 jam lagi! Sedikit lagi naik level, nih.\n\nKarena durasi \"Review\" kamu baru 6 menit, ini cara mudah memulainya:\n\n1. **Review Vocab:** Buka kembali daftar kata baru yang kamu temukan di bacaan minggu ini. Coba buat satu kalimat sendiri untuk tiap kata.\n2. **Review Grammar:** Lihat kembali topik tata bahasa yang sempat bikin kamu bingung di latihan sebelumnya.\n3. **Review Speaking:** Dengarkan rekaman suaramu sendiri dari sesi *Speaking* lalu. Apakah ada pelafalan yang bisa diperbaiki?\n\nTarget hari ini cuma 10 menit, jadi fokus saja pada **satu** materi yang paling menantang buat kamu minggu ini. Kamu pasti bisa! *Keep going!*"
+        }
     ]
 }
