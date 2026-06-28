@@ -1117,9 +1117,13 @@ def render_metrics(total_hrs, level, xp, this_week, streak, today_mins=0.0):
             need_per_day = hrs_remaining / days_remaining
             note = f"butuh **{need_per_day:.1f}h/hari** · {days_remaining} hari tersisa"
 
+        # note may contain **bold** markdown — convert to <b> for HTML context
+        note_html = note.replace("**", "<b>", 1)
+        while "**" in note_html:
+            note_html = note_html.replace("**", "</b>", 1)
         st.markdown(
             f'<div style="font-size:0.80rem;opacity:0.8;margin-top:10px">'
-            f'📅 Weekly: **{this_week:.1f} / {weekly_goal:.0f}h** — {note}'
+            f'📅 Weekly: <b>{this_week:.1f} / {weekly_goal:.0f}h</b> — {note_html}'
             f'</div>',
             unsafe_allow_html=True,
         )
