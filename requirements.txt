@@ -4,3 +4,4 @@ PyGithub
 plotly
 numpy
 google-generativeai
+matplotlib
