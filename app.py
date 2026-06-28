@@ -684,74 +684,105 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
 # FREE-FORM AI CHAT
 # ═══════════════════════════════════════════════════════════════
 def _build_tracker_context(diet_dict, streak, level, this_week,
-                            weekly_goal, today_mins, daily_goal_mins) -> str:
+                            weekly_goal, today_mins, daily_goal_mins,
+                            flags: dict | None = None) -> str:
+    """
+    flags keys (all True by default):
+      include_stats      — level, total hrs, streak, week/day progress
+      include_breakdown  — full skill logged-minutes breakdown
+      include_schedule   — weekly planned schedule
+      include_today      — today's schedule done/pending status
+      include_presets    — saved preset names
+    """
+    if flags is None:
+        flags = {}
+    def _on(key):
+        return flags.get(key, True)
+
     total_hrs   = sum(diet_dict.values()) / 60
     xp_pct      = int((total_hrs % 50) / 50 * 100)
+    hrs_to_next = 50 - (total_hrs % 50)
     top_skills  = sorted(diet_dict.items(), key=lambda x: x[1], reverse=True)[:3]
-    top_str     = ", ".join(f"{k}={v}m" for k, v in top_skills) if top_skills else "none"
+    top_str     = ", ".join(f"{k}={v}m (logged)" for k, v in top_skills) if top_skills else "none"
     weakest     = min(diet_dict, key=diet_dict.get) if diet_dict else "unknown"
     weak_mins   = diet_dict.get(weakest, 0)
-    hrs_to_next = 50 - (total_hrs % 50)
 
     lines = [
-        "English tracker data (use this to answer the user's question):",
-        f"• Total: {total_hrs:.1f}h | Level {level} ({xp_pct}% to next, ~{hrs_to_next:.1f}h away)",
-        f"• Streak: {streak} days",
-        f"• This week: {this_week:.1f}/{weekly_goal}h",
-        f"• Today: {today_mins:.0f}/{daily_goal_mins} min",
-        f"• Top skills: {top_str}",
-        f"• Weakest skill: {weakest} ({weak_mins}m total)",
-        f"• Full breakdown (mins): {json.dumps(diet_dict, separators=(',', ':'))}",
+        "=== English Tracker Context ===",
+        "IMPORTANT: 'logged' = actual study time recorded in CSV.",
+        "'planned/scheduled' = target duration in the study schedule.",
+        "These are DIFFERENT — do not confuse them.",
     ]
 
-    # ── Jadwal mingguan ──────────────────────────────────────
+    if _on("include_stats"):
+        lines += [
+            "",
+            "[PROGRESS]",
+            f"• Total logged: {total_hrs:.1f}h | Level {level} ({xp_pct}% to next, ~{hrs_to_next:.1f}h away)",
+            f"• Streak: {streak} days",
+            f"• This week logged: {this_week:.1f}/{weekly_goal}h goal",
+            f"• Today logged: {today_mins:.0f}/{daily_goal_mins} min goal",
+        ]
+
+    if _on("include_breakdown") and diet_dict:
+        # Build a clear per-skill table
+        skill_rows = "\n".join(
+            f"    {k}: {v}m logged ({v/60:.1f}h)"
+            for k, v in sorted(diet_dict.items(), key=lambda x: x[1], reverse=True)
+        )
+        lines += [
+            "",
+            "[SKILL BREAKDOWN — logged time in CSV]",
+            f"• Top: {top_str}",
+            f"• Weakest logged: {weakest} ({weak_mins}m = {weak_mins/60:.1f}h total)",
+            f"• All skills:\n{skill_rows}",
+        ]
+
+    # ── Schedule ─────────────────────────────────────────────
     schedule = st.session_state.get("study_schedule", [])
-    if schedule:
-        week_lines = []
+    if schedule and _on("include_schedule"):
+        lines.append("")
+        lines.append("[WEEKLY STUDY SCHEDULE — planned sessions, NOT logged time]")
         for day_idx, day_name in enumerate(SCHEDULE_DAYS):
             day_items = [s for s in schedule if s.get("day") == day_idx]
             if day_items:
-                items_str = ", ".join(
-                    f"{(s.get('name') or s.get('skill', '?'))} {s.get('minutes', 0)}m"
+                items_str = " | ".join(
+                    f"{(s.get('name') or s.get('skill','?'))} ({s.get('skill','?')}) "
+                    f"planned {s.get('minutes',0)}m"
                     for s in day_items
                 )
-                week_lines.append(f"  {day_name[:3]}: {items_str}")
-        if week_lines:
-            lines.append("• Weekly schedule:\n" + "\n".join(week_lines))
+                lines.append(f"  {day_name}: {items_str}")
 
-        # ── Status jadwal hari ini ────────────────────────────
+    if schedule and _on("include_today"):
         today       = today_wib()
         today_day   = today.weekday()
         today_sched = [s for s in schedule if s.get("day") == today_day]
         if today_sched:
-            done_ids     = _get_schedule_done_from_data(today_sched, today)
-            status_parts = []
+            done_ids = _get_schedule_done_from_data(today_sched, today)
+            lines.append("")
+            lines.append(f"[TODAY'S SCHEDULE — {SCHEDULE_DAYS[today_day]}]")
             for s in today_sched:
-                label  = s.get("name") or s.get("skill", "?")
-                mins   = s.get("minutes", 0)
-                status = "done" if s.get("id", "") in done_ids else "pending"
-                status_parts.append(f"{label} {mins}m [{status}]")
-            lines.append(
-                f"• Today's schedule ({SCHEDULE_DAYS[today_day]}): "
-                + " | ".join(status_parts)
-            )
+                label   = s.get("name") or s.get("skill", "?")
+                skill   = s.get("skill", "?")
+                planned = s.get("minutes", 0)
+                status  = "✅ done (auto-logged)" if s.get("id","") in done_ids else "⏳ pending"
+                lines.append(f"  • {label} (skill: {skill}) — planned {planned}m — {status}")
 
-    # ── Nama preset tersimpan ────────────────────────────────
-    presets = st.session_state.get("schedule_presets", [])
-    if presets:
-        lines.append(
-            f"• Saved schedule presets: "
-            + ", ".join(p["name"] for p in presets)
-        )
+    if _on("include_presets"):
+        presets = st.session_state.get("schedule_presets", [])
+        if presets:
+            lines.append("")
+            lines.append(f"[SAVED PRESETS]: {', '.join(p['name'] for p in presets)}")
 
+    lines.append("\n=== End Context ===")
     return "\n".join(lines)
 
 @st.fragment
 def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
+    # ── Header ───────────────────────────────────────────────
     hcol, bcol = st.columns([4, 1])
     with hcol:
         st.markdown("### 💬 Chat with Your AI Coach")
-        st.caption("Ask anything — your full tracker data is shared with the AI.")
     with bcol:
         if st.session_state.ai_chat_history:
             if st.button("🗑️ Clear", use_container_width=True):
@@ -762,18 +793,48 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
         st.info("💡 Add your Gemini API key in the sidebar to use this feature.")
         return
 
+    # ── Context Selector ─────────────────────────────────────
+    with st.expander("🎛️ Konteks yang dikirim ke AI", expanded=False):
+        st.caption(
+            "Pilih data apa yang disertakan dalam setiap pesan ke AI. "
+            "Matikan yang tidak relevan untuk jawaban lebih fokus."
+        )
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            ctx_stats     = st.checkbox("📊 Progress & Stats",    value=True,  key="ctx_stats")
+            ctx_breakdown = st.checkbox("🎯 Skill Breakdown",     value=True,  key="ctx_breakdown")
+        with cc2:
+            ctx_schedule  = st.checkbox("📅 Jadwal Mingguan",     value=True,  key="ctx_schedule")
+            ctx_today     = st.checkbox("✅ Status Jadwal Hari Ini", value=True, key="ctx_today")
+        ctx_presets   = st.checkbox("🗂️ Nama Preset Tersimpan", value=False, key="ctx_presets")
+
+        # Preview badge count
+        active = sum([ctx_stats, ctx_breakdown, ctx_schedule, ctx_today, ctx_presets])
+        st.caption(f"**{active}/5 konteks aktif** — lebih banyak = jawaban lebih personal, "
+                   f"lebih sedikit = lebih cepat & hemat token.")
+
+    ctx_flags = {
+        "include_stats":     st.session_state.get("ctx_stats",     True),
+        "include_breakdown": st.session_state.get("ctx_breakdown", True),
+        "include_schedule":  st.session_state.get("ctx_schedule",  True),
+        "include_today":     st.session_state.get("ctx_today",     True),
+        "include_presets":   st.session_state.get("ctx_presets",   False),
+    }
+
+    # ── Message history ──────────────────────────────────────
     for msg in st.session_state.ai_chat_history:
         with st.chat_message(msg["role"], avatar="🧑" if msg["role"] == "user" else "🤖"):
             st.markdown(msg["content"])
 
+    # ── Starter suggestions ──────────────────────────────────
     if not st.session_state.ai_chat_history:
         st.markdown('<div style="opacity:0.6;font-size:0.84rem;margin-bottom:8px">💡 Try asking:</div>',
                     unsafe_allow_html=True)
         suggestions = [
-            "What should I focus on this week?",
+            "Jadwal hari ini apa saja yang belum selesai?",
             "How many hours until my next level?",
-            "Give me a 7-day study plan",
-            "Why is my grammar weak and how do I fix it?",
+            "Give me a 7-day study plan based on my schedule",
+            "Why is my weakest skill weak and how do I fix it?",
         ]
         scols = st.columns(2)
         for i, s in enumerate(suggestions):
@@ -781,6 +842,7 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
                 st.session_state["_chat_prefill"] = s
                 st.rerun()
 
+    # ── Chat input ───────────────────────────────────────────
     prefill    = st.session_state.pop("_chat_prefill", "")
     user_input = st.chat_input("Ask your coach anything…", key="ai_chat_input")
     if not user_input and prefill:
@@ -795,9 +857,14 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
 
     st.session_state.ai_chat_history.append({"role": "user", "content": user_input})
 
-    tracker_ctx   = _build_tracker_context(diet_dict, streak, level, this_week,
-                                           float(st.session_state.weekly_goal),
-                                           today_mins, int(st.session_state.daily_goal_mins))
+    # ── Build context with selected flags ────────────────────
+    tracker_ctx = _build_tracker_context(
+        diet_dict, streak, level, this_week,
+        float(st.session_state.weekly_goal),
+        today_mins, int(st.session_state.daily_goal_mins),
+        flags=ctx_flags,
+    )
+
     history_window = st.session_state.ai_chat_history[-9:-1]
     history_str    = ""
     if history_window:
@@ -807,9 +874,12 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
         ) + "\n\n"
 
     full_prompt = (
-        f"You are a helpful English learning coach. "
-        f"Answer concisely (≤150 words unless a study plan is requested). "
-        f"Be encouraging and specific.\n\n"
+        "You are a helpful English learning coach. "
+        "Answer in the same language the user uses (Indonesian or English). "
+        "Answer concisely (≤150 words unless a study plan is requested). "
+        "Be encouraging and specific. "
+        "When referencing skill time, always clarify if it is 'logged' (actual) "
+        "or 'planned' (scheduled) to avoid confusion.\n\n"
         f"{tracker_ctx}\n\n{history_str}User: {user_input}\nCoach:"
     )
 
@@ -828,7 +898,6 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
 
     st.session_state.ai_chat_history.append({"role": "assistant", "content": reply})
     st.session_state.ai_chat_history = st.session_state.ai_chat_history[-20:]
-    # Persist last 10 messages to GitHub config
     sync_config_to_github()
     st.rerun()
 
