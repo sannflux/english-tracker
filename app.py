@@ -1411,9 +1411,9 @@ def generate_pdf_report(df: pd.DataFrame, diet: pd.Series,
         ax.text(0.5, 0.92, f"Progress Report  ·  {today_str}", ha="center", va="top",
                 fontsize=13, color=sub, transform=ax.transAxes)
 
-        # Divider line
-        ax.axhline(0.89, xmin=0.05, xmax=0.95, color="#444455", linewidth=0.8,
-                   transform=ax.transAxes)
+        # Divider line (use ax.plot with transAxes instead of axhline)
+        ax.plot([0.05, 0.95], [0.89, 0.89], color="#444455", linewidth=0.8,
+                transform=ax.transAxes)
 
         stats = [
             ("Level",           f"Lvl {level}"),
