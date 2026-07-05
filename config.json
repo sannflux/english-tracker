@@ -348,14 +348,6 @@
     "ai_chat_history": [
         {
             "role": "user",
-            "content": "Gimana metode belajar listeningnya? "
-        },
-        {
-            "role": "assistant",
-            "content": "Bagus sekali pertanyaannya! Karena *Listening* adalah salah satu kekuatanmu (53.0 jam **logged**), mari kita tingkatkan efektivitasnya dengan metode ini:\n\n1. **Active Listening (Focused):** Pilih video/podcast pendek (3-5 menit). Dengarkan tanpa *subtitle* dulu, lalu catat poin utamanya. Setelah itu, dengarkan kembali sambil menyalakan *subtitle* untuk mengecek apa yang terlewat.\n2. **Dictation (Dikte):** Ambil satu kalimat dari audio, tulis apa yang kamu dengar kata demi kata. Ini sangat membantu melatih fokus telinga pada detail kecil seperti *grammar* atau *tenses*.\n3. **Shadowing:** Kamu bisa menggabungkan dengan latihan *Shadowing* (yang saat ini baru 6.7 jam **logged**). Ikuti cara penutur asli berbicara persis setelah mereka mengucapkannya.\n\nIngat, durasi *Listening* kamu di jadwal adalah 20 menit **planned**. Gunakan waktu tersebut untuk fokus pada satu audio saja agar tidak kewalahan. Semangat, sedikit lagi ke Level 6!"
-        },
-        {
-            "role": "user",
             "content": "Gimana metode readingnya? Btw gw ga suka nonton podcast, jadi gw nonton vid 20 menit+. "
         },
         {
@@ -385,6 +377,14 @@
         {
             "role": "assistant",
             "content": "That\u2019s an ambitious and exciting goal! To reach advanced proficiency in 3 months with a 30-minute daily focus, we must prioritize **high-intensity engagement** over passive consumption.\n\nHere is your 30-minute **planned** daily study structure:\n\n*   **15m Intensive Listening (Active):** Watch 15 minutes of a high-level video (TED Talks, documentaries, or deep-dive essays). Do not just watch\u2014identify 3 phrases where you struggled to hear the \"connected speech\" and repeat them until you can mimic the speed perfectly.\n*   **15m Intensive Reading:** Read articles from *The Economist*, *Medium* (long-form), or academic journals. Don\u2019t just finish the text; practice **\"Active Summarization.\"** Explain the core argument in one English paragraph.\n\n**Coach\u2019s Tip:** To reach \"advanced\" in 3 months, you must push into uncomfortable topics (politics, science, philosophy). Stick to this **planned** 30m routine consistently, and you will hit Level 6 very soon! Ready to start?"
+        },
+        {
+            "role": "user",
+            "content": "Recommend me a book to read"
+        },
+        {
+            "role": "assistant",
+            "content": "Since you want to reach an advanced level, you should pick books that challenge your vocabulary but keep you engaged. Here are three recommendations based on your goal:\n\n1. **\"Atomic Habits\" by James Clear**: Perfect for your level. The language is clear, professional, and highly practical. It\u2019s excellent for learning how to discuss productivity and psychology in English.\n2. **\"Sapiens\" by Yuval Noah Harari**: If you want \"advanced,\" this is it. It uses complex sentence structures and academic vocabulary. It will force you to analyze history and human nature, which is great for your \"Active Summarization\" practice.\n3. **\"The Midnight Library\" by Matt Haig**: A great piece of contemporary fiction. It uses beautiful, descriptive language that will help you move beyond basic conversational English.\n\n**Coach's Tip:** When reading, if you find a paragraph that sounds \"advanced,\" read it aloud! Which one sounds most interesting to you?"
         }
     ]
 }
