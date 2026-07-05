@@ -348,14 +348,6 @@
     "ai_chat_history": [
         {
             "role": "user",
-            "content": "Gw ga ada ide mau review apa di fase review, gmn? "
-        },
-        {
-            "role": "assistant",
-            "content": "Wah, semangat ya! Kamu sudah di 90% Level 5, tinggal 4,8 jam lagi! Sedikit lagi naik level, nih.\n\nKarena durasi \"Review\" kamu baru 6 menit, ini cara mudah memulainya:\n\n1. **Review Vocab:** Buka kembali daftar kata baru yang kamu temukan di bacaan minggu ini. Coba buat satu kalimat sendiri untuk tiap kata.\n2. **Review Grammar:** Lihat kembali topik tata bahasa yang sempat bikin kamu bingung di latihan sebelumnya.\n3. **Review Speaking:** Dengarkan rekaman suaramu sendiri dari sesi *Speaking* lalu. Apakah ada pelafalan yang bisa diperbaiki?\n\nTarget hari ini cuma 10 menit, jadi fokus saja pada **satu** materi yang paling menantang buat kamu minggu ini. Kamu pasti bisa! *Keep going!*"
-        },
-        {
-            "role": "user",
             "content": "Gimana metode belajar listeningnya? "
         },
         {
@@ -385,6 +377,14 @@
         {
             "role": "assistant",
             "content": "Untuk mencapai tahap di mana kamu bisa mendengar apapun sambil santai (*effortless listening*), kuncinya adalah **Immersion (Paparan)** yang konsisten. Kamu sudah punya 53.6 jam **logged** di *Listening*, ini fondasi yang hebat!\n\nAgar telingamu semakin \"terbiasa\" dan tidak perlu *effort* ekstra, coba ini:\n\n1. **Passive Immersion:** Putar konten Inggris (YouTube/Podcast) sebagai *background noise* saat kamu melakukan kegiatan santai (masak, beres-beres, atau di perjalanan). Tujuannya bukan mengerti 100%, tapi membiasakan otak dengan ritme dan intonasi bahasa Inggris.\n2. **Increase the Difficulty:** Mulai dengarkan konten dengan logat berbeda atau topik yang lebih teknis.\n3. **Transcription/Dictation:** Untuk memahami detail yang sering terlewat, tetap lakukan *dictation* sesekali agar otakmu menangkap kata-kata yang tersambung (*connected speech*).\n\nKonsistensi adalah kunci. Kamu sudah sangat dekat ke Level 6! *Keep going!*"
+        },
+        {
+            "role": "user",
+            "content": "Do u have a 30m schedule recommendation? I just want really good at reading and listening. So, I can read anything of watch anything English contents. I want to get really advanced 3 months from now. "
+        },
+        {
+            "role": "assistant",
+            "content": "That\u2019s an ambitious and exciting goal! To reach advanced proficiency in 3 months with a 30-minute daily focus, we must prioritize **high-intensity engagement** over passive consumption.\n\nHere is your 30-minute **planned** daily study structure:\n\n*   **15m Intensive Listening (Active):** Watch 15 minutes of a high-level video (TED Talks, documentaries, or deep-dive essays). Do not just watch\u2014identify 3 phrases where you struggled to hear the \"connected speech\" and repeat them until you can mimic the speed perfectly.\n*   **15m Intensive Reading:** Read articles from *The Economist*, *Medium* (long-form), or academic journals. Don\u2019t just finish the text; practice **\"Active Summarization.\"** Explain the core argument in one English paragraph.\n\n**Coach\u2019s Tip:** To reach \"advanced\" in 3 months, you must push into uncomfortable topics (politics, science, philosophy). Stick to this **planned** 30m routine consistently, and you will hit Level 6 very soon! Ready to start?"
         }
     ]
 }
