@@ -348,14 +348,6 @@
     "ai_chat_history": [
         {
             "role": "user",
-            "content": "Gimana metode readingnya? Btw gw ga suka nonton podcast, jadi gw nonton vid 20 menit+. "
-        },
-        {
-            "role": "assistant",
-            "content": "Tidak masalah! Kalau kamu lebih suka video berdurasi 20 menit+, metode *Active Listening* yang saya sarankan tetap bisa dipakai dengan cara membedah video tersebut per segmen (misal: ambil 5 menit terbaik untuk didengarkan berulang-ulang).\n\nUntuk **Reading**, karena ini adalah keahlian utamamu (59.2 jam **logged**), mari tingkatkan ke level *critical*:\n\n1. **Active Reading:** Jangan cuma membaca. Sambil membaca, tulis 3 pertanyaan \"Why\" atau \"How\" tentang isi teks tersebut, lalu coba jawab sendiri.\n2. **Vocabulary Mining:** Karena *Vocabulary* masih butuh banyak latihan (23.4 jam **logged**), catat 3-5 kata baru dari bacaanmu, lalu buat kalimat yang relevan dengan hidupmu.\n3. **Summarizing:** Setelah selesai membaca 20 menit **planned**, tutup bukunya dan jelaskan isi bacaan tersebut dengan bahasamu sendiri (bisa ditulis atau diucapkan).\n\nAyo selesaikan 20 menit **planned** hari ini! *You're so close to Level 6!*"
-        },
-        {
-            "role": "user",
             "content": "Metode speaking? Gw bingung mau ngomongin apa! "
         },
         {
@@ -385,6 +377,14 @@
         {
             "role": "assistant",
             "content": "Since you want to reach an advanced level, you should pick books that challenge your vocabulary but keep you engaged. Here are three recommendations based on your goal:\n\n1. **\"Atomic Habits\" by James Clear**: Perfect for your level. The language is clear, professional, and highly practical. It\u2019s excellent for learning how to discuss productivity and psychology in English.\n2. **\"Sapiens\" by Yuval Noah Harari**: If you want \"advanced,\" this is it. It uses complex sentence structures and academic vocabulary. It will force you to analyze history and human nature, which is great for your \"Active Summarization\" practice.\n3. **\"The Midnight Library\" by Matt Haig**: A great piece of contemporary fiction. It uses beautiful, descriptive language that will help you move beyond basic conversational English.\n\n**Coach's Tip:** When reading, if you find a paragraph that sounds \"advanced,\" read it aloud! Which one sounds most interesting to you?"
+        },
+        {
+            "role": "user",
+            "content": "I want to advance. Give me some books recommendation"
+        },
+        {
+            "role": "assistant",
+            "content": "To push toward an advanced level, you need books that combine sophisticated vocabulary with complex ideas. Here are three recommendations specifically for your goal of advanced mastery:\n\n1. **\"Thinking, Fast and Slow\" by Daniel Kahneman**: This is a classic for high-level learners. It\u2019s dense, academic, and full of logical arguments. It\u2019s perfect for practicing **active summarization**.\n2. **\"1984\" by George Orwell**: A literary masterpiece. The vocabulary is precise and the political themes are deep. It will challenge your comprehension of nuance and tone.\n3. **\"Educated\" by Tara Westover**: A powerful memoir. Because it\u2019s biographical, it uses a mix of emotional, narrative, and analytical language. It\u2019s fantastic for broadening your descriptive range.\n\n**Coach\u2019s Tip:** For your 15m **planned** reading sessions, don't just read\u2014highlight \"power words.\" Aim to use at least 3 of these in your active summary! Which genre excites you more: Psychology, Fiction, or Memoir?"
         }
     ]
 }
