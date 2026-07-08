@@ -109,26 +109,24 @@ def _load_bg_base64(path: str) -> str:
 
 def set_background(png_file: str, light_mode: bool = False):
     bg           = _load_bg_base64(png_file)
-    sidebar_bg   = "rgba(245,245,250,0.92)" if light_mode else "rgba(0,0,0,0.70)"
-    tab_bg       = "rgba(255,255,255,0.82)" if light_mode else "rgba(20,20,20,0.60)"
+    sidebar_bg   = "rgba(245,245,250,1.0)" if light_mode else "rgba(0,0,0,0.70)"
+    tab_bg       = "rgba(255,255,255,0.95)" if light_mode else "rgba(20,20,20,0.60)"
     text_color   = "#0d0d0d"               if light_mode else "white"
     alert_bg     = "rgba(255,255,255,0.5)" if light_mode else "rgba(0,0,0,0.40)"
     alert_border = "rgba(0,0,0,0.15)"      if light_mode else "rgba(255,255,255,0.20)"
 
-    # Light mode: tetap pakai bg image tapi ditimpa overlay putih semi-opaque
-    # sehingga teks gelap tetap terbaca di atas gambar apapun
-    if bg:
+    # Light mode → pure white, no background image at all
+    if light_mode:
+        bg_css = '.stApp {background-color:#ffffff !important; background-image:none !important;}'
+        light_overlay = ""
+    elif bg:
         bg_css = (
             f'.stApp {{background-image:url("data:image/png;base64,{bg}");'
             f'background-size:cover;background-attachment:fixed;}}'
         )
-        light_overlay = (
-            '.stApp::before {content:"";position:fixed;inset:0;'
-            'background:rgba(255,255,255,0.78);z-index:0;pointer-events:none;}'
-            '.stApp > * {position:relative;z-index:1;}'
-        ) if light_mode else ""
+        light_overlay = ""
     else:
-        bg_css = f'.stApp {{background-color:{"#f0f2f6" if light_mode else "#0d1117"};}}'
+        bg_css = '.stApp {background-color:#0d1117;}'
         light_overlay = ""
 
     st.markdown(f"""
