@@ -109,20 +109,32 @@ def _load_bg_base64(path: str) -> str:
 
 def set_background(png_file: str, light_mode: bool = False):
     bg           = _load_bg_base64(png_file)
-    sidebar_bg   = "rgba(245,245,250,0.88)" if light_mode else "rgba(0,0,0,0.70)"
-    tab_bg       = "rgba(255,255,255,0.72)" if light_mode else "rgba(20,20,20,0.60)"
+    sidebar_bg   = "rgba(245,245,250,0.92)" if light_mode else "rgba(0,0,0,0.70)"
+    tab_bg       = "rgba(255,255,255,0.82)" if light_mode else "rgba(20,20,20,0.60)"
     text_color   = "#0d0d0d"               if light_mode else "white"
     alert_bg     = "rgba(255,255,255,0.5)" if light_mode else "rgba(0,0,0,0.40)"
     alert_border = "rgba(0,0,0,0.15)"      if light_mode else "rgba(255,255,255,0.20)"
-    bg_css = (
-        f'.stApp {{background-image:url("data:image/png;base64,{bg}");'
-        f'background-size:cover;background-attachment:fixed;}}'
-        if bg else
-        f'.stApp {{background-color:{"#f0f2f6" if light_mode else "#0d1117"};}}'
-    )
+
+    # Light mode: tetap pakai bg image tapi ditimpa overlay putih semi-opaque
+    # sehingga teks gelap tetap terbaca di atas gambar apapun
+    if bg:
+        bg_css = (
+            f'.stApp {{background-image:url("data:image/png;base64,{bg}");'
+            f'background-size:cover;background-attachment:fixed;}}'
+        )
+        light_overlay = (
+            '.stApp::before {content:"";position:fixed;inset:0;'
+            'background:rgba(255,255,255,0.78);z-index:0;pointer-events:none;}'
+            '.stApp > * {position:relative;z-index:1;}'
+        ) if light_mode else ""
+    else:
+        bg_css = f'.stApp {{background-color:{"#f0f2f6" if light_mode else "#0d1117"};}}'
+        light_overlay = ""
+
     st.markdown(f"""
     <style>
     {bg_css}
+    {light_overlay}
     [data-testid="stSidebar"]{{background-color:{sidebar_bg}!important;backdrop-filter:blur(10px);}}
     .stTabs [data-baseweb="tab-panel"]{{background-color:{tab_bg}!important;padding:20px;
         border-radius:15px;backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);}}
@@ -153,6 +165,17 @@ def set_background(png_file: str, light_mode: bool = False):
         text-transform:uppercase;opacity:0.6;margin-bottom:6px;}}
     .preset-card{{background:rgba(255,255,255,0.05);border-radius:10px;
         padding:10px 14px;border:1px solid rgba(255,255,255,0.12);margin-bottom:6px;}}
+
+    /* ── Responsive title — prevent wrap on mobile ─────────── */
+    h1 {{
+        font-size: clamp(1.4rem, 5vw, 2.2rem) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        line-height: 1.2 !important;
+    }}
+    /* Light mode metric & label text override */
+    {"[data-testid='stMetricLabel'], [data-testid='stMetricDelta'] {color:" + text_color + "!important;}" if light_mode else ""}
     </style>
     """, unsafe_allow_html=True)
 
