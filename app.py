@@ -916,12 +916,13 @@ def _build_schedule_ai_prompt(
         f'{{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":{duration_example}}}' +
         "]}\n"
         f"Rules:\n"
-        f"- Schedule {requested_sessions} sessions PER DAY, each using a DIFFERENT skill\n"
-        f"- Cover all 7 days (Mon-Sun)\n"
-        f"- Prioritise the weakest skill but include variety — do NOT repeat the same skill twice on the same day\n"
+        f"- Pick 5 active study days from Mon-Sun (skip 2 rest days)\n"
+        f"- Each active day gets exactly {requested_sessions} session(s), each with a DIFFERENT skill\n"
+        f"- Do NOT put the same skill twice on the same day\n"
+        f"- Prioritise the weakest skill overall but spread all skills across the week\n"
         f"- {minutes_note}\n"
         f"- Only use skill names from the valid list above\n"
-        f"- Total sessions = 7 days x {requested_sessions} sessions = approximately {7 * requested_sessions} sessions total"
+        f"- Total = 5 days × {requested_sessions} sessions = {5 * requested_sessions} sessions"
     )
 
 
@@ -994,21 +995,38 @@ def _resolve_skill(raw: str, all_skills: list) -> str:
 
 def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int):
     """
-    Render AI-suggested schedule sessions as interactive cards.
-    Each card has a ➕ Add button; a bulk Add All button appears when
-    more than one addable session remains.
+    Render AI-suggested schedule sessions grouped by day.
+    Each day gets a header, then its sessions with individual ➕ buttons.
+    A bulk Add All button appears at the bottom.
     """
     if not schedule_items:
         return
 
     accent = st.session_state.accent_color
 
-    st.markdown(
-        "<div style='margin-top:10px;font-size:0.8rem;opacity:0.65;"
-        "font-weight:700;letter-spacing:0.07em;text-transform:uppercase;"
-        "margin-bottom:6px'>📅 Suggested Schedule</div>",
-        unsafe_allow_html=True,
-    )
+    # ── Normalise & resolve all items first ───────────────────
+    normalised = []
+    for item in schedule_items:
+        skill   = _resolve_skill(item.get("skill", "General"), all_skills)
+        day_raw = item.get("day", 0)
+        day_idx = (
+            SCHEDULE_DAYS.index(day_raw)
+            if isinstance(day_raw, str) and day_raw in SCHEDULE_DAYS
+            else int(day_raw) % 7
+        )
+        normalised.append({
+            "skill":   skill,
+            "day":     day_idx,
+            "minutes": int(item.get("minutes", 30)),
+            "name":    item.get("name", "").strip(),
+        })
+
+    # ── Group by day, preserving Mon→Sun order ────────────────
+    from collections import defaultdict
+    by_day = defaultdict(list)
+    for item in normalised:
+        by_day[item["day"]].append(item)
+    sorted_days = sorted(by_day.keys())   # 0=Mon … 6=Sun
 
     existing_schedule = st.session_state.study_schedule
     existing_keys = {
@@ -1016,90 +1034,84 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
         for s in existing_schedule
     }
 
-    # ── Per-session cards ─────────────────────────────────────
-    for i, item in enumerate(schedule_items):
-        skill   = item.get("skill", "General")
-        day_raw = item.get("day", 0)
-        mins    = int(item.get("minutes", 30))
-        name    = item.get("name", "").strip()
+    st.markdown(
+        "<div style='margin-top:10px;font-size:0.8rem;opacity:0.65;"
+        "font-weight:700;letter-spacing:0.07em;text-transform:uppercase;"
+        "margin-bottom:8px'>📅 Suggested Schedule</div>",
+        unsafe_allow_html=True,
+    )
 
-        # Fuzzy-resolve AI skill name to a valid skill
-        skill = _resolve_skill(skill, all_skills)
+    # ── Render day-by-day ─────────────────────────────────────
+    global_i = 0   # unique key counter across all days
+    for day_idx in sorted_days:
+        day_items = by_day[day_idx]
+        day_name  = SCHEDULE_DAYS[day_idx]
+        day_mins  = sum(it["minutes"] for it in day_items)
 
-        # Normalise day to int index
-        if isinstance(day_raw, str):
-            day_idx = SCHEDULE_DAYS.index(day_raw) if day_raw in SCHEDULE_DAYS else 0
-        else:
-            day_idx = int(day_raw) % 7
+        # Day header
+        st.markdown(
+            f"<div style='font-size:0.82rem;font-weight:700;"
+            f"opacity:0.9;margin:10px 0 4px 0;"
+            f"border-bottom:1px solid {accent}44;padding-bottom:3px'>"
+            f"📆 {day_name} "
+            f"<span style='font-size:0.72rem;opacity:0.6;font-weight:400'>"
+            f"— {len(day_items)} session(s) · {day_mins} min total</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
-        day_name = SCHEDULE_DAYS[day_idx]
-        display  = name or add_emoji(skill)
-        already  = (skill, day_idx, mins) in existing_keys
+        for item in day_items:
+            skill   = item["skill"]
+            mins    = item["minutes"]
+            name    = item["name"]
+            display = name or add_emoji(skill)
+            already = (skill, day_idx, mins) in existing_keys
 
-        col_card, col_btn = st.columns([5, 1])
-        with col_card:
-            added_badge = (
-                f"&nbsp;&nbsp;<span style=\"font-size:0.72rem;color:{accent}\">"
-                f"✅ Added</span>"
-                if already else ""
-            )
-            st.markdown(
-                f"<div style='background:rgba(255,255,255,0.06);"
-                f"border-radius:8px;padding:8px 12px;"
-                f"border-left:3px solid {accent};margin:3px 0'>"
-                f"<b>{display}</b> &nbsp;"
-                f"<span style='font-size:0.75rem;opacity:0.65'>"
-                f"{day_name} · {add_emoji(skill)} · {mins} min"
-                f"</span>"
-                f"{added_badge}"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-        with col_btn:
-            if not already:
-                if st.button(
-                    "➕",
-                    key=f"sched_add_{msg_idx}_{i}",
-                    use_container_width=True,
-                    help=f"Add: {display} on {day_name}",
-                ):
-                    new_item = {
-                        "id":      str(uuid.uuid4())[:8],
-                        "name":    name,
-                        "day":     day_idx,
-                        "skill":   skill,
-                        "minutes": mins,
-                    }
-                    st.session_state.study_schedule.append(new_item)
-                    sync_config_to_github()
-                    st.toast(f"✅ Added: {display} on {day_name}", icon="📅")
-                    st.rerun()
+            col_card, col_btn = st.columns([5, 1])
+            with col_card:
+                added_badge = (
+                    f"&nbsp;<span style='font-size:0.70rem;color:{accent}'>✅ Added</span>"
+                    if already else ""
+                )
+                st.markdown(
+                    f"<div style='background:rgba(255,255,255,0.06);"
+                    f"border-radius:8px;padding:7px 12px;"
+                    f"border-left:3px solid {accent};margin:2px 0'>"
+                    f"<b>{display}</b>&nbsp;"
+                    f"<span style='font-size:0.74rem;opacity:0.60'>"
+                    f"{add_emoji(skill)} · {mins} min"
+                    f"</span>{added_badge}</div>",
+                    unsafe_allow_html=True,
+                )
+            with col_btn:
+                if not already:
+                    if st.button(
+                        "➕",
+                        key=f"sched_add_{msg_idx}_{global_i}",
+                        use_container_width=True,
+                        help=f"Add {display} on {day_name}",
+                    ):
+                        st.session_state.study_schedule.append({
+                            "id":      str(uuid.uuid4())[:8],
+                            "name":    name,
+                            "day":     day_idx,
+                            "skill":   skill,
+                            "minutes": mins,
+                        })
+                        sync_config_to_github()
+                        st.toast(f"✅ {display} added to {day_name}!", icon="📅")
+                        st.rerun()
+            global_i += 1
 
-    # ── Add All button (only when multiple sessions can still be added) ──
-    addable = []
-    for item in schedule_items:
-        skill   = item.get("skill", "General")
-        day_raw = item.get("day", 0)
-        mins    = int(item.get("minutes", 30))
-
-        if isinstance(day_raw, str):
-            day_idx = SCHEDULE_DAYS.index(day_raw) if day_raw in SCHEDULE_DAYS else 0
-        else:
-            day_idx = int(day_raw) % 7
-
-        skill = _resolve_skill(skill, all_skills)
-
-        if (skill, day_idx, mins) not in existing_keys:
-            addable.append({
-                "name":    item.get("name", "").strip(),
-                "day":     day_idx,
-                "skill":   skill,
-                "minutes": mins,
-            })
-
+    # ── Add All button ────────────────────────────────────────
+    addable = [
+        item for item in normalised
+        if (item["skill"], item["day"], item["minutes"]) not in existing_keys
+    ]
     if len(addable) > 1:
+        st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
         if st.button(
-            f"➕ Add All {len(addable)} Sessions",
+            f"➕ Add All {len(addable)} Sessions to Schedule",
             key=f"sched_add_all_{msg_idx}",
             type="primary",
             use_container_width=True,
@@ -1115,6 +1127,7 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
             sync_config_to_github()
             st.toast(f"✅ Added {len(addable)} sessions to your schedule!", icon="📅")
             st.rerun()
+
 
 # ═══════════════════════════════════════════════════════════════
 # FREE-FORM AI CHAT (with schedule detection)
