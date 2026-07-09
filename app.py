@@ -9,6 +9,7 @@ import numpy as np
 import google.generativeai as genai
 import json
 import os
+import re
 import base64
 import time
 import hashlib
@@ -109,30 +110,20 @@ def _load_bg_base64(path: str) -> str:
 
 def set_background(png_file: str, light_mode: bool = False):
     bg           = _load_bg_base64(png_file)
-    sidebar_bg   = "rgba(245,245,250,1.0)" if light_mode else "rgba(0,0,0,0.70)"
-    tab_bg       = "rgba(255,255,255,0.95)" if light_mode else "rgba(20,20,20,0.60)"
+    sidebar_bg   = "rgba(245,245,250,0.88)" if light_mode else "rgba(0,0,0,0.70)"
+    tab_bg       = "rgba(255,255,255,0.72)" if light_mode else "rgba(20,20,20,0.60)"
     text_color   = "#0d0d0d"               if light_mode else "white"
     alert_bg     = "rgba(255,255,255,0.5)" if light_mode else "rgba(0,0,0,0.40)"
     alert_border = "rgba(0,0,0,0.15)"      if light_mode else "rgba(255,255,255,0.20)"
-
-    # Light mode → pure white, no background image at all
-    if light_mode:
-        bg_css = '.stApp {background-color:#ffffff !important; background-image:none !important;}'
-        light_overlay = ""
-    elif bg:
-        bg_css = (
-            f'.stApp {{background-image:url("data:image/png;base64,{bg}");'
-            f'background-size:cover;background-attachment:fixed;}}'
-        )
-        light_overlay = ""
-    else:
-        bg_css = '.stApp {background-color:#0d1117;}'
-        light_overlay = ""
-
+    bg_css = (
+        f'.stApp {{background-image:url("data:image/png;base64,{bg}");'
+        f'background-size:cover;background-attachment:fixed;}}'
+        if bg else
+        f'.stApp {{background-color:{"#f0f2f6" if light_mode else "#0d1117"};}}'
+    )
     st.markdown(f"""
     <style>
     {bg_css}
-    {light_overlay}
     [data-testid="stSidebar"]{{background-color:{sidebar_bg}!important;backdrop-filter:blur(10px);}}
     .stTabs [data-baseweb="tab-panel"]{{background-color:{tab_bg}!important;padding:20px;
         border-radius:15px;backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);}}
@@ -156,24 +147,21 @@ def set_background(png_file: str, light_mode: bool = False):
     .ai-card{{background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 14px;
         margin:6px 0;border-left:3px solid var(--accent-col,#00CC96);}}
     .cooldown-label{{font-size:0.82rem;opacity:0.85;margin-bottom:2px;}}
-    .sched-card{{background:rgba(255,255,255,0.06);border-radius:12px;padding:14px 18px;
-        border:1px solid rgba(255,255,255,0.14);margin-bottom:6px;}}
-    .sched-done{{background:rgba(0,204,150,0.12);border-color:rgba(0,204,150,0.35);opacity:0.65;}}
-    .sched-header{{font-size:0.78rem;font-weight:600;letter-spacing:0.07em;
-        text-transform:uppercase;opacity:0.6;margin-bottom:6px;}}
-    .preset-card{{background:rgba(255,255,255,0.05);border-radius:10px;
-        padding:10px 14px;border:1px solid rgba(255,255,255,0.12);margin-bottom:6px;}}
-
-    /* ── Responsive title — prevent wrap on mobile ─────────── */
-    h1 {{
-        font-size: clamp(1.4rem, 5vw, 2.2rem) !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        line-height: 1.2 !important;
+    .sched-card{{
+        background:rgba(255,255,255,0.06);
+        border-radius:12px;padding:14px 18px;
+        border:1px solid rgba(255,255,255,0.14);
+        margin-bottom:6px;
     }}
-    /* Light mode metric & label text override */
-    {"[data-testid='stMetricLabel'], [data-testid='stMetricDelta'] {color:" + text_color + "!important;}" if light_mode else ""}
+    .sched-done{{
+        background:rgba(0,204,150,0.12);
+        border-color:rgba(0,204,150,0.35);
+        opacity:0.65;
+    }}
+    .sched-header{{
+        font-size:0.78rem;font-weight:600;letter-spacing:0.07em;
+        text-transform:uppercase;opacity:0.6;margin-bottom:6px;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -200,7 +188,6 @@ _DEFAULTS = {
     "eco_mode": False, "ai_daily_cap_setting": AI_DAILY_CAP,
     "mobile_mode": False, "prev_achievements": [],
     "study_schedule": [],
-    "schedule_presets": [],        # ← NEW: named schedule presets
     "log_rows": None,
     "ai_chat_history": [],
     "edit_schedule_id": None,
@@ -307,8 +294,6 @@ def sync_config_to_github():
                 "ai_daily_cap_setting": st.session_state.ai_daily_cap_setting,
                 "mobile_mode":          st.session_state.mobile_mode,
                 "study_schedule":       st.session_state.study_schedule,
-                "schedule_presets":     st.session_state.schedule_presets,
-                "ai_chat_history":      st.session_state.ai_chat_history[-10:],  # ← persist last 10
             },
         )
 
@@ -384,8 +369,6 @@ if (
             "ai_daily_cap_setting": "ai_daily_cap_setting",
             "mobile_mode":          "mobile_mode",
             "study_schedule":       "study_schedule",
-            "schedule_presets":     "schedule_presets",   # ← NEW
-            "ai_chat_history":      "ai_chat_history",    # ← persist chat
         }
         for cfg_key, ss_key in _cfg_map.items():
             if cfg_key in _remote_cfg:
@@ -564,7 +547,7 @@ def _eco_changed(diet_dict: dict, threshold_pct: float = 5.0) -> bool:
     if not old:
         return True
     total = sum(diet_dict.values()) or 1
-    delta = sum(abs(diet_dict.get(k,0)-old.get(k,0)) for k in set(diet_dict)|set(old))
+    delta = sum(abs(diet_dict.get(k, 0) - old.get(k, 0)) for k in set(diet_dict) | set(old))
     return (delta / total * 100) >= threshold_pct
 
 def _parse_ai_json(text: str) -> dict:
@@ -591,7 +574,7 @@ def get_ai_recommendation(api_key, skill_totals, target_skill="All Skills",
         return {"tip": "Please provide a Gemini API key.", "exercise": "", "resource": ""}
     try:
         genai.configure(api_key=api_key)
-        model   = genai.GenerativeModel("gemini-3.1-flash-lite")
+        model   = genai.GenerativeModel("gemini-2.5-flash-lite")
         compact = json.dumps(skill_totals, separators=(",", ":"))
         weakest = min(skill_totals, key=skill_totals.get) if skill_totals else "General"
         ctx_parts = [f"Skills(mins):{compact}"]
@@ -631,9 +614,10 @@ def evaluate_achievements(total_hrs, streak, unique_skills) -> set:
     return unlocked
 
 # ═══════════════════════════════════════════════════════════════
-# SCHEDULE: derive done-state dari data aktual (persistent)
+# SCHEDULE DONE-STATE (persistent via CSV data)
 # ═══════════════════════════════════════════════════════════════
 def _get_schedule_done_from_data(today_items: list, today_date) -> set:
+    """Return set of item_ids that have already been logged today."""
     df = st.session_state.df
     if df is None or df.empty:
         return set()
@@ -670,17 +654,29 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
     current_mins  = item.get("minutes", 30)
 
     new_name = st.text_input(
-        "Session Name (opsional)",
+        "Session Name (optional)",
         value=current_name,
         placeholder=f"e.g. Morning {current_skill} Practice",
         key="edit_sched_name",
     )
-    new_day = st.selectbox("Day", SCHEDULE_DAYS, index=current_day, key="edit_sched_day")
-    skill_idx = (all_skills.index(current_skill) if current_skill in all_skills else 0)
-    new_skill = st.selectbox("Skill", all_skills, index=skill_idx,
-                             format_func=add_emoji, key="edit_sched_skill")
-    new_mins = st.number_input("Minutes (planned)", min_value=5, max_value=300,
-                               value=current_mins, key="edit_sched_mins")
+    new_day = st.selectbox(
+        "Day", SCHEDULE_DAYS,
+        index=current_day,
+        key="edit_sched_day",
+    )
+    skill_idx = (all_skills.index(current_skill)
+                 if current_skill in all_skills else 0)
+    new_skill = st.selectbox(
+        "Skill", all_skills,
+        index=skill_idx,
+        format_func=add_emoji,
+        key="edit_sched_skill",
+    )
+    new_mins = st.number_input(
+        "Minutes (planned)", min_value=5, max_value=300,
+        value=current_mins,
+        key="edit_sched_mins",
+    )
 
     cs, cc = st.columns(2)
     with cs:
@@ -702,111 +698,249 @@ def edit_schedule_dialog(item_id: str, all_skills: list):
             st.rerun()
 
 # ═══════════════════════════════════════════════════════════════
-# FREE-FORM AI CHAT
+# AI CHAT TRACKER CONTEXT BUILDER
 # ═══════════════════════════════════════════════════════════════
-def _build_tracker_context(diet_dict, streak, level, this_week,
-                            weekly_goal, today_mins, daily_goal_mins,
-                            flags: dict | None = None) -> str:
-    """
-    flags keys (all True by default):
-      include_stats      — level, total hrs, streak, week/day progress
-      include_breakdown  — full skill logged-minutes breakdown
-      include_schedule   — weekly planned schedule
-      include_today      — today's schedule done/pending status
-      include_presets    — saved preset names
-    """
-    if flags is None:
-        flags = {}
-    def _on(key):
-        return flags.get(key, True)
-
-    total_hrs   = sum(diet_dict.values()) / 60
+def _build_tracker_context(diet_dict: dict, streak: int, level: int,
+                            this_week: float, weekly_goal: float,
+                            today_mins: float, daily_goal_mins: int) -> str:
+    total_mins  = sum(diet_dict.values())
+    total_hrs   = total_mins / 60
     xp_pct      = int((total_hrs % 50) / 50 * 100)
-    hrs_to_next = 50 - (total_hrs % 50)
     top_skills  = sorted(diet_dict.items(), key=lambda x: x[1], reverse=True)[:3]
-    top_str     = ", ".join(f"{k}={v}m (logged)" for k, v in top_skills) if top_skills else "none"
+    top_str     = ", ".join(f"{k}={v}m" for k, v in top_skills) if top_skills else "none"
     weakest     = min(diet_dict, key=diet_dict.get) if diet_dict else "unknown"
     weak_mins   = diet_dict.get(weakest, 0)
+    hrs_to_next = 50 - (total_hrs % 50)
 
     lines = [
-        "=== English Tracker Context ===",
-        "IMPORTANT: 'logged' = actual study time recorded in CSV.",
-        "'planned/scheduled' = target duration in the study schedule.",
-        "These are DIFFERENT — do not confuse them.",
+        "English tracker data (use this to answer the user's question):",
+        f"• Total: {total_hrs:.1f}h | Level {level} ({xp_pct}% to next, ~{hrs_to_next:.1f}h away)",
+        f"• Streak: {streak} days",
+        f"• This week: {this_week:.1f}/{weekly_goal}h",
+        f"• Today: {today_mins:.0f}/{daily_goal_mins} min",
+        f"• Top skills: {top_str}",
+        f"• Weakest skill: {weakest} ({weak_mins}m total)",
+        f"• Full breakdown (mins): {json.dumps(diet_dict, separators=(',', ':'))}",
     ]
-
-    if _on("include_stats"):
-        lines += [
-            "",
-            "[PROGRESS]",
-            f"• Total logged: {total_hrs:.1f}h | Level {level} ({xp_pct}% to next, ~{hrs_to_next:.1f}h away)",
-            f"• Streak: {streak} days",
-            f"• This week logged: {this_week:.1f}/{weekly_goal}h goal",
-            f"• Today logged: {today_mins:.0f}/{daily_goal_mins} min goal",
-        ]
-
-    if _on("include_breakdown") and diet_dict:
-        # Build a clear per-skill table
-        skill_rows = "\n".join(
-            f"    {k}: {v}m logged ({v/60:.1f}h)"
-            for k, v in sorted(diet_dict.items(), key=lambda x: x[1], reverse=True)
-        )
-        lines += [
-            "",
-            "[SKILL BREAKDOWN — logged time in CSV]",
-            f"• Top: {top_str}",
-            f"• Weakest logged: {weakest} ({weak_mins}m = {weak_mins/60:.1f}h total)",
-            f"• All skills:\n{skill_rows}",
-        ]
-
-    # ── Schedule ─────────────────────────────────────────────
-    schedule = st.session_state.get("study_schedule", [])
-    if schedule and _on("include_schedule"):
-        lines.append("")
-        lines.append("[WEEKLY STUDY SCHEDULE — planned sessions, NOT logged time]")
-        for day_idx, day_name in enumerate(SCHEDULE_DAYS):
-            day_items = [s for s in schedule if s.get("day") == day_idx]
-            if day_items:
-                items_str = " | ".join(
-                    f"{(s.get('name') or s.get('skill','?'))} ({s.get('skill','?')}) "
-                    f"planned {s.get('minutes',0)}m"
-                    for s in day_items
-                )
-                lines.append(f"  {day_name}: {items_str}")
-
-    if schedule and _on("include_today"):
-        today       = today_wib()
-        today_day   = today.weekday()
-        today_sched = [s for s in schedule if s.get("day") == today_day]
-        if today_sched:
-            done_ids = _get_schedule_done_from_data(today_sched, today)
-            lines.append("")
-            lines.append(f"[TODAY'S SCHEDULE — {SCHEDULE_DAYS[today_day]}]")
-            for s in today_sched:
-                label   = s.get("name") or s.get("skill", "?")
-                skill   = s.get("skill", "?")
-                planned = s.get("minutes", 0)
-                status  = "✅ done (auto-logged)" if s.get("id","") in done_ids else "⏳ pending"
-                lines.append(f"  • {label} (skill: {skill}) — planned {planned}m — {status}")
-
-    if _on("include_presets"):
-        presets = st.session_state.get("schedule_presets", [])
-        if presets:
-            lines.append("")
-            lines.append(f"[SAVED PRESETS]: {', '.join(p['name'] for p in presets)}")
-
-    lines.append("\n=== End Context ===")
     return "\n".join(lines)
 
+# ═══════════════════════════════════════════════════════════════
+# AI SCHEDULE SUGGESTION HELPERS
+# ═══════════════════════════════════════════════════════════════
+def _is_schedule_request(text: str) -> bool:
+    """Return True when the user's message is asking for a study schedule."""
+    keywords = [
+        "schedule", "jadwal", "plan my week", "study plan", "timetable",
+        "routine", "rencana", "buatkan jadwal", "weekly plan", "daily plan",
+        "create a plan", "make a plan", "suggest a schedule", "buat jadwal",
+    ]
+    lower = text.lower()
+    return any(k in lower for k in keywords)
+
+
+def _build_schedule_ai_prompt(
+    user_input: str,
+    tracker_ctx: str,
+    history_str: str,
+    all_skills: list,
+) -> str:
+    """Build the Gemini prompt that returns structured schedule JSON."""
+    skills_json = json.dumps(all_skills)
+    return (
+        "You are an English learning coach. The user wants a study schedule.\n\n"
+        f"{tracker_ctx}\n\n"
+        f"Available skills (use EXACTLY these names): {skills_json}\n"
+        "Day numbers: 0=Monday 1=Tuesday 2=Wednesday 3=Thursday "
+        "4=Friday 5=Saturday 6=Sunday\n\n"
+        f"{history_str}"
+        f"User request: {user_input}\n\n"
+        "Respond ONLY with valid JSON (no markdown fences, no text outside JSON):\n"
+        '{"message":"2-sentence motivating intro","schedule":['
+        '{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":30}'
+        "]}\n"
+        "Rules: 4-7 sessions total, spread across Mon-Sun, "
+        "prioritise the weakest skill, each session 20-60 min, "
+        "only use skill names from the list above."
+    )
+
+
+def _parse_ai_schedule(text: str) -> tuple:
+    """
+    Parse Gemini response that may contain a schedule JSON.
+    Returns (message_str, schedule_list).
+    schedule_list is [] when the response is not schedule JSON.
+    """
+    candidates = [
+        text.strip(),
+        re.sub(r"^```json\s*|```\s*$", "", text.strip(), flags=re.M).strip(),
+    ]
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+            if isinstance(data, dict) and "schedule" in data:
+                return str(data.get("message", "")), list(data["schedule"])
+        except Exception:
+            pass
+
+    # Fallback: look for embedded JSON object containing "schedule"
+    m = re.search(r'\{[^{}]*"schedule"\s*:\s*\[[\s\S]*?\]\s*\}', text)
+    if m:
+        try:
+            data = json.loads(m.group())
+            return str(data.get("message", "")), list(data.get("schedule", []))
+        except Exception:
+            pass
+
+    return text.strip(), []
+
+
+def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int):
+    """
+    Render AI-suggested schedule sessions as interactive cards.
+    Each card has a ➕ Add button; a bulk Add All button appears when
+    more than one addable session remains.
+    """
+    if not schedule_items:
+        return
+
+    accent = st.session_state.accent_color
+
+    st.markdown(
+        "<div style='margin-top:10px;font-size:0.8rem;opacity:0.65;"
+        "font-weight:700;letter-spacing:0.07em;text-transform:uppercase;"
+        "margin-bottom:6px'>📅 Suggested Schedule</div>",
+        unsafe_allow_html=True,
+    )
+
+    existing_schedule = st.session_state.study_schedule
+    existing_keys = {
+        (s.get("skill"), int(s.get("day", 0)), int(s.get("minutes", 0)))
+        for s in existing_schedule
+    }
+
+    # ── Per-session cards ─────────────────────────────────────
+    for i, item in enumerate(schedule_items):
+        skill   = item.get("skill", "General")
+        day_raw = item.get("day", 0)
+        mins    = int(item.get("minutes", 30))
+        name    = item.get("name", "").strip()
+
+        # Validate skill name
+        if skill not in all_skills:
+            skill = all_skills[0] if all_skills else "Listening"
+
+        # Normalise day to int index
+        if isinstance(day_raw, str):
+            day_idx = SCHEDULE_DAYS.index(day_raw) if day_raw in SCHEDULE_DAYS else 0
+        else:
+            day_idx = int(day_raw) % 7
+
+        day_name = SCHEDULE_DAYS[day_idx]
+        display  = name or add_emoji(skill)
+        already  = (skill, day_idx, mins) in existing_keys
+
+        col_card, col_btn = st.columns([5, 1])
+        with col_card:
+            added_badge = (
+                f"&nbsp;&nbsp;<span style=\"font-size:0.72rem;color:{accent}\">"
+                f"✅ Added</span>"
+                if already else ""
+            )
+            st.markdown(
+                f"<div style='background:rgba(255,255,255,0.06);"
+                f"border-radius:8px;padding:8px 12px;"
+                f"border-left:3px solid {accent};margin:3px 0'>"
+                f"<b>{display}</b> &nbsp;"
+                f"<span style='font-size:0.75rem;opacity:0.65'>"
+                f"{day_name} · {add_emoji(skill)} · {mins} min"
+                f"</span>"
+                f"{added_badge}"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+        with col_btn:
+            if not already:
+                if st.button(
+                    "➕",
+                    key=f"sched_add_{msg_idx}_{i}",
+                    use_container_width=True,
+                    help=f"Add: {display} on {day_name}",
+                ):
+                    new_item = {
+                        "id":      str(uuid.uuid4())[:8],
+                        "name":    name,
+                        "day":     day_idx,
+                        "skill":   skill,
+                        "minutes": mins,
+                    }
+                    st.session_state.study_schedule.append(new_item)
+                    sync_config_to_github()
+                    st.toast(f"✅ Added: {display} on {day_name}", icon="📅")
+                    st.rerun()
+
+    # ── Add All button (only when multiple sessions can still be added) ──
+    addable = []
+    for item in schedule_items:
+        skill   = item.get("skill", "General")
+        day_raw = item.get("day", 0)
+        mins    = int(item.get("minutes", 30))
+
+        if isinstance(day_raw, str):
+            day_idx = SCHEDULE_DAYS.index(day_raw) if day_raw in SCHEDULE_DAYS else 0
+        else:
+            day_idx = int(day_raw) % 7
+
+        if skill not in all_skills:
+            skill = all_skills[0] if all_skills else "Listening"
+
+        if (skill, day_idx, mins) not in existing_keys:
+            addable.append({
+                "name":    item.get("name", "").strip(),
+                "day":     day_idx,
+                "skill":   skill,
+                "minutes": mins,
+            })
+
+    if len(addable) > 1:
+        if st.button(
+            f"➕ Add All {len(addable)} Sessions",
+            key=f"sched_add_all_{msg_idx}",
+            type="primary",
+            use_container_width=True,
+        ):
+            for item in addable:
+                st.session_state.study_schedule.append({
+                    "id":      str(uuid.uuid4())[:8],
+                    "name":    item["name"],
+                    "day":     item["day"],
+                    "skill":   item["skill"],
+                    "minutes": item["minutes"],
+                })
+            sync_config_to_github()
+            st.toast(f"✅ Added {len(addable)} sessions to your schedule!", icon="📅")
+            st.rerun()
+
+# ═══════════════════════════════════════════════════════════════
+# FREE-FORM AI CHAT (with schedule detection)
+# ═══════════════════════════════════════════════════════════════
 @st.fragment
-def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
-    # ── Header ───────────────────────────────────────────────
+def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
+                   this_week: float = 0.0, today_mins: float = 0.0,
+                   all_skills: list = None):
+    accent      = st.session_state.accent_color
+    _all_skills = all_skills or []
+
     hcol, bcol = st.columns([4, 1])
     with hcol:
         st.markdown("### 💬 Chat with Your AI Coach")
+        st.caption(
+            "Ask anything — or try *'Create a weekly schedule for me!'* "
+            "to get a plan you can add directly. Your full tracker data is shared."
+        )
     with bcol:
         if st.session_state.ai_chat_history:
-            if st.button("🗑️ Clear", use_container_width=True):
+            if st.button("🗑️ Clear", use_container_width=True,
+                         help="Clear chat history"):
                 st.session_state.ai_chat_history = []
                 st.rerun()
 
@@ -814,48 +948,27 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
         st.info("💡 Add your Gemini API key in the sidebar to use this feature.")
         return
 
-    # ── Context Selector ─────────────────────────────────────
-    with st.expander("🎛️ Konteks yang dikirim ke AI", expanded=False):
-        st.caption(
-            "Pilih data apa yang disertakan dalam setiap pesan ke AI. "
-            "Matikan yang tidak relevan untuk jawaban lebih fokus."
-        )
-        cc1, cc2 = st.columns(2)
-        with cc1:
-            ctx_stats     = st.checkbox("📊 Progress & Stats",    value=True,  key="ctx_stats")
-            ctx_breakdown = st.checkbox("🎯 Skill Breakdown",     value=True,  key="ctx_breakdown")
-        with cc2:
-            ctx_schedule  = st.checkbox("📅 Jadwal Mingguan",     value=True,  key="ctx_schedule")
-            ctx_today     = st.checkbox("✅ Status Jadwal Hari Ini", value=True, key="ctx_today")
-        ctx_presets   = st.checkbox("🗂️ Nama Preset Tersimpan", value=False, key="ctx_presets")
-
-        # Preview badge count
-        active = sum([ctx_stats, ctx_breakdown, ctx_schedule, ctx_today, ctx_presets])
-        st.caption(f"**{active}/5 konteks aktif** — lebih banyak = jawaban lebih personal, "
-                   f"lebih sedikit = lebih cepat & hemat token.")
-
-    ctx_flags = {
-        "include_stats":     st.session_state.get("ctx_stats",     True),
-        "include_breakdown": st.session_state.get("ctx_breakdown", True),
-        "include_schedule":  st.session_state.get("ctx_schedule",  True),
-        "include_today":     st.session_state.get("ctx_today",     True),
-        "include_presets":   st.session_state.get("ctx_presets",   False),
-    }
-
-    # ── Message history ──────────────────────────────────────
-    for msg in st.session_state.ai_chat_history:
-        with st.chat_message(msg["role"], avatar="🧑" if msg["role"] == "user" else "🤖"):
+    # ── Render existing history ───────────────────────────────
+    for msg_idx, msg in enumerate(st.session_state.ai_chat_history):
+        with st.chat_message(msg["role"],
+                             avatar="🧑" if msg["role"] == "user" else "🤖"):
             st.markdown(msg["content"])
+            # Re-render schedule cards so they survive page refreshes
+            if msg["role"] == "assistant" and msg.get("schedule_data"):
+                _render_schedule_cards(msg["schedule_data"], _all_skills, msg_idx)
 
-    # ── Starter suggestions ──────────────────────────────────
+    # ── Suggestion chips (shown only on empty history) ────────
     if not st.session_state.ai_chat_history:
-        st.markdown('<div style="opacity:0.6;font-size:0.84rem;margin-bottom:8px">💡 Try asking:</div>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            '<div style="opacity:0.6;font-size:0.84rem;margin-bottom:8px">'
+            "💡 Try asking:</div>",
+            unsafe_allow_html=True,
+        )
         suggestions = [
-            "Jadwal hari ini apa saja yang belum selesai?",
+            "What should I focus on this week?",
+            "Create a weekly schedule for me",
             "How many hours until my next level?",
-            "Give me a 7-day study plan based on my schedule",
-            "Why is my weakest skill weak and how do I fix it?",
+            "Why is my grammar weak and how do I fix it?",
         ]
         scols = st.columns(2)
         for i, s in enumerate(suggestions):
@@ -863,11 +976,15 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
                 st.session_state["_chat_prefill"] = s
                 st.rerun()
 
-    # ── Chat input ───────────────────────────────────────────
+    # ── Chat input ────────────────────────────────────────────
     prefill    = st.session_state.pop("_chat_prefill", "")
-    user_input = st.chat_input("Ask your coach anything…", key="ai_chat_input")
+    user_input = st.chat_input(
+        "Ask your coach anything… e.g. 'Make me a weekly study schedule'",
+        key="ai_chat_input",
+    )
     if not user_input and prefill:
         user_input = prefill
+
     if not user_input:
         return
 
@@ -878,48 +995,79 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
 
     st.session_state.ai_chat_history.append({"role": "user", "content": user_input})
 
-    # ── Build context with selected flags ────────────────────
     tracker_ctx = _build_tracker_context(
         diet_dict, streak, level, this_week,
         float(st.session_state.weekly_goal),
         today_mins, int(st.session_state.daily_goal_mins),
-        flags=ctx_flags,
     )
 
     history_window = st.session_state.ai_chat_history[-9:-1]
-    history_str    = ""
+    history_str = ""
     if history_window:
         history_str = "Previous conversation:\n" + "\n".join(
-            f"{'User' if m['role']=='user' else 'Coach'}: {m['content']}"
+            f"{'User' if m['role'] == 'user' else 'Coach'}: {m['content']}"
             for m in history_window
         ) + "\n\n"
 
-    full_prompt = (
-        "You are a helpful English learning coach. "
-        "Answer in the same language the user uses (Indonesian or English). "
-        "Answer concisely (≤150 words unless a study plan is requested). "
-        "Be encouraging and specific. "
-        "When referencing skill time, always clarify if it is 'logged' (actual) "
-        "or 'planned' (scheduled) to avoid confusion.\n\n"
-        f"{tracker_ctx}\n\n{history_str}User: {user_input}\nCoach:"
-    )
+    # ── Route to schedule prompt or standard prompt ───────────
+    is_sched_req = _is_schedule_request(user_input)
 
+    if is_sched_req:
+        full_prompt = _build_schedule_ai_prompt(
+            user_input, tracker_ctx, history_str, _all_skills
+        )
+    else:
+        full_prompt = (
+            "You are a helpful English learning coach. "
+            "Answer concisely (≤150 words unless a study plan is requested). "
+            "Be encouraging and specific.\n\n"
+            f"{tracker_ctx}\n\n"
+            f"{history_str}"
+            f"User: {user_input}\n"
+            "Coach:"
+        )
+
+    schedule_data = []
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Thinking…"):
             try:
                 genai.configure(api_key=st.session_state.gemini_key)
-                model    = genai.GenerativeModel("gemini-3.1-flash-lite")
+                model    = genai.GenerativeModel("gemini-2.5-flash-lite")
                 response = model.generate_content(full_prompt)
-                reply    = response.text.strip()
+                raw_text = response.text.strip()
                 st.session_state.last_ai_time    = now_wib()
                 st.session_state.ai_calls_today += 1
-            except Exception as e:
-                reply = f"⚠️ Error: {e}"
-        st.markdown(reply)
 
-    st.session_state.ai_chat_history.append({"role": "assistant", "content": reply})
+                if is_sched_req:
+                    reply, schedule_data = _parse_ai_schedule(raw_text)
+                    # If parse completely fails, fall back to raw text
+                    if not reply and not schedule_data:
+                        reply         = raw_text
+                        schedule_data = []
+                else:
+                    reply         = raw_text
+                    schedule_data = []
+
+            except Exception as e:
+                reply         = f"⚠️ Error: {e}"
+                schedule_data = []
+
+        st.markdown(reply)
+        # Render cards for the brand-new assistant message
+        if schedule_data:
+            _render_schedule_cards(
+                schedule_data,
+                _all_skills,
+                len(st.session_state.ai_chat_history),  # unique per-message index
+            )
+
+    st.session_state.ai_chat_history.append({
+        "role":          "assistant",
+        "content":       reply,
+        "schedule_data": schedule_data,  # persisted so cards survive refresh
+    })
+    # Keep history window bounded
     st.session_state.ai_chat_history = st.session_state.ai_chat_history[-20:]
-    sync_config_to_github()
     st.rerun()
 
 # ═══════════════════════════════════════════════════════════════
@@ -928,17 +1076,21 @@ def render_ai_chat(diet_dict, streak=0, level=1, this_week=0.0, today_mins=0.0):
 @st.dialog("➕ Log New Study Session")
 def log_session_dialog(available_skills):
     if st.session_state.log_rows is None:
-        st.session_state.log_rows = [{"skill": available_skills[0], "minutes": 30}]
+        st.session_state.log_rows = [
+            {"skill": available_skills[0], "minutes": 30}
+        ]
 
     d = st.date_input("Date", today_wib())
-    n = st.text_input("Notes (applies to all skills logged)",
-                      placeholder="e.g. Focused on past tense")
+    n = st.text_input("Notes (applies to all skills logged)", placeholder="e.g. Focused on past tense")
 
     st.markdown("**Skills to log:**")
-    hc1, hc2, hc3 = st.columns([3, 2, 1])
-    hc1.caption("Skill"); hc2.caption("Minutes"); hc3.caption("")
 
-    rows = st.session_state.log_rows
+    hc1, hc2, hc3 = st.columns([3, 2, 1])
+    hc1.caption("Skill")
+    hc2.caption("Minutes")
+    hc3.caption("")
+
+    rows       = st.session_state.log_rows
     delete_idx = None
 
     for i, row in enumerate(rows):
@@ -946,16 +1098,23 @@ def log_session_dialog(available_skills):
         skill_idx = (available_skills.index(row["skill"])
                      if row["skill"] in available_skills else 0)
         with c1:
-            st.selectbox(f"skill_{i}", available_skills, index=skill_idx,
-                         format_func=add_emoji, key=f"log_skill_{i}",
-                         label_visibility="collapsed")
+            st.selectbox(
+                f"skill_{i}", available_skills,
+                index=skill_idx,
+                format_func=add_emoji,
+                key=f"log_skill_{i}",
+                label_visibility="collapsed",
+            )
         with c2:
-            st.number_input(f"mins_{i}", min_value=1, max_value=600,
-                            value=row["minutes"], key=f"log_mins_{i}",
-                            label_visibility="collapsed")
+            st.number_input(
+                f"mins_{i}", min_value=1, max_value=600,
+                value=row["minutes"],
+                key=f"log_mins_{i}",
+                label_visibility="collapsed",
+            )
         with c3:
             if len(rows) > 1:
-                if st.button("🗑️", key=f"log_del_{i}"):
+                if st.button("🗑️", key=f"log_del_{i}", help="Remove this row"):
                     delete_idx = i
 
     if delete_idx is not None:
@@ -963,14 +1122,21 @@ def log_session_dialog(available_skills):
         st.rerun()
 
     ba, br, bs = st.columns([1, 1, 2])
+
     with ba:
         if st.button("➕ Add Skill", use_container_width=True):
-            st.session_state.log_rows.append({"skill": available_skills[0], "minutes": 30})
+            st.session_state.log_rows.append(
+                {"skill": available_skills[0], "minutes": 30}
+            )
             st.rerun()
+
     with br:
         if st.button("🔄 Reset", use_container_width=True):
-            st.session_state.log_rows = [{"skill": available_skills[0], "minutes": 30}]
+            st.session_state.log_rows = [
+                {"skill": available_skills[0], "minutes": 30}
+            ]
             st.rerun()
+
     with bs:
         if st.button("💾 Log & Sync", type="primary", use_container_width=True):
             new_rows_data = []
@@ -978,14 +1144,23 @@ def log_session_dialog(available_skills):
                 skill   = st.session_state.get(f"log_skill_{i}", available_skills[0])
                 minutes = int(st.session_state.get(f"log_mins_{i}", 30))
                 new_rows_data.append({
-                    "Date": pd.Timestamp(d), "Skill": skill,
-                    "Time Spent": minutes, "Notes": n,
+                    "Date":       pd.Timestamp(d),
+                    "Skill":      skill,
+                    "Time Spent": minutes,
+                    "Notes":      n,
                 })
+
             new_df     = pd.DataFrame(new_rows_data)
             updated_df = pd.concat([st.session_state.df, new_df], ignore_index=True)
+
             with st.spinner("Saving to GitHub…"):
-                sha = save_to_github(st.session_state.saved_token,
-                                     st.session_state.saved_repo, "data.csv", updated_df)
+                sha = save_to_github(
+                    st.session_state.saved_token,
+                    st.session_state.saved_repo,
+                    "data.csv",
+                    updated_df,
+                )
+
             if sha:
                 st.session_state.df       = updated_df
                 st.session_state.file_sha = sha
@@ -993,17 +1168,23 @@ def log_session_dialog(available_skills):
                 _invalidate_derived_cache()
                 load_data_from_github.clear()
                 total_logged = sum(r["Time Spent"] for r in new_rows_data)
-                summary = " · ".join(f"{add_emoji(r['Skill'])} {r['Time Spent']}m"
-                                     for r in new_rows_data)
-                st.toast(f"✅ Logged {len(new_rows_data)} skill(s) · {total_logged} min\n{summary}",
-                         icon="📚")
+                summary = " · ".join(
+                    f"{add_emoji(r['Skill'])} {r['Time Spent']}m"
+                    for r in new_rows_data
+                )
+                st.toast(
+                    f"✅ Logged {len(new_rows_data)} skill(s) · {total_logged} min total\n{summary}",
+                    icon="📚",
+                )
                 st.rerun()
             else:
                 st.warning("⚠️ Entry NOT saved. Fix the error above and try again.")
 
     if len(rows) > 1:
-        total_preview = sum(int(st.session_state.get(f"log_mins_{i}", row["minutes"]))
-                            for i, row in enumerate(rows))
+        total_preview = sum(
+            int(st.session_state.get(f"log_mins_{i}", row["minutes"]))
+            for i, row in enumerate(rows)
+        )
         st.caption(f"📊 Total: **{total_preview} minutes** across {len(rows)} skills")
 
 # ═══════════════════════════════════════════════════════════════
@@ -1015,7 +1196,7 @@ def render_schedule_widget(all_skills: list):
         return
 
     today     = today_wib()
-    today_day = today.weekday()
+    today_day = today.weekday()  # 0=Mon … 6=Sun
     today_items = [item for item in schedule if item.get("day") == today_day]
     if not today_items:
         return
@@ -1038,60 +1219,91 @@ def render_schedule_widget(all_skills: list):
 
             if is_done:
                 st.markdown(
-                    f'<div style="opacity:0.55;text-decoration:line-through;padding:8px 4px;">'
-                    f'✅ {item_label} — {plan_mins} min</div>',
+                    f"<div style='opacity:0.55;text-decoration:line-through;"
+                    f"padding:8px 4px;'>✅ {item_label} — {plan_mins} min</div>",
                     unsafe_allow_html=True,
                 )
             else:
                 col_chk, col_label, col_mins = st.columns([1, 5, 2])
+
                 with col_chk:
-                    checked = st.checkbox("", value=False, key=f"sched_chk_{item_id}",
-                                         label_visibility="collapsed")
+                    checked = st.checkbox(
+                        "",
+                        value=False,
+                        key=f"sched_chk_{item_id}",
+                        label_visibility="collapsed",
+                    )
                 with col_label:
                     st.markdown(
                         f"**{item_label}**"
-                        + (f"  \n<span style='font-size:0.78rem;opacity:0.6'>"
-                           f"{add_emoji(skill_name)}</span>" if item.get("name") else ""),
+                        + (
+                            f"  \n<span style='font-size:0.78rem;opacity:0.6'>"
+                            f"{add_emoji(skill_name)}</span>"
+                            if item.get("name") else ""
+                        ),
                         unsafe_allow_html=True,
                     )
                 with col_mins:
                     override_mins = st.number_input(
-                        "min", min_value=1, max_value=600, value=plan_mins,
-                        key=f"sched_override_{item_id}", label_visibility="collapsed",
-                        help=f"Planned: {plan_mins} min — ubah untuk hari ini saja",
+                        "min",
+                        min_value=1,
+                        max_value=600,
+                        value=plan_mins,
+                        key=f"sched_override_{item_id}",
+                        label_visibility="collapsed",
+                        help=f"Planned: {plan_mins} min — override for today only",
                     )
 
                 if checked:
-                    actual_mins = int(st.session_state.get(f"sched_override_{item_id}", plan_mins))
+                    actual_mins = int(
+                        st.session_state.get(f"sched_override_{item_id}", plan_mins)
+                    )
                     new_row = pd.DataFrame({
-                        "Date": [pd.Timestamp(today)], "Skill": [skill_name],
+                        "Date":       [pd.Timestamp(today)],
+                        "Skill":      [skill_name],
                         "Time Spent": [actual_mins],
-                        "Notes": [f"📅 Auto-logged: {item_id}"],
+                        "Notes":      [f"📅 Auto-logged: {item_id}"],
                     })
-                    updated_df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+                    updated_df = pd.concat(
+                        [st.session_state.df, new_row], ignore_index=True
+                    )
                     with st.spinner(f"Logging {item_label}…"):
-                        sha = save_to_github(st.session_state.saved_token,
-                                             st.session_state.saved_repo, "data.csv", updated_df)
+                        sha = save_to_github(
+                            st.session_state.saved_token,
+                            st.session_state.saved_repo,
+                            "data.csv",
+                            updated_df,
+                        )
                     if sha:
                         st.session_state.df       = updated_df
                         st.session_state.file_sha = sha
                         _invalidate_derived_cache()
                         load_data_from_github.clear()
-                        diff_note = (f" (override dari {plan_mins} min)"
-                                     if actual_mins != plan_mins else "")
-                        st.toast(f"✅ {item_label} — {actual_mins} min logged!{diff_note}", icon="📅")
+                        diff_note = (
+                            f" (override from {plan_mins} min)"
+                            if actual_mins != plan_mins else ""
+                        )
+                        st.toast(
+                            f"✅ {item_label} — {actual_mins} min logged!{diff_note}",
+                            icon="📅",
+                        )
                         st.rerun()
                     else:
-                        st.error("❌ Gagal menyimpan. Cek pengaturan GitHub.")
+                        st.error("❌ Failed to save. Check your GitHub settings.")
 
+        # ── Progress bar ──────────────────────────────────────
         if today_items:
             prog = done_count / len(today_items)
             st.markdown(
                 f"""<div style="margin-top:8px">
-                <div style="font-size:0.78rem;opacity:0.7;margin-bottom:4px">Schedule progress</div>
-                <div style="background:rgba(255,255,255,0.12);border-radius:999px;height:8px;overflow:hidden;">
-                    <div style="width:{prog*100:.0f}%;height:100%;background:{accent};
-                                border-radius:999px;transition:width 0.4s ease"></div>
+                <div style="font-size:0.78rem;opacity:0.7;margin-bottom:4px">
+                    Schedule progress
+                </div>
+                <div style="background:rgba(255,255,255,0.12);border-radius:999px;
+                            height:8px;overflow:hidden;">
+                    <div style="width:{prog * 100:.0f}%;height:100%;
+                                background:{accent};border-radius:999px;
+                                transition:width 0.4s ease"></div>
                 </div></div>""",
                 unsafe_allow_html=True,
             )
@@ -1114,6 +1326,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
+
     theme_map = {
         "Emerald City":  "#00CC96",
         "Ocean Deep":    "#0099FF",
@@ -1123,6 +1336,7 @@ with st.sidebar:
     st.selectbox("Theme", list(theme_map.keys()), key="theme_selector",
                  on_change=sync_config_to_github)
     st.session_state.accent_color = theme_map[st.session_state.theme_selector]
+
     st.toggle("☀️ Light Mode",        key="light_mode",      on_change=sync_config_to_github)
     st.slider("Weekly Goal (Hours)",  1, 40,  key="weekly_goal",      on_change=sync_config_to_github)
     st.slider("Daily Goal (Minutes)", 10, 300, key="daily_goal_mins", on_change=sync_config_to_github)
@@ -1130,29 +1344,31 @@ with st.sidebar:
     st.checkbox("🔄 Auto AI Coach",    key="ask_ai_auto",     on_change=sync_config_to_github)
 
     st.divider()
+
     _today_str    = today_wib().isoformat()
     _cap          = int(st.session_state.get("ai_daily_cap_setting", AI_DAILY_CAP))
     display_calls = (st.session_state.ai_calls_today
                      if st.session_state.ai_call_date == _today_str else 0)
-    _ratio = display_calls / _cap if _cap > 0 else 0
+    _ratio        = display_calls / _cap if _cap > 0 else 0
     _gauge_color, _gauge_icon = (
-        ("#00CC96","🟢") if _ratio < 0.5 else
-        ("#FFA500","🟡") if _ratio < 0.85 else
-        ("#FF4B4B","🔴")
+        ("#00CC96", "🟢") if _ratio < 0.5 else
+        ("#FFA500", "🟡") if _ratio < 0.85 else
+        ("#FF4B4B", "🔴")
     )
     st.markdown(f"**{_gauge_icon} AI Budget: {display_calls} / {_cap}**")
     st.markdown(f"""
     <div style="background:rgba(255,255,255,0.12);border-radius:999px;
                 height:10px;overflow:hidden;margin-bottom:4px">
-      <div style="width:{min(_ratio*100,100):.0f}%;height:100%;
+      <div style="width:{min(_ratio * 100, 100):.0f}%;height:100%;
                   background:{_gauge_color};border-radius:999px;
                   transition:width 0.4s ease"></div>
     </div>""", unsafe_allow_html=True)
+
     _now_sb      = now_wib()
     _midnight_sb = datetime.combine(_now_sb.date() + timedelta(days=1),
                                     datetime.min.time(), tzinfo=_WIB)
     _sl = int((_midnight_sb - _now_sb).total_seconds())
-    st.caption(f"⏰ Resets in {_sl//3600}h {(_sl%3600)//60}m (WIB)")
+    st.caption(f"⏰ Resets in {_sl // 3600}h {(_sl % 3600) // 60}m (WIB)")
     if display_calls >= _cap:
         st.warning("Daily AI limit reached.")
     st.checkbox("🛠 Debug Timings", key="debug_perf")
@@ -1161,74 +1377,26 @@ with st.sidebar:
 # FRAGMENT: Metrics
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
-def render_metrics(total_hrs, level, xp, this_week, streak, today_mins=0.0):
+def render_metrics(total_hrs, level, xp, this_week, streak):
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Level",  f"Lvl {level}")
-    m2.metric("Total",  f"{total_hrs:.1f}h",
-              delta=f"+{int(today_mins)} min today" if today_mins > 0 else None,
-              delta_color="normal")
-    m3.metric("Streak", f"{streak} Days")
+    m1.metric("Level",     f"Lvl {level}")
+    m2.metric("Total",     f"{total_hrs:.1f}h")
+    m3.metric("Streak",    f"{streak} Days")
     m4.metric("This Week", f"{this_week:.1f}/{st.session_state.weekly_goal}h")
-
     pct    = int(xp * 100)
     accent = st.session_state.accent_color
     st.markdown(f"""
     <style>:root{{--xp-target:{pct}%;}}</style>
     <div style="font-size:0.82rem;opacity:0.8;margin-top:8px">
-        ✨ Progress to Level {level+1} &nbsp;·&nbsp; {pct}%
+        ✨ Progress to Level {level + 1} &nbsp;·&nbsp; {pct}%
     </div>
     <div class="xp-bar-outer">
         <div class="xp-bar-inner" style="width:{pct}%;background:{accent};"></div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Streak recovery warning ───────────────────────────────
-    if streak > 0 and today_mins == 0:
-        st.warning(
-            f"⚠️ Belum ada log hari ini — streak **{streak} hari** kamu akan putus! "
-            f"Log sekarang sebelum tengah malam."
-        )
-    elif streak == 0 and today_mins == 0:
-        st.info("💡 Mulai streak kamu — log sesi pertama hari ini!")
-
-    # ── Weekly goal breakdown bar ─────────────────────────────
-    weekly_goal = float(st.session_state.weekly_goal)
-    if weekly_goal > 0:
-        _today_wd      = today_wib().weekday()        # 0=Mon, 6=Sun
-        days_remaining = max(0, 6 - _today_wd)        # hari setelah hari ini
-        hrs_remaining  = max(0.0, weekly_goal - this_week)
-        week_pct       = min(1.0, this_week / weekly_goal)
-
-        if hrs_remaining <= 0:
-            note = "🎉 **Goal minggu ini tercapai!**"
-        elif days_remaining == 0:
-            note = f"⚡ Hari terakhir — butuh **{hrs_remaining:.1f}h** lagi!"
-        else:
-            need_per_day = hrs_remaining / days_remaining
-            note = f"butuh **{need_per_day:.1f}h/hari** · {days_remaining} hari tersisa"
-
-        # note may contain **bold** markdown — convert to <b> for HTML context
-        note_html = note.replace("**", "<b>", 1)
-        while "**" in note_html:
-            note_html = note_html.replace("**", "</b>", 1)
-        st.markdown(
-            f'<div style="font-size:0.80rem;opacity:0.8;margin-top:10px">'
-            f'📅 Weekly: <b>{this_week:.1f} / {weekly_goal:.0f}h</b> — {note_html}'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"""<div style="background:rgba(255,255,255,0.12);border-radius:999px;
-                        height:6px;overflow:hidden;margin-top:4px;">
-                <div style="width:{week_pct*100:.0f}%;height:100%;
-                            background:{accent};border-radius:999px;
-                            transition:width 0.4s ease;opacity:0.75"></div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-
 # ═══════════════════════════════════════════════════════════════
-# FRAGMENT: AI Coach
+# FRAGMENT: AI Coach (quick-tip panel, separate from chat)
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
 def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
@@ -1249,7 +1417,7 @@ def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
     )
 
     def _fire_ai(monthly_review=False):
-        last_tip = (st.session_state.last_ai_response.get("tip","")
+        last_tip = (st.session_state.last_ai_response.get("tip", "")
                     if st.session_state.last_ai_response else "")
         resp = get_ai_recommendation(
             api_key=st.session_state.gemini_key, skill_totals=diet_dict,
@@ -1259,7 +1427,7 @@ def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
             this_week=this_week, monthly_review=monthly_review,
         )
         st.session_state.last_ai_response   = resp
-        st.session_state.last_ai_rec        = resp.get("tip","")
+        st.session_state.last_ai_rec        = resp.get("tip", "")
         st.session_state.last_diet_hash     = _diet_hash(diet_dict)
         st.session_state.last_diet_snapshot = dict(diet_dict)
         if monthly_review:
@@ -1267,18 +1435,21 @@ def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
         entry = {
             "time":     now_wib().strftime("%Y-%m-%d %H:%M WIB"),
             "skill":    st.session_state.ai_target_skill,
-            "tip":      resp.get("tip",""),
-            "exercise": resp.get("exercise",""),
-            "resource": resp.get("resource",""),
+            "tip":      resp.get("tip", ""),
+            "exercise": resp.get("exercise", ""),
+            "resource": resp.get("resource", ""),
             "monthly":  monthly_review,
         }
         st.session_state.ai_history = ([entry] + st.session_state.ai_history)[:5]
 
     def _show_cooldown(wait_secs, reason):
         if wait_secs > 0:
-            st.markdown(f'<div class="cooldown-label">⏳ {reason}</div>', unsafe_allow_html=True)
-            st.progress(max(0.0, min(1.0, 1.0-(wait_secs/AI_MIN_INTERVAL))),
-                        text=f"Cooling down — {wait_secs:.0f}s")
+            st.markdown(f'<div class="cooldown-label">⏳ {reason}</div>',
+                        unsafe_allow_html=True)
+            st.progress(
+                max(0.0, min(1.0, 1.0 - (wait_secs / AI_MIN_INTERVAL))),
+                text=f"Cooling down — {wait_secs:.0f}s",
+            )
         else:
             st.caption(f"⏳ {reason}")
 
@@ -1298,7 +1469,7 @@ def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
                     st.toast(f"⏳ {reason}", icon="🤖")
                 _show_cooldown(wait_secs, reason)
     else:
-        col_ask, col_monthly = st.columns([2,1])
+        col_ask, col_monthly = st.columns([2, 1])
         with col_ask:
             if st.button("💬 Ask Coach", use_container_width=True):
                 allowed, reason, wait_secs = _check_ai_rate_limit()
@@ -1310,11 +1481,15 @@ def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
                     st.toast(f"⏳ {reason}", icon="🚦")
                     _show_cooldown(wait_secs, reason)
         with col_monthly:
-            _last_mr    = st.session_state.get("last_monthly_review","")
+            _last_mr    = st.session_state.get("last_monthly_review", "")
             _can_review = (not _last_mr) or (
-                (today_wib() - datetime.fromisoformat(_last_mr).date()).days >= 30)
-            if st.button("📅 Monthly Review" if _can_review else "✅ Done this month",
-                         use_container_width=True, disabled=not _can_review):
+                (today_wib() - datetime.fromisoformat(_last_mr).date()).days >= 30
+            )
+            if st.button(
+                "📅 Monthly Review" if _can_review else "✅ Done this month",
+                use_container_width=True,
+                disabled=not _can_review,
+            ):
                 allowed, reason, wait_secs = _check_ai_rate_limit()
                 if allowed:
                     with st.status("📅 Preparing monthly review...", expanded=False) as _s:
@@ -1327,34 +1502,50 @@ def render_ai_coach(diet_dict, all_skills, streak=0, level=1, this_week=0.0):
     accent = st.session_state.accent_color
     resp   = st.session_state.last_ai_response
     if resp:
-        tip      = resp.get("tip","")
-        exercise = resp.get("exercise","")
-        resource = resp.get("resource","")
-        is_monthly = (st.session_state.ai_history[0].get("monthly",False)
+        tip        = resp.get("tip", "")
+        exercise   = resp.get("exercise", "")
+        resource   = resp.get("resource", "")
+        is_monthly = (st.session_state.ai_history[0].get("monthly", False)
                       if st.session_state.ai_history else False)
-        with st.expander("📅 Monthly Review" if is_monthly else "💡 Coach's Insight", expanded=True):
+        with st.expander(
+            "📅 Monthly Review" if is_monthly else "💡 Coach's Insight",
+            expanded=True,
+        ):
             if tip:
-                st.markdown(f'<div class="ai-card" style="--accent-col:{accent}">'
-                            f'💡 <strong>Tip</strong><br>{tip}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="ai-card" style="--accent-col:{accent}">'
+                    f"💡 <strong>Tip</strong><br>{tip}</div>",
+                    unsafe_allow_html=True,
+                )
             if exercise:
-                st.markdown(f'<div class="ai-card" style="--accent-col:{accent}">'
-                            f'🏋️ <strong>Exercise</strong><br>{exercise}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="ai-card" style="--accent-col:{accent}">'
+                    f"🏋️ <strong>Exercise</strong><br>{exercise}</div>",
+                    unsafe_allow_html=True,
+                )
             if resource:
-                st.markdown(f'<div class="ai-card" style="--accent-col:{accent}">'
-                            f'🔗 <strong>Resource</strong><br>{resource}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="ai-card" style="--accent-col:{accent}">'
+                    f"🔗 <strong>Resource</strong><br>{resource}</div>",
+                    unsafe_allow_html=True,
+                )
             if st.session_state.last_ai_time:
-                st.caption(f"🕐 {st.session_state.last_ai_time.strftime('%H:%M:%S')}"
-                           f"  ·  Calls today: {display_calls}/{_cap_local}")
+                st.caption(
+                    f"🕐 {st.session_state.last_ai_time.strftime('%H:%M:%S')}"
+                    f"  ·  Calls today: {display_calls}/{_cap_local}"
+                )
     elif st.session_state.last_ai_rec:
         with st.expander("💡 Coach's Insight", expanded=True):
             st.write(st.session_state.last_ai_rec)
 
     if st.session_state.ai_history:
-        with st.expander(f"📜 Coaching History ({len(st.session_state.ai_history)} tip(s))",
-                         expanded=False):
+        with st.expander(
+            f"📜 Coaching History ({len(st.session_state.ai_history)} tip(s))",
+            expanded=False,
+        ):
             for entry in st.session_state.ai_history:
                 badge = " 📅 Monthly" if entry.get("monthly") else ""
-                st.markdown(f"**{entry['time']}** · *{entry.get('skill','?')}*{badge}")
+                st.markdown(f"**{entry['time']}** · *{entry.get('skill', '?')}*{badge}")
                 if entry.get("tip"):      st.write(f"💡 {entry['tip']}")
                 if entry.get("exercise"): st.write(f"🏋️ {entry['exercise']}")
                 if entry.get("resource"): st.write(f"🔗 {entry['resource']}")
@@ -1376,188 +1567,26 @@ def render_tab_dashboard(df, diet, accent_color, today_mins, daily_goal_mins):
         ]:
             st.plotly_chart(fig, use_container_width=True)
     else:
-        c1, c2 = st.columns([2,1])
+        c1, c2 = st.columns([2, 1])
         with c1:
-            st.plotly_chart(build_area_chart(df, accent_color, "Study Mountain"),
-                            use_container_width=True)
+            st.plotly_chart(
+                build_area_chart(df, accent_color, "Study Mountain"),
+                use_container_width=True,
+            )
         with c2:
-            st.plotly_chart(build_pie_chart(tuple(diet.index), tuple(diet.values)),
-                            use_container_width=True)
-        c3, c4 = st.columns([3,1])
+            st.plotly_chart(
+                build_pie_chart(tuple(diet.index), tuple(diet.values)),
+                use_container_width=True,
+            )
+        c3, c4 = st.columns([3, 1])
         with c3:
             st.plotly_chart(build_heatmap(df, accent_color), use_container_width=True)
         with c4:
-            st.plotly_chart(build_daily_ring(today_mins, daily_goal_mins, accent_color),
-                            use_container_width=True)
+            st.plotly_chart(
+                build_daily_ring(today_mins, daily_goal_mins, accent_color),
+                use_container_width=True,
+            )
         st.plotly_chart(build_skill_bars(diet, accent_color), use_container_width=True)
-
-# ═══════════════════════════════════════════════════════════════
-# PDF REPORT GENERATOR
-# Uses matplotlib — no extra dependencies needed.
-# Generates a multi-page A4 PDF: stats summary, skill chart,
-# 90-day activity chart, and recent sessions table.
-# ═══════════════════════════════════════════════════════════════
-def generate_pdf_report(df: pd.DataFrame, diet: pd.Series,
-                         total_hrs: float, level: int, streak: int,
-                         this_week: float, accent_color: str) -> bytes:
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_pdf import PdfPages
-    import io as _io
-
-    # Parse accent hex → RGB 0-1
-    h = accent_color.lstrip("#")
-    accent_rgb = tuple(int(h[i:i+2], 16) / 255 for i in (0, 2, 4))
-    bg   = "#1a1a2e"
-    fg   = "white"
-    sub  = "#999999"
-
-    buf = _io.BytesIO()
-    with PdfPages(buf) as pdf:
-
-        # ── Page 1: Summary stats ─────────────────────────────
-        fig = plt.figure(figsize=(8.27, 11.69))
-        fig.patch.set_facecolor(bg)
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.set_facecolor(bg)
-        ax.axis("off")
-
-        today_str   = today_wib().strftime("%d %B %Y")
-        xp_pct      = (total_hrs % 50) / 50
-        hrs_to_next = 50 - (total_hrs % 50)
-
-        ax.text(0.5, 0.96, "🇬🇧  English Pro Elite", ha="center", va="top",
-                fontsize=24, color=fg, fontweight="bold", transform=ax.transAxes)
-        ax.text(0.5, 0.92, f"Progress Report  ·  {today_str}", ha="center", va="top",
-                fontsize=13, color=sub, transform=ax.transAxes)
-
-        # Divider line (use ax.plot with transAxes instead of axhline)
-        ax.plot([0.05, 0.95], [0.89, 0.89], color="#444455", linewidth=0.8,
-                transform=ax.transAxes)
-
-        stats = [
-            ("Level",           f"Lvl {level}"),
-            ("Total Study",     f"{total_hrs:.1f} hours"),
-            ("Current Streak",  f"{streak} days"),
-            ("This Week",       f"{this_week:.1f} / {0} h"),
-            ("To Next Level",   f"{hrs_to_next:.1f} h remaining"),
-        ]
-        y = 0.84
-        for label, value in stats:
-            ax.text(0.28, y, label + ":", ha="right", fontsize=12,
-                    color=sub, transform=ax.transAxes)
-            ax.text(0.31, y, value, ha="left", fontsize=13,
-                    color=fg, fontweight="bold", transform=ax.transAxes)
-            y -= 0.065
-
-        # XP progress bar
-        bar_top = y - 0.01
-        ax.text(0.5, bar_top, f"Progress to Level {level+1}  ·  {int(xp_pct*100)}%",
-                ha="center", fontsize=10, color=sub, transform=ax.transAxes)
-        bar_y = bar_top - 0.025
-        # background bar
-        bar_bg = plt.Rectangle((0.05, bar_y), 0.90, 0.018,
-                                transform=ax.transAxes, color="#333344",
-                                clip_on=False)
-        # fill bar
-        bar_fill = plt.Rectangle((0.05, bar_y), 0.90 * xp_pct, 0.018,
-                                  transform=ax.transAxes, color=accent_rgb,
-                                  clip_on=False)
-        ax.add_patch(bar_bg)
-        ax.add_patch(bar_fill)
-
-        pdf.savefig(fig, bbox_inches="tight")
-        plt.close(fig)
-
-        # ── Page 2: Skill breakdown bar chart ────────────────
-        fig, ax = plt.subplots(figsize=(8.27, 5.5))
-        fig.patch.set_facecolor(bg)
-        ax.set_facecolor(bg)
-
-        df_bar = diet.reset_index()
-        df_bar.columns = ["Skill", "Minutes"]
-        df_bar = df_bar.sort_values("Minutes", ascending=True)
-        hours  = df_bar["Minutes"] / 60
-
-        bars = ax.barh(df_bar["Skill"], hours, color=accent_rgb, alpha=0.85)
-        ax.set_xlabel("Hours", color=fg, fontsize=11)
-        ax.set_title("Skill Breakdown", color=fg, fontsize=15, pad=12, loc="left")
-        ax.tick_params(colors=fg, labelsize=10)
-        for spine in ax.spines.values():
-            spine.set_edgecolor("#444455")
-        for bar, val in zip(bars, hours):
-            ax.text(val + max(hours) * 0.01, bar.get_y() + bar.get_height() / 2,
-                    f"{val:.1f}h", va="center", color=fg, fontsize=9)
-        ax.set_xlim(right=hours.max() * 1.15)
-        fig.tight_layout(pad=2.5)
-        pdf.savefig(fig, bbox_inches="tight")
-        plt.close(fig)
-
-        # ── Page 3: 90-day daily activity area chart ─────────
-        fig, ax = plt.subplots(figsize=(8.27, 4.5))
-        fig.patch.set_facecolor(bg)
-        ax.set_facecolor(bg)
-
-        cutoff    = _naive_ts(today_wib() - timedelta(days=90))
-        dates_col = _naive_dates(df["Date"])
-        daily = (df[dates_col >= cutoff]
-                 .groupby(dates_col.dt.date)["Time Spent"]
-                 .sum().reset_index())
-        daily.columns = ["Date", "Minutes"]
-        daily["Date"]  = pd.to_datetime(daily["Date"])
-        daily          = daily.sort_values("Date")
-        daily_hrs      = daily["Minutes"] / 60
-
-        ax.fill_between(daily["Date"], daily_hrs, alpha=0.45, color=accent_rgb)
-        ax.plot(daily["Date"], daily_hrs, color=accent_rgb, linewidth=1.8)
-        ax.set_title("Daily Study — Last 90 Days", color=fg, fontsize=15, pad=12, loc="left")
-        ax.set_ylabel("Hours", color=fg, fontsize=11)
-        ax.tick_params(colors=fg, labelsize=9, rotation=25)
-        for spine in ax.spines.values():
-            spine.set_edgecolor("#444455")
-        fig.tight_layout(pad=2.5)
-        pdf.savefig(fig, bbox_inches="tight")
-        plt.close(fig)
-
-        # ── Page 4: Recent sessions table ────────────────────
-        recent = df.head(25).copy()
-        if pd.api.types.is_datetime64_any_dtype(recent["Date"]):
-            recent["Date"] = recent["Date"].dt.strftime("%Y-%m-%d")
-        recent["Time Spent"] = recent["Time Spent"].astype(int).astype(str) + " min"
-        recent = recent[["Date", "Skill", "Time Spent", "Notes"]].fillna("").copy()
-        recent["Notes"] = recent["Notes"].str[:35]
-
-        fig, ax = plt.subplots(figsize=(8.27, 11.69))
-        fig.patch.set_facecolor(bg)
-        ax.set_facecolor(bg)
-        ax.axis("off")
-        ax.text(0.0, 1.01, "Recent Sessions (last 25)", ha="left", va="bottom",
-                fontsize=14, color=fg, fontweight="bold", transform=ax.transAxes)
-
-        tbl = ax.table(
-            cellText=recent.values,
-            colLabels=list(recent.columns),
-            cellLoc="left", loc="upper center",
-            bbox=[0, 0, 1, 0.97],
-        )
-        tbl.auto_set_font_size(False)
-        tbl.set_fontsize(8)
-        for (row, col), cell in tbl.get_celld().items():
-            if row == 0:
-                cell.set_facecolor("#2a2a4e")
-                cell.set_text_props(color=accent_rgb, fontweight="bold")
-            else:
-                cell.set_facecolor("#1e1e32" if row % 2 == 0 else "#252538")
-                cell.set_text_props(color=fg)
-            cell.set_edgecolor("#3a3a55")
-        fig.tight_layout(pad=1.5)
-        pdf.savefig(fig, bbox_inches="tight")
-        plt.close(fig)
-
-    buf.seek(0)
-    return buf.read()
-
 
 # ═══════════════════════════════════════════════════════════════
 # FRAGMENT: History Tab
@@ -1565,56 +1594,28 @@ def generate_pdf_report(df: pd.DataFrame, diet: pd.Series,
 @st.fragment
 def render_tab_history(all_skills: list):
     current_df = st.session_state.df
-    st.info("💡 Edit or delete rows, then press **💾 Save Changes** to sync to GitHub.")
 
-    # ── Export buttons ────────────────────────────────────────
-    ex1, ex2 = st.columns(2)
+    st.info("💡 Edit or delete rows, then press **💾 Save Changes** to sync to GitHub.")
 
     _date_col = (current_df["Date"].dt.strftime("%Y-%m-%d")
                  if pd.api.types.is_datetime64_any_dtype(current_df["Date"])
                  else current_df["Date"])
     csv_bytes = current_df.assign(Date=_date_col).to_csv(index=False).encode("utf-8")
-    with ex1:
-        st.download_button(
-            label="⬇️ Export CSV", data=csv_bytes,
-            file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.csv",
-            mime="text/csv", use_container_width=True,
-        )
-    with ex2:
-        if st.button("📄 Generate PDF Report", use_container_width=True):
-            total_hrs_pdf, level_pdf, _, streak_pdf = get_dashboard_stats(current_df)
-            _, diet_pdf, this_week_pdf              = get_or_compute_derived(current_df)
-            with st.spinner("Generating PDF… (4 halaman)"):
-                try:
-                    pdf_bytes = generate_pdf_report(
-                        df=current_df, diet=diet_pdf,
-                        total_hrs=total_hrs_pdf, level=level_pdf,
-                        streak=streak_pdf, this_week=this_week_pdf,
-                        accent_color=st.session_state.accent_color,
-                    )
-                    st.session_state["_pdf_bytes"] = pdf_bytes
-                    st.toast("✅ PDF siap — klik Save PDF di bawah!", icon="📄")
-                except Exception as e:
-                    st.error(f"❌ PDF error: {e}")
+    st.download_button(
+        label="⬇️ Export CSV", data=csv_bytes,
+        file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.csv",
+        mime="text/csv",
+    )
 
-    if st.session_state.get("_pdf_bytes"):
-        st.download_button(
-            label="💾 Save PDF Report",
-            data=st.session_state["_pdf_bytes"],
-            file_name=f"english_pro_{today_wib().strftime('%Y%m%d')}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            key="pdf_dl_btn",
-        )
-
-    # ── Data editor ───────────────────────────────────────────
     edited_df = st.data_editor(
         current_df,
         column_config={
             "Date":  st.column_config.DateColumn(),
             "Skill": st.column_config.SelectboxColumn(options=all_skills),
         },
-        use_container_width=True, hide_index=True, num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        num_rows="dynamic",
         key="history_editor",
     )
 
@@ -1622,12 +1623,19 @@ def render_tab_history(all_skills: list):
         if "Date" in edited_df.columns:
             edited_df["Date"] = pd.to_datetime(edited_df["Date"], errors="coerce")
         if "Time Spent" in edited_df.columns:
-            edited_df["Time Spent"] = (pd.to_numeric(edited_df["Time Spent"], errors="coerce")
-                                       .fillna(0).astype(int))
+            edited_df["Time Spent"] = (
+                pd.to_numeric(edited_df["Time Spent"], errors="coerce")
+                .fillna(0).astype(int)
+            )
         edited_df = edited_df.dropna(subset=["Date"]).reset_index(drop=True)
+
         with st.spinner("Saving…"):
-            sha = save_to_github(st.session_state.saved_token,
-                                 st.session_state.saved_repo, "data.csv", edited_df)
+            sha = save_to_github(
+                st.session_state.saved_token,
+                st.session_state.saved_repo,
+                "data.csv",
+                edited_df,
+            )
         if sha:
             st.session_state.df       = edited_df
             st.session_state.file_sha = sha
@@ -1644,19 +1652,26 @@ def render_tab_history(all_skills: list):
 @st.fragment
 def render_tab_trophies(total_hrs, streak, unique_skills, level, accent_color):
     if level >= 2:
-        st.success(f"🚀 You are **Level {level}**! "
-                   f"Next level unlocks at **{level*50:.0f} hours** total.")
+        st.success(
+            f"🚀 You are **Level {level}**! "
+            f"Next level unlocks at **{level * 50:.0f} hours** total."
+        )
 
     st.subheader("🎁 Today's Milestone Reward")
-    new_reward = st.text_input("Your personal reward", value=st.session_state.milestone_reward,
-                               key="reward_input", placeholder="e.g. Treat myself to coffee")
+    new_reward = st.text_input(
+        "Your personal reward",
+        value=st.session_state.milestone_reward,
+        key="reward_input",
+        placeholder="e.g. Treat myself to coffee",
+    )
     if new_reward != st.session_state.milestone_reward:
         st.session_state.milestone_reward = new_reward
         sync_config_to_github()
 
     today_iso = today_wib().isoformat()
     if st.session_state.milestone_claimed_date != today_iso:
-        if st.button(f"🎉 Claim: {st.session_state.milestone_reward}", use_container_width=True):
+        if st.button(f"🎉 Claim: {st.session_state.milestone_reward}",
+                     use_container_width=True):
             st.success("Claimed! Enjoy your reward. 🎊")
             st.session_state.milestone_claimed_date = today_iso
             st.balloons()
@@ -1694,36 +1709,46 @@ def render_tab_trophies(total_hrs, streak, unique_skills, level, accent_color):
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
 def render_tab_settings(all_skills: list):
-    # ── AI Budget ────────────────────────────────────────────
+    # ── AI Budget ─────────────────────────────────────────────
     st.subheader("🤖 AI Budget")
-    st.slider("Daily AI Call Limit", min_value=1, max_value=AI_DAILY_CAP,
-              key="ai_daily_cap_setting",
-              help=f"Hard ceiling is {AI_DAILY_CAP}/day (Gemini Free Tier).",
-              on_change=sync_config_to_github)
-    st.toggle("🌿 Eco Mode — only call AI when skill data changes by 5%+",
-              key="eco_mode", on_change=sync_config_to_github)
+    st.slider(
+        "Daily AI Call Limit", min_value=1, max_value=AI_DAILY_CAP,
+        key="ai_daily_cap_setting",
+        help=f"Hard ceiling is {AI_DAILY_CAP}/day (Gemini Free Tier).",
+        on_change=sync_config_to_github,
+    )
+    st.toggle(
+        "🌿 Eco Mode — only call AI when skill data changes by 5%+",
+        key="eco_mode", on_change=sync_config_to_github,
+    )
     if st.session_state.eco_mode:
         st.caption("Eco Mode ON · Skips calls when skill totals haven't shifted meaningfully.")
 
     st.divider()
 
-    # ── Layout ───────────────────────────────────────────────
+    # ── Layout ────────────────────────────────────────────────
     st.subheader("📱 Layout")
-    st.toggle("📱 Mobile-Friendly Layout (single column)",
-              key="mobile_mode", on_change=sync_config_to_github)
+    st.toggle(
+        "📱 Mobile-Friendly Layout (single column)",
+        key="mobile_mode", on_change=sync_config_to_github,
+    )
 
     st.divider()
 
-    # ── Custom Skills ────────────────────────────────────────
+    # ── Custom Skills ─────────────────────────────────────────
     st.subheader("⚙️ Custom Skills Manager")
     st.caption("Add skills beyond the default six. Saved to your GitHub config.json.")
+
     custom = list(st.session_state.custom_skills or [])
-    col_input, col_btn = st.columns([3,1])
+    col_input, col_btn = st.columns([3, 1])
     with col_input:
-        new_skill = st.text_input("New skill name", placeholder="e.g. Pronunciation",
-                                  label_visibility="collapsed")
+        new_skill = st.text_input(
+            "New skill name", placeholder="e.g. Pronunciation",
+            label_visibility="collapsed",
+        )
     with col_btn:
         add_clicked = st.button("➕ Add", use_container_width=True)
+
     if add_clicked:
         stripped = new_skill.strip()
         if not stripped:
@@ -1737,10 +1762,11 @@ def render_tab_settings(all_skills: list):
             sync_config_to_github()
             st.success(f"Added: {stripped}")
             st.rerun()
+
     if custom:
         st.markdown("**Your custom skills:**")
         for skill in list(custom):
-            sc1, sc2 = st.columns([5,1])
+            sc1, sc2 = st.columns([5, 1])
             sc1.write(f"• {skill}")
             if sc2.button("🗑️", key=f"del_{skill}", help=f"Remove {skill}"):
                 custom.remove(skill)
@@ -1753,133 +1779,53 @@ def render_tab_settings(all_skills: list):
 
     st.divider()
     st.subheader("🗃️ Default Skills")
-    st.caption("Always available: 🎧 Listening, 🗣️ Speaking, 📖 Reading, "
-               "✍️ Writing, 📝 Grammar, 💬 Vocabulary.")
+    st.caption(
+        "Always available: 🎧 Listening, 🗣️ Speaking, 📖 Reading, "
+        "✍️ Writing, 📝 Grammar, 💬 Vocabulary."
+    )
 
-    # ════════════════════════════════════════════════════════
-    # 📅 Study Schedule
-    # ════════════════════════════════════════════════════════
+    # ── Study Schedule Manager ────────────────────────────────
     st.divider()
     st.subheader("📅 Study Schedule")
     st.caption(
-        "Buat jadwal belajar mingguan. Setiap sesi muncul sebagai checkbox di dashboard — "
-        "centang untuk auto-log. Override menit hanya berlaku untuk hari itu."
+        "Create your weekly study schedule. Each session appears as a checkbox on the "
+        "dashboard — tick it to auto-log. You can also ask the AI in the Chat tab to "
+        "generate a schedule and add sessions directly from there!"
     )
 
     schedule  = list(st.session_state.study_schedule)
     accent    = st.session_state.accent_color
     today_day = today_wib().weekday()
 
-    # ════════════════════════════════════════════════════════
-    # 🗂️ SCHEDULE PRESETS — simpan & switch jadwal bernama
-    # ════════════════════════════════════════════════════════
-    st.markdown("#### 🗂️ Schedule Presets")
-    st.caption(
-        "Simpan jadwal aktif sebagai preset bernama "
-        "(misal: *Jadwal Reguler*, *Intensive Week*, *Exam Prep*). "
-        "Klik ▶️ untuk switch jadwal tanpa hapus satu-satu."
-    )
-
-    presets = list(st.session_state.get("schedule_presets", []))
-
-    # ── Simpan jadwal aktif sebagai preset ───────────────────
-    sp1, sp2 = st.columns([4, 1])
-    with sp1:
-        new_preset_name = st.text_input(
-            "Nama preset",
-            placeholder="e.g. Jadwal Reguler, Intensive Week…",
-            key="new_preset_name",
-            label_visibility="collapsed",
-        )
-    with sp2:
-        if st.button("💾 Simpan", use_container_width=True, key="save_preset_btn"):
-            pname = new_preset_name.strip()
-            if not pname:
-                st.warning("Isi nama preset dulu.")
-            elif not schedule:
-                st.warning("Jadwal aktif kosong — tidak ada yang disimpan.")
-            else:
-                existing = next((p for p in presets if p["name"] == pname), None)
-                if existing:
-                    existing["items"] = list(schedule)
-                    msg = f"✅ Preset **'{pname}'** diperbarui."
-                else:
-                    presets.append({
-                        "id":    str(uuid.uuid4())[:8],
-                        "name":  pname,
-                        "items": list(schedule),
-                    })
-                    msg = f"✅ Preset **'{pname}'** disimpan ({len(schedule)} sesi)."
-                st.session_state.schedule_presets = presets
-                sync_config_to_github()
-                st.toast(msg, icon="🗂️")
-                st.rerun()
-
-    # ── Daftar preset tersimpan ───────────────────────────────
-    if presets:
-        st.markdown("**Preset tersimpan:**")
-        for preset in presets:
-            n_items   = len(preset.get("items", []))
-            days_used = sorted({
-                SCHEDULE_DAYS[item["day"]][:3]
-                for item in preset.get("items", [])
-                if "day" in item
-            })
-            day_str = ", ".join(days_used) if days_used else "—"
-
-            pc1, pc2, pc3 = st.columns([5, 1, 1])
-            with pc1:
-                st.markdown(
-                    f"**{preset['name']}**  \n"
-                    f"<span style='font-size:0.78rem;opacity:0.6'>"
-                    f"{n_items} sesi · {day_str}</span>",
-                    unsafe_allow_html=True,
-                )
-            with pc2:
-                if st.button("▶️", key=f"activate_{preset['id']}",
-                             use_container_width=True,
-                             help=f"Aktifkan '{preset['name']}'"):
-                    # Beri ID baru agar tidak bentrok dengan log lama
-                    new_items = []
-                    for item in preset.get("items", []):
-                        ni       = dict(item)
-                        ni["id"] = str(uuid.uuid4())[:8]
-                        new_items.append(ni)
-                    st.session_state.study_schedule = new_items
-                    sync_config_to_github()
-                    st.toast(
-                        f"✅ Jadwal aktif → **'{preset['name']}'** ({len(new_items)} sesi)",
-                        icon="📅",
-                    )
-                    st.rerun()
-            with pc3:
-                if st.button("🗑️", key=f"del_preset_{preset['id']}",
-                             use_container_width=True,
-                             help=f"Hapus preset '{preset['name']}'"):
-                    presets = [p for p in presets if p["id"] != preset["id"]]
-                    st.session_state.schedule_presets = presets
-                    sync_config_to_github()
-                    st.rerun()
-    else:
-        st.info("Belum ada preset. Buat jadwal dulu, lalu simpan di atas ↑")
-
-    st.markdown("---")
-
-    # ── Tambah sesi baru ─────────────────────────────────────
-    st.markdown("**➕ Tambah sesi baru:**")
+    # ── Add new session form ──────────────────────────────────
+    st.markdown("**➕ Add new session:**")
     na, nb, nc, nd, ne = st.columns([2, 2, 2, 1, 1])
     with na:
-        new_sched_name = st.text_input("Nama sesi", placeholder="e.g. Morning Practice",
-                                       key="sched_new_name", label_visibility="collapsed")
+        new_sched_name = st.text_input(
+            "Session name",
+            placeholder="e.g. Morning Practice",
+            key="sched_new_name",
+            label_visibility="collapsed",
+        )
     with nb:
-        new_day = st.selectbox("Day", SCHEDULE_DAYS, key="sched_new_day",
-                               label_visibility="collapsed")
+        new_day = st.selectbox(
+            "Day", SCHEDULE_DAYS,
+            key="sched_new_day",
+            label_visibility="collapsed",
+        )
     with nc:
-        new_sched_skill = st.selectbox("Skill", all_skills, key="sched_new_skill",
-                                       format_func=add_emoji, label_visibility="collapsed")
+        new_sched_skill = st.selectbox(
+            "Skill", all_skills,
+            key="sched_new_skill",
+            format_func=add_emoji,
+            label_visibility="collapsed",
+        )
     with nd:
-        new_sched_mins = st.number_input("Min", min_value=5, max_value=300, value=30,
-                                         key="sched_new_mins", label_visibility="collapsed")
+        new_sched_mins = st.number_input(
+            "Min", min_value=5, max_value=300, value=30,
+            key="sched_new_mins",
+            label_visibility="collapsed",
+        )
     with ne:
         if st.button("➕ Add", use_container_width=True, key="sched_add_btn"):
             new_item = {
@@ -1898,9 +1844,10 @@ def render_tab_settings(all_skills: list):
 
     st.markdown("---")
 
-    # ── Jadwal mingguan ───────────────────────────────────────
+    # ── Schedule grouped by day ───────────────────────────────
     if schedule:
-        st.markdown("**Jadwal mingguan kamu:**")
+        st.markdown("**Your weekly schedule:**")
+
         for day_idx, day_name in enumerate(SCHEDULE_DAYS):
             day_items = [item for item in schedule if item.get("day") == day_idx]
             if not day_items:
@@ -1908,9 +1855,11 @@ def render_tab_settings(all_skills: list):
 
             today_badge = " 📍 *Today*" if day_idx == today_day else ""
             day_total   = sum(i.get("minutes", 0) for i in day_items)
+
             st.markdown(
                 f"**{day_name}**{today_badge} "
-                f"<span style='font-size:0.8rem;opacity:0.6'>— {len(day_items)} sesi · {day_total} min</span>",
+                f"<span style='font-size:0.8rem;opacity:0.6'>"
+                f"— {len(day_items)} session(s) · {day_total} min total</span>",
                 unsafe_allow_html=True,
             )
 
@@ -1918,6 +1867,7 @@ def render_tab_settings(all_skills: list):
                 item_name = item.get("name", "").strip()
                 display   = item_name or add_emoji(item["skill"])
                 sub_label = f"{add_emoji(item['skill'])} · {item['minutes']} min"
+
                 ic1, ic2, ic3 = st.columns([6, 1, 1])
                 with ic1:
                     st.markdown(
@@ -1926,29 +1876,37 @@ def render_tab_settings(all_skills: list):
                         unsafe_allow_html=True,
                     )
                 with ic2:
-                    if st.button("✏️", key=f"edit_sched_{item['id']}", help="Edit sesi ini"):
+                    if st.button("✏️", key=f"edit_sched_{item['id']}",
+                                 help="Edit this session"):
                         edit_schedule_dialog(item["id"], all_skills)
                 with ic3:
-                    if st.button("🗑️", key=f"del_sched_{item['id']}", help="Hapus sesi ini"):
+                    if st.button("🗑️", key=f"del_sched_{item['id']}",
+                                 help="Delete this session"):
                         schedule = [s for s in schedule if s.get("id") != item.get("id")]
                         st.session_state.study_schedule = schedule
                         sync_config_to_github()
                         st.rerun()
 
-            # ── Copy day ─────────────────────────────────────
-            with st.expander(f"📋 Copy semua sesi {day_name} ke hari lain…", expanded=False):
+            # ── Copy day to another day ───────────────────────
+            with st.expander(f"📋 Copy all {day_name} sessions to another day…",
+                             expanded=False):
                 copy_targets = [d for d in SCHEDULE_DAYS if d != day_name]
                 cc1, cc2 = st.columns([3, 1])
                 with cc1:
-                    copy_target = st.selectbox("Copy to", copy_targets,
-                                               key=f"copy_target_{day_idx}",
-                                               label_visibility="collapsed")
+                    copy_target = st.selectbox(
+                        "Copy to", copy_targets,
+                        key=f"copy_target_{day_idx}",
+                        label_visibility="collapsed",
+                    )
                 with cc2:
-                    if st.button(f"📋 Copy → {copy_target[:3]}", key=f"copy_day_{day_idx}",
-                                 use_container_width=True):
+                    if st.button(
+                        f"📋 Copy → {copy_target[:3]}",
+                        key=f"copy_day_{day_idx}",
+                        use_container_width=True,
+                    ):
                         target_idx     = SCHEDULE_DAYS.index(copy_target)
                         already_exists = [
-                            (s["skill"], s.get("minutes"), s.get("name",""))
+                            (s["skill"], s.get("minutes"), s.get("name", ""))
                             for s in schedule if s.get("day") == target_idx
                         ]
                         copied_count = 0
@@ -1956,7 +1914,7 @@ def render_tab_settings(all_skills: list):
                             duplicate = any(
                                 e[0] == src_item["skill"]
                                 and e[1] == src_item.get("minutes")
-                                and e[2] == src_item.get("name","")
+                                and e[2] == src_item.get("name", "")
                                 for e in already_exists
                             )
                             if duplicate:
@@ -1969,23 +1927,30 @@ def render_tab_settings(all_skills: list):
                                 "minutes": src_item["minutes"],
                             }
                             schedule.append(new_copy)
-                            already_exists.append((new_copy["skill"], new_copy["minutes"],
-                                                   new_copy.get("name","")))
+                            already_exists.append((
+                                new_copy["skill"],
+                                new_copy["minutes"],
+                                new_copy.get("name", ""),
+                            ))
                             copied_count += 1
+
                         st.session_state.study_schedule = schedule
                         sync_config_to_github()
                         if copied_count > 0:
-                            st.toast(f"✅ {copied_count} sesi di-copy ke {copy_target}", icon="📋")
+                            st.toast(
+                                f"✅ {copied_count} session(s) copied to {copy_target}",
+                                icon="📋",
+                            )
                         else:
-                            st.info("Semua sesi sudah ada di hari itu.")
+                            st.info("All sessions already exist on that day — nothing copied.")
                         st.rerun()
 
-            st.markdown("")
+            st.markdown("")  # spacer between days
 
     else:
-        st.info("Belum ada jadwal. Tambahkan sesi pertama di atas ↑")
+        st.info("No schedule yet. Add your first session above ↑")
 
-    # ── Week overview ─────────────────────────────────────────
+    # ── Week overview summary ─────────────────────────────────
     if schedule:
         st.markdown("**Week at a glance:**")
         week_data = []
@@ -1999,7 +1964,11 @@ def render_tab_settings(all_skills: list):
                 "Minutes":  total_min,
                 "Skills":   ", ".join(skills) if skills else "—",
             })
-        st.dataframe(pd.DataFrame(week_data), use_container_width=True, hide_index=True)
+        st.dataframe(
+            pd.DataFrame(week_data),
+            use_container_width=True,
+            hide_index=True,
+        )
 
 # ═══════════════════════════════════════════════════════════════
 # ONBOARDING
@@ -2029,7 +1998,7 @@ def render_onboarding():
     if completed == 3:
         st.success("🎉 All set! Click **🔄 Refresh Application** in the sidebar to load your data.")
     else:
-        st.info(f"👈 Complete **{3-completed} more step(s)** in the sidebar to continue.")
+        st.info(f"👈 Complete **{3 - completed} more step(s)** in the sidebar to continue.")
 
 # ═══════════════════════════════════════════════════════════════
 # MAIN UI
@@ -2063,14 +2032,15 @@ if st.session_state.df is not None:
     dates_norm = _naive_dates(df["Date"])
     today_mins = float(df.loc[dates_norm >= today_ts, "Time Spent"].sum())
 
-    c_title, c_btn = st.columns([3,1])
+    # ── Title row ─────────────────────────────────────────────
+    c_title, c_btn = st.columns([3, 1])
     with c_title:
         st.title("🇬🇧 English Pro Elite")
     with c_btn:
         if st.button("➕ Log Time", type="primary", use_container_width=True):
             log_session_dialog(all_skills)
 
-    render_metrics(total_hrs, level, xp, this_week, streak, today_mins)
+    render_metrics(total_hrs, level, xp, this_week, streak)
     render_schedule_widget(all_skills)
     render_ai_coach(diet.to_dict(), all_skills, streak=streak, level=level, this_week=this_week)
 
@@ -2082,25 +2052,37 @@ if st.session_state.df is not None:
         if st.button("❌ Exit Zen"):
             st.session_state.zen_mode = False
             st.rerun()
-        st.plotly_chart(build_area_chart(df, st.session_state.accent_color, "Learning Curve"),
-                        use_container_width=True)
+        st.plotly_chart(
+            build_area_chart(df, st.session_state.accent_color, "Learning Curve"),
+            use_container_width=True,
+        )
     else:
         tab_dash, tab_history, tab_trophy, tab_settings, tab_chat = st.tabs([
-            "📈 Dashboard", "📝 History", "🏆 Trophies", "⚙️ Settings", "💬 Chat"
+            "📈 Dashboard", "📝 History", "🏆 Trophies", "⚙️ Settings", "💬 Chat",
         ])
         with tab_dash:
-            render_tab_dashboard(df, diet, st.session_state.accent_color,
-                                 today_mins, st.session_state.daily_goal_mins)
+            render_tab_dashboard(
+                df, diet, st.session_state.accent_color,
+                today_mins, st.session_state.daily_goal_mins,
+            )
         with tab_history:
             render_tab_history(all_skills)
         with tab_trophy:
-            render_tab_trophies(total_hrs, streak, unique_skills,
-                                level, st.session_state.accent_color)
+            render_tab_trophies(
+                total_hrs, streak, unique_skills,
+                level, st.session_state.accent_color,
+            )
         with tab_settings:
             render_tab_settings(all_skills)
         with tab_chat:
-            render_ai_chat(diet_dict=diet.to_dict(), streak=streak, level=level,
-                           this_week=this_week, today_mins=today_mins)
+            render_ai_chat(
+                diet_dict=diet.to_dict(),
+                streak=streak,
+                level=level,
+                this_week=this_week,
+                today_mins=today_mins,
+                all_skills=all_skills,   # ← required for schedule card validation
+            )
 
     perf_log("full_main_render", t_main)
 
