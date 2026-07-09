@@ -111,10 +111,104 @@ def _load_bg_base64(path: str) -> str:
 def set_background(png_file: str, light_mode: bool = False):
     bg           = _load_bg_base64(png_file)
     sidebar_bg   = "rgba(245,245,250,0.88)" if light_mode else "rgba(0,0,0,0.70)"
-    tab_bg       = "rgba(255,255,255,0.72)" if light_mode else "rgba(20,20,20,0.60)"
+    tab_bg       = "rgba(255,255,255,0.85)" if light_mode else "rgba(20,20,20,0.60)"
     text_color   = "#0d0d0d"               if light_mode else "white"
     alert_bg     = "rgba(255,255,255,0.5)" if light_mode else "rgba(0,0,0,0.40)"
     alert_border = "rgba(0,0,0,0.15)"      if light_mode else "rgba(255,255,255,0.20)"
+
+    # Light-mode specific overrides — fixes buttons, chat bubbles, inputs
+    light_extra = """
+    /* ── Buttons: dark text on light bg ── */
+    .stButton > button {
+        color: #0d0d0d !important;
+        background-color: rgba(255,255,255,0.90) !important;
+        border: 1px solid rgba(0,0,0,0.18) !important;
+    }
+    .stButton > button:hover {
+        background-color: rgba(220,220,230,0.95) !important;
+        border-color: rgba(0,0,0,0.30) !important;
+    }
+    /* Primary buttons keep accent colour but stay readable */
+    .stButton > button[kind="primary"] {
+        color: #ffffff !important;
+    }
+    /* ── Chat input ── */
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] {
+        background-color: rgba(255,255,255,0.92) !important;
+        color: #0d0d0d !important;
+        border: 1px solid rgba(0,0,0,0.20) !important;
+    }
+    /* ── Chat messages ── */
+    [data-testid="stChatMessage"] {
+        background-color: rgba(255,255,255,0.88) !important;
+        border: 1px solid rgba(0,0,0,0.10) !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] span,
+    [data-testid="stChatMessage"] div {
+        color: #0d0d0d !important;
+    }
+    /* ── Suggestion chips / all secondary buttons in chat ── */
+    [data-testid="stHorizontalBlock"] .stButton > button,
+    .stColumn .stButton > button {
+        color: #0d0d0d !important;
+        background-color: rgba(255,255,255,0.92) !important;
+        border: 1px solid rgba(0,0,0,0.20) !important;
+    }
+    /* ── Selectbox / dropdowns ── */
+    [data-testid="stSelectbox"] > div > div {
+        background-color: rgba(255,255,255,0.92) !important;
+        color: #0d0d0d !important;
+        border: 1px solid rgba(0,0,0,0.20) !important;
+    }
+    /* ── Number inputs ── */
+    [data-testid="stNumberInput"] input {
+        background-color: rgba(255,255,255,0.92) !important;
+        color: #0d0d0d !important;
+    }
+    /* ── Text inputs ── */
+    [data-testid="stTextInput"] input {
+        background-color: rgba(255,255,255,0.92) !important;
+        color: #0d0d0d !important;
+        border: 1px solid rgba(0,0,0,0.20) !important;
+    }
+    /* ── Expanders ── */
+    [data-testid="stExpander"] {
+        background-color: rgba(255,255,255,0.80) !important;
+        border: 1px solid rgba(0,0,0,0.12) !important;
+    }
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] p {
+        color: #0d0d0d !important;
+    }
+    /* ── Metrics ── */
+    [data-testid="stMetric"] {
+        background-color: rgba(255,255,255,0.75) !important;
+        border-radius: 10px !important;
+        padding: 8px !important;
+    }
+    /* ── Tab labels ── */
+    .stTabs [data-baseweb="tab"] span {
+        color: #0d0d0d !important;
+    }
+    /* ── Caption / small text ── */
+    .stCaption, small, caption {
+        color: #444444 !important;
+    }
+    /* ── ai-card in light mode ── */
+    .ai-card {
+        background: rgba(0,0,0,0.05) !important;
+        color: #0d0d0d !important;
+    }
+    /* ── XP bar track ── */
+    .xp-bar-outer {
+        background: rgba(0,0,0,0.10) !important;
+        border: 1px solid rgba(0,0,0,0.15) !important;
+    }
+    """ if light_mode else ""
+
     bg_css = (
         f'.stApp {{background-image:url("data:image/png;base64,{bg}");'
         f'background-size:cover;background-attachment:fixed;}}'
@@ -126,9 +220,9 @@ def set_background(png_file: str, light_mode: bool = False):
     {bg_css}
     [data-testid="stSidebar"]{{background-color:{sidebar_bg}!important;backdrop-filter:blur(10px);}}
     .stTabs [data-baseweb="tab-panel"]{{background-color:{tab_bg}!important;padding:20px;
-        border-radius:15px;backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);}}
+        border-radius:15px;backdrop-filter:blur(5px);border:1px solid rgba(0,0,0,0.08);}}
     [data-testid="stMetricValue"]{{color:{text_color}!important;}}
-    h1,h2,h3,h4,p,span,.stMarkdown div p{{color:{text_color}!important;}}
+    h1,h2,h3,h4,p,span,label,.stMarkdown div p{{color:{text_color}!important;}}
     .stAlert{{background-color:{alert_bg}!important;color:{text_color}!important;
         border:1px solid {alert_border}!important;}}
     .badge-card{{background:rgba(255,255,255,0.10);border-radius:12px;padding:12px 8px;
@@ -162,6 +256,7 @@ def set_background(png_file: str, light_mode: bool = False):
         font-size:0.78rem;font-weight:600;letter-spacing:0.07em;
         text-transform:uppercase;opacity:0.6;margin-bottom:6px;
     }}
+    {light_extra}
     </style>
     """, unsafe_allow_html=True)
 
@@ -738,14 +833,51 @@ def _is_schedule_request(text: str) -> bool:
     return any(k in lower for k in keywords)
 
 
+def _extract_requested_minutes(text: str):
+    """
+    Parse the user message for an explicit duration.
+    Handles: "1 jam", "1 hour", "2 hours", "60 menit", "45 minutes", "1.5 hr", etc.
+    Returns minutes as int, or None if no duration found.
+    """
+    lower = text.lower()
+    pattern = r'(\d+(?:[.,]\d+)?)\s*(jam|hour|hours|hr|hrs|menit|minutes|minute|mins|min)\b'
+    matches = re.findall(pattern, lower)
+    for value_str, unit in matches:
+        value = float(value_str.replace(",", "."))
+        if unit in ("jam", "hour", "hours", "hr", "hrs"):
+            return int(round(value * 60))
+        else:
+            return int(round(value))
+    return None
+
+
 def _build_schedule_ai_prompt(
     user_input: str,
     tracker_ctx: str,
     history_str: str,
     all_skills: list,
 ) -> str:
-    """Build the Gemini prompt that returns structured schedule JSON."""
-    skills_json = json.dumps(all_skills)
+    """
+    Build the Gemini prompt that returns structured schedule JSON.
+    Extracts the user's requested session duration and injects it as a
+    hard constraint so Gemini cannot silently override it.
+    """
+    skills_json    = json.dumps(all_skills)
+    requested_mins = _extract_requested_minutes(user_input)
+
+    if requested_mins:
+        duration_rule    = (
+            f"CRITICAL RULE: The user explicitly requested {requested_mins}-minute sessions. "
+            f"You MUST set \"minutes\": {requested_mins} for EVERY session in the schedule. "
+            "Do NOT use any other value."
+        )
+        duration_example = str(requested_mins)
+        minutes_note     = f"all sessions MUST be exactly {requested_mins} minutes"
+    else:
+        duration_rule    = "Use 30-60 min per session unless the user specified otherwise."
+        duration_example = "30"
+        minutes_note     = "each session 30-60 min"
+
     return (
         "You are an English learning coach. The user wants a study schedule.\n\n"
         f"{tracker_ctx}\n\n"
@@ -754,14 +886,15 @@ def _build_schedule_ai_prompt(
         "4=Friday 5=Saturday 6=Sunday\n\n"
         f"{history_str}"
         f"User request: {user_input}\n\n"
+        f"{duration_rule}\n\n"
         "Respond ONLY with valid JSON (no markdown fences, no text outside JSON):\n"
-        '{"message":"2-sentence motivating intro","schedule":['
-        '{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":30}'
+        '{"message":"2-sentence motivating intro","schedule":[' +
+        f'{{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":{duration_example}}}' +
         "]}\n"
-        "Rules: 4-7 sessions total, spread across Mon-Sun, "
-        "prioritise the weakest skill, each session 20-60 min, "
-        "only use skill names from the list above."
+        f"Rules: 4-7 sessions total, spread across Mon-Sun, prioritise weakest skill, "
+        f"{minutes_note}, only use skill names from the list above."
     )
+
 
 
 def _parse_ai_schedule(text: str) -> tuple:
