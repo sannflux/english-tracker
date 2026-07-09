@@ -851,6 +851,26 @@ def _extract_requested_minutes(text: str):
     return None
 
 
+def _extract_sessions_per_day(text: str) -> int:
+    """
+    Parse how many sessions per day the user wants.
+    e.g. "3 sesi per hari", "2 sessions a day", "4 skills per day"
+    Returns int (default 3 if not specified).
+    """
+    lower = text.lower()
+    # Pattern: <number> (sesi|sessions|skills|skill|jadwal) (per|a|setiap|tiap) (hari|day)
+    pattern = (
+        r'(\d+)\s*'
+        r'(?:sesi|sessions?|skills?|jadwal|materi)\s*'
+        r'(?:per|a|setiap|tiap|each)\s*'
+        r'(?:hari|day)'
+    )
+    m = re.search(pattern, lower)
+    if m:
+        return max(1, min(6, int(m.group(1))))  # clamp 1-6
+    return 3  # default: 3 sessions per day
+
+
 def _build_schedule_ai_prompt(
     user_input: str,
     tracker_ctx: str,
@@ -864,6 +884,8 @@ def _build_schedule_ai_prompt(
     """
     skills_json    = json.dumps(all_skills)
     requested_mins = _extract_requested_minutes(user_input)
+
+    requested_sessions = _extract_sessions_per_day(user_input)
 
     if requested_mins:
         duration_rule    = (
@@ -893,8 +915,13 @@ def _build_schedule_ai_prompt(
         '{"message":"2-sentence motivating intro","schedule":[' +
         f'{{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":{duration_example}}}' +
         "]}\n"
-        f"Rules: 4-7 sessions total, spread across Mon-Sun, prioritise weakest skill, "
-        f"{minutes_note}, only use skill names from the list above."
+        f"Rules:\n"
+        f"- Schedule {requested_sessions} sessions PER DAY, each using a DIFFERENT skill\n"
+        f"- Cover all 7 days (Mon-Sun)\n"
+        f"- Prioritise the weakest skill but include variety — do NOT repeat the same skill twice on the same day\n"
+        f"- {minutes_note}\n"
+        f"- Only use skill names from the valid list above\n"
+        f"- Total sessions = 7 days x {requested_sessions} sessions = approximately {7 * requested_sessions} sessions total"
     )
 
 
