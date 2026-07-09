@@ -881,7 +881,9 @@ def _build_schedule_ai_prompt(
     return (
         "You are an English learning coach. The user wants a study schedule.\n\n"
         f"{tracker_ctx}\n\n"
-        f"Available skills (use EXACTLY these names): {skills_json}\n"
+        f"VALID SKILL NAMES — the \"skill\" field MUST be one of these exact strings: {skills_json}\n"
+        "Do NOT invent names like \"Review\", \"Practice\", \"Mixed\", \"General\". "
+        "Choose the single best matching skill from the list for every session.\n"
         "Day numbers: 0=Monday 1=Tuesday 2=Wednesday 3=Thursday "
         "4=Friday 5=Saturday 6=Sunday\n\n"
         f"{history_str}"
@@ -927,6 +929,42 @@ def _parse_ai_schedule(text: str) -> tuple:
     return text.strip(), []
 
 
+def _resolve_skill(raw: str, all_skills: list) -> str:
+    """
+    Map an AI-generated skill name to the closest valid entry in all_skills.
+    Priority: exact → case-insensitive → substring → first-word → weighted char overlap.
+    Never blindly returns all_skills[0].
+    """
+    if not all_skills:
+        return "Listening"
+    if raw in all_skills:
+        return raw
+    lower_raw = raw.lower()
+    # Case-insensitive exact
+    for s in all_skills:
+        if s.lower() == lower_raw:
+            return s
+    # Valid skill contained in raw  e.g. "Vocabulary" in "Vocabulary & Review"
+    for s in all_skills:
+        if s.lower() in lower_raw:
+            return s
+    # Raw contained in a valid skill
+    for s in all_skills:
+        if lower_raw in s.lower():
+            return s
+    # First-word match
+    raw_first = lower_raw.split()[0] if lower_raw.split() else ""
+    for s in all_skills:
+        if s.lower().startswith(raw_first):
+            return s
+    # Weighted character-set overlap — normalised by skill name length
+    def _score(skill, text):
+        s_chars = set(skill.lower().replace(" ", ""))
+        t_chars = set(text.lower().replace(" ", ""))
+        return len(s_chars & t_chars) / max(len(s_chars), 1)
+    return max(all_skills, key=lambda s: _score(s, raw))
+
+
 def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int):
     """
     Render AI-suggested schedule sessions as interactive cards.
@@ -958,9 +996,8 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
         mins    = int(item.get("minutes", 30))
         name    = item.get("name", "").strip()
 
-        # Validate skill name
-        if skill not in all_skills:
-            skill = all_skills[0] if all_skills else "Listening"
+        # Fuzzy-resolve AI skill name to a valid skill
+        skill = _resolve_skill(skill, all_skills)
 
         # Normalise day to int index
         if isinstance(day_raw, str):
@@ -1023,8 +1060,7 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
         else:
             day_idx = int(day_raw) % 7
 
-        if skill not in all_skills:
-            skill = all_skills[0] if all_skills else "Listening"
+        skill = _resolve_skill(skill, all_skills)
 
         if (skill, day_idx, mins) not in existing_keys:
             addable.append({
