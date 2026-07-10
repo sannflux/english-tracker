@@ -968,7 +968,7 @@ def _build_schedule_ai_prompt(
         f"{duration_rule}\n\n"
         "Respond ONLY with valid JSON (no markdown fences, no text outside JSON):\n"
         '{"message":"2-sentence motivating intro","schedule":[' +
-        f'{{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":{duration_example}}}' +
+        f'{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":{duration_example},"method":"e.g. Listen to a 10-min podcast and note 5 new words"}' +
         "]}\n"
         f"Rules:\n"
         f"- Pick 5 active study days from Mon-Sun (skip 2 rest days)\n"
@@ -977,7 +977,10 @@ def _build_schedule_ai_prompt(
         f"- Prioritise the weakest skill overall but spread all skills across the week\n"
         f"- {minutes_note}\n"
         f"- Only use skill names from the valid list above\n"
-        f"- Total = 5 days × {requested_sessions} sessions = {5 * requested_sessions} sessions"
+        f"- Total = 5 days × {requested_sessions} sessions = {5 * requested_sessions} sessions\n"
+        "- Every session MUST include a \"method\" field: a clear 1-2 sentence activity "
+        "the user should do (e.g. \"Watch a 10-min YouTube video in English and write down 5 new words you hear\"). "
+        "Make it practical and specific to the skill."
     )
 
 
@@ -1074,6 +1077,7 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
             "day":     day_idx,
             "minutes": int(item.get("minutes", 30)),
             "name":    item.get("name", "").strip(),
+            "method":  item.get("method", "").strip(),
         })
 
     # ── Group by day, preserving Mon→Sun order ────────────────
@@ -1128,14 +1132,21 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
                     f"&nbsp;<span style='font-size:0.70rem;color:{accent}'>✅ Added</span>"
                     if already else ""
                 )
+                method      = item.get("method", "").strip()
+                method_html = (
+                    f"<div style='font-size:0.72rem;opacity:0.75;margin-top:4px;"
+                    f"font-style:italic;line-height:1.4'>📌 {method}</div>"
+                    if method else ""
+                )
                 st.markdown(
                     f"<div style='background:rgba(255,255,255,0.06);"
-                    f"border-radius:8px;padding:7px 12px;"
+                    f"border-radius:8px;padding:8px 12px;"
                     f"border-left:3px solid {accent};margin:2px 0'>"
                     f"<b>{display}</b>&nbsp;"
                     f"<span style='font-size:0.74rem;opacity:0.60'>"
                     f"{add_emoji(skill)} · {mins} min"
-                    f"</span>{added_badge}</div>",
+                    f"</span>{added_badge}"
+                    f"{method_html}</div>",
                     unsafe_allow_html=True,
                 )
             with col_btn:
@@ -1152,6 +1163,7 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
                             "day":     day_idx,
                             "skill":   skill,
                             "minutes": mins,
+                            "method":  item.get("method", "").strip(),
                         })
                         sync_config_to_github()
                         st.toast(f"✅ {display} added to {day_name}!", icon="📅")
@@ -1160,7 +1172,8 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
 
     # ── Add All button ────────────────────────────────────────
     addable = [
-        item for item in normalised
+        {**item, "method": schedule_items[idx].get("method", "").strip()}
+        for idx, item in enumerate(normalised)
         if (item["skill"], item["day"], item["minutes"]) not in existing_keys
     ]
     if len(addable) > 1:
@@ -1178,6 +1191,7 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
                     "day":     item["day"],
                     "skill":   item["skill"],
                     "minutes": item["minutes"],
+                    "method":  item.get("method", ""),
                 })
             sync_config_to_github()
             st.toast(f"✅ Added {len(addable)} sessions to your schedule!", icon="📅")
@@ -1498,13 +1512,19 @@ def render_schedule_widget(all_skills: list):
                         label_visibility="collapsed",
                     )
                 with col_label:
+                    method_widget = item.get("method", "").strip()
+                    method_line   = (
+                        f"  \n<span style='font-size:0.72rem;opacity:0.65;font-style:italic'>"
+                        f"📌 {method_widget}</span>"
+                        if method_widget else ""
+                    )
+                    skill_line    = (
+                        f"  \n<span style='font-size:0.78rem;opacity:0.6'>"
+                        f"{add_emoji(skill_name)}</span>"
+                        if item.get("name") else ""
+                    )
                     st.markdown(
-                        f"**{item_label}**"
-                        + (
-                            f"  \n<span style='font-size:0.78rem;opacity:0.6'>"
-                            f"{add_emoji(skill_name)}</span>"
-                            if item.get("name") else ""
-                        ),
+                        f"**{item_label}**{skill_line}{method_line}",
                         unsafe_allow_html=True,
                     )
                 with col_mins:
