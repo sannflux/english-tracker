@@ -833,32 +833,43 @@ def _is_schedule_request(text: str) -> bool:
     return any(k in lower for k in keywords)
 
 
-def _extract_requested_minutes(text: str):
+def _extract_requested_minutes(text: str) -> tuple:
     """
-    Parse the user message for an explicit duration.
-    Handles: "1 jam", "1 hour", "2 hours", "60 menit", "45 minutes", "1.5 hr", etc.
-    Returns minutes as int, or None if no duration found.
+    Parse duration from the user message.
+    Returns (minutes: int|None, is_daily_total: bool).
+
+    "1 jam per hari" / "1 hour per day"  → (60, True)   ← daily total
+    "1 jam"          / "1 hour"           → (60, False)  ← per-session
+    no match                              → (None, False)
     """
     lower = text.lower()
-    pattern = r'(\d+(?:[.,]\d+)?)\s*(jam|hour|hours|hr|hrs|menit|minutes|minute|mins|min)\b'
-    matches = re.findall(pattern, lower)
-    for value_str, unit in matches:
-        value = float(value_str.replace(",", "."))
-        if unit in ("jam", "hour", "hours", "hr", "hrs"):
-            return int(round(value * 60))
-        else:
-            return int(round(value))
-    return None
+    time_pat = r'(\d+(?:[.,]\d+)?)\s*(jam|hour|hours|hr|hrs|menit|minutes|minute|mins|min)'
+    daily_pat = time_pat + r'\s*(?:per|a|setiap|tiap|each)\s*(?:hari|day)\b'
+
+    def _to_mins(val_str, unit):
+        v = float(val_str.replace(",", "."))
+        return int(round(v * 60)) if unit in ("jam","hour","hours","hr","hrs") else int(round(v))
+
+    # Check daily-total pattern first ("1 jam per hari")
+    m = re.search(daily_pat, lower)
+    if m:
+        return _to_mins(m.group(1), m.group(2)), True
+
+    # Fallback: plain duration ("1 jam", "60 menit")
+    m = re.search(time_pat, lower)
+    if m:
+        return _to_mins(m.group(1), m.group(2)), False
+
+    return None, False
 
 
-def _extract_sessions_per_day(text: str) -> int:
+def _extract_sessions_per_day(text: str) -> tuple:
     """
     Parse how many sessions per day the user wants.
-    e.g. "3 sesi per hari", "2 sessions a day", "4 skills per day"
-    Returns int (default 3 if not specified).
+    Returns (count: int, was_explicit: bool).
+    was_explicit=False when not stated — caller decides the default.
     """
     lower = text.lower()
-    # Pattern: <number> (sesi|sessions|skills|skill|jadwal) (per|a|setiap|tiap) (hari|day)
     pattern = (
         r'(\d+)\s*'
         r'(?:sesi|sessions?|skills?|jadwal|materi)\s*'
@@ -867,8 +878,8 @@ def _extract_sessions_per_day(text: str) -> int:
     )
     m = re.search(pattern, lower)
     if m:
-        return max(1, min(6, int(m.group(1))))  # clamp 1-6
-    return 3  # default: 3 sessions per day
+        return max(1, min(6, int(m.group(1)))), True
+    return 3, False  # default 3, NOT explicit
 
 
 def _build_schedule_ai_prompt(
@@ -879,26 +890,70 @@ def _build_schedule_ai_prompt(
 ) -> str:
     """
     Build the Gemini prompt that returns structured schedule JSON.
-    Extracts the user's requested session duration and injects it as a
-    hard constraint so Gemini cannot silently override it.
+    Key logic:
+      - "1 jam"                   → 1 session × 60 min/day  (no explicit sessions = default 1)
+      - "1 jam per hari"          → 1 session × 60 min/day  (daily total)
+      - "3 sesi per hari, 30 min" → 3 sessions × 30 min/day (both explicit)
+      - "3 sesi per hari"         → 3 sessions × 30 min/day (sessions explicit, duration default)
     """
-    skills_json    = json.dumps(all_skills)
-    requested_mins = _extract_requested_minutes(user_input)
+    skills_json                          = json.dumps(all_skills)
+    raw_mins, is_daily_total             = _extract_requested_minutes(user_input)
+    _sessions_count, _sessions_explicit  = _extract_sessions_per_day(user_input)
 
-    requested_sessions = _extract_sessions_per_day(user_input)
-
-    if requested_mins:
-        duration_rule    = (
-            f"CRITICAL RULE: The user explicitly requested {requested_mins}-minute sessions. "
-            f"You MUST set \"minutes\": {requested_mins} for EVERY session in the schedule. "
-            "Do NOT use any other value."
+    # ── Resolve sessions count and per-session minutes ────────
+    if raw_mins and is_daily_total and _sessions_explicit:
+        # "X jam per hari, N sesi" — divide total across explicit session count
+        requested_sessions = _sessions_count
+        session_mins       = max(10, raw_mins // requested_sessions)
+        requested_mins     = session_mins
+        duration_rule = (
+            f"CRITICAL RULE: The user wants {raw_mins} minutes TOTAL per day "
+            f"across {requested_sessions} session(s). "
+            f"Each session MUST have \"minutes\": {session_mins}. Do NOT change this."
         )
-        duration_example = str(requested_mins)
-        minutes_note     = f"all sessions MUST be exactly {requested_mins} minutes"
+        duration_example = str(session_mins)
+        minutes_note = (
+            f"each session = {session_mins} min "
+            f"({requested_sessions} × {session_mins} = {raw_mins} min/day total)"
+        )
+    elif raw_mins and is_daily_total and not _sessions_explicit:
+        # "1 jam per hari" without session count → 1 session of that duration
+        requested_sessions = 1
+        requested_mins     = raw_mins
+        duration_rule = (
+            f"CRITICAL RULE: The user wants {raw_mins} minutes per day (1 session). "
+            f"Every session MUST have \"minutes\": {raw_mins}. Do NOT change this."
+        )
+        duration_example = str(raw_mins)
+        minutes_note     = f"each session MUST be exactly {raw_mins} minutes"
+    elif raw_mins and not _sessions_explicit:
+        # "1 jam" with NO sessions count → 1 session of that duration per day
+        requested_sessions = 1
+        requested_mins     = raw_mins
+        duration_rule = (
+            f"CRITICAL RULE: The user wants 1 session of {raw_mins} minutes per day. "
+            f"Every session MUST have \"minutes\": {raw_mins}. "
+            "Do NOT add extra sessions beyond what the Rules say."
+        )
+        duration_example = str(raw_mins)
+        minutes_note     = f"each session MUST be exactly {raw_mins} minutes"
+    elif raw_mins and _sessions_explicit:
+        # User gave BOTH sessions count AND duration per session
+        requested_sessions = _sessions_count
+        requested_mins     = raw_mins
+        duration_rule = (
+            f"CRITICAL RULE: The user requested {raw_mins}-minute sessions. "
+            f"Every session MUST have \"minutes\": {raw_mins}. Do NOT change this."
+        )
+        duration_example = str(raw_mins)
+        minutes_note     = f"each session MUST be exactly {raw_mins} minutes"
     else:
-        duration_rule    = "Use 30-60 min per session unless the user specified otherwise."
-        duration_example = "30"
-        minutes_note     = "each session 30-60 min"
+        # No duration specified at all
+        requested_sessions = _sessions_count
+        requested_mins     = None
+        duration_rule      = "Use 20-45 min per session unless the user specified otherwise."
+        duration_example   = "30"
+        minutes_note       = "each session 20-45 min"
 
     return (
         "You are an English learning coach. The user wants a study schedule.\n\n"
