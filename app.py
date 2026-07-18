@@ -1111,75 +1111,84 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
         unsafe_allow_html=True,
     )
 
-    # ── Render day-by-day ─────────────────────────────────────
-    global_i = 0   # unique key counter across all days
+    # ── Render day-by-day: ONE combined card per day ──────────
     for day_idx in sorted_days:
         day_items = by_day[day_idx]
         day_name  = SCHEDULE_DAYS[day_idx]
         day_mins  = sum(it["minutes"] for it in day_items)
 
-        # Day header
-        st.markdown(
-            f"<div style='font-size:0.82rem;font-weight:700;"
-            f"opacity:0.9;margin:10px 0 4px 0;"
-            f"border-bottom:1px solid {accent}44;padding-bottom:3px'>"
-            f"📆 {day_name} "
-            f"<span style='font-size:0.72rem;opacity:0.6;font-weight:400'>"
-            f"— {len(day_items)} session(s) · {day_mins} min total</span>"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-
-        for item in day_items:
+        # All sessions for this day, rendered inside ONE card
+        session_blocks = []
+        for i, item in enumerate(day_items):
             skill   = item["skill"]
             mins    = item["minutes"]
             name    = item["name"]
             display = name or add_emoji(skill)
             already = (skill, day_idx, mins) in existing_keys
 
-            col_card, col_btn = st.columns([5, 1])
-            with col_card:
-                added_badge = (
-                    f"&nbsp;<span style='font-size:0.70rem;color:{accent}'>✅ Added</span>"
-                    if already else ""
-                )
-                method      = item.get("method", "").strip()
-                method_html = (
-                    f"<div style='font-size:0.72rem;opacity:0.75;margin-top:4px;"
-                    f"font-style:italic;line-height:1.4'>📌 {method}</div>"
-                    if method else ""
-                )
-                st.markdown(
-                    f"<div style='background:rgba(255,255,255,0.06);"
-                    f"border-radius:8px;padding:8px 12px;"
-                    f"border-left:3px solid {accent};margin:2px 0'>"
-                    f"<b>{display}</b>&nbsp;"
-                    f"<span style='font-size:0.74rem;opacity:0.60'>"
-                    f"{add_emoji(skill)} · {mins} min"
-                    f"</span>{added_badge}"
-                    f"{method_html}</div>",
-                    unsafe_allow_html=True,
-                )
-            with col_btn:
-                if not already:
-                    if st.button(
-                        "➕",
-                        key=f"sched_add_{msg_idx}_{global_i}",
-                        use_container_width=True,
-                        help=f"Add {display} on {day_name}",
-                    ):
-                        st.session_state.study_schedule.append({
-                            "id":      str(uuid.uuid4())[:8],
-                            "name":    name,
-                            "day":     day_idx,
-                            "skill":   skill,
-                            "minutes": mins,
-                            "method":  item.get("method", "").strip(),
-                        })
-                        sync_config_to_github()
-                        st.toast(f"✅ {display} added to {day_name}!", icon="📅")
-                        st.rerun()
-            global_i += 1
+            added_badge = (
+                f"&nbsp;<span style='font-size:0.70rem;color:{accent}'>✅ Added</span>"
+                if already else ""
+            )
+            method      = item.get("method", "").strip()
+            method_html = (
+                f"<div style='font-size:0.72rem;opacity:0.75;margin-top:4px;"
+                f"font-style:italic;line-height:1.4'>📌 {method}</div>"
+                if method else ""
+            )
+            divider = (
+                f"<div style='border-top:1px solid rgba(255,255,255,0.10);"
+                f"margin:10px 0 8px 0'></div>"
+                if i > 0 else ""
+            )
+            session_blocks.append(
+                f"{divider}"
+                f"<div><b>{display}</b>&nbsp;"
+                f"<span style='font-size:0.74rem;opacity:0.60'>"
+                f"{add_emoji(skill)} · {mins} min"
+                f"</span>{added_badge}"
+                f"{method_html}</div>"
+            )
+
+        st.markdown(
+            f"<div style='background:rgba(255,255,255,0.06);"
+            f"border-radius:10px;padding:12px 14px;"
+            f"border-left:3px solid {accent};margin:10px 0 4px 0'>"
+            f"<div style='font-size:0.82rem;font-weight:700;opacity:0.9;"
+            f"margin-bottom:8px'>📆 {day_name} "
+            f"<span style='font-size:0.72rem;opacity:0.6;font-weight:400'>"
+            f"— {len(day_items)} session(s) · {day_mins} min total</span>"
+            f"</div>"
+            + "".join(session_blocks) +
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # One ➕ button per day — adds every session in that day at once
+        day_addable = [
+            item for item in day_items
+            if (item["skill"], day_idx, item["minutes"]) not in existing_keys
+        ]
+        if day_addable:
+            if st.button(
+                f"➕ Add {day_name} ({len(day_addable)} session(s))",
+                key=f"sched_add_day_{msg_idx}_{day_idx}",
+                use_container_width=True,
+                help=f"Add all sessions for {day_name}",
+            ):
+                for item in day_addable:
+                    st.session_state.study_schedule.append({
+                        "id":      str(uuid.uuid4())[:8],
+                        "name":    item["name"],
+                        "day":     day_idx,
+                        "skill":   item["skill"],
+                        "minutes": item["minutes"],
+                        "method":  item.get("method", "").strip(),
+                    })
+                sync_config_to_github()
+                st.toast(f"✅ {day_name} sessions added!", icon="📅")
+                st.rerun()
+
 
     # ── Add All button ────────────────────────────────────────
     addable = [
