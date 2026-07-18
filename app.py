@@ -955,6 +955,17 @@ def _build_schedule_ai_prompt(
         duration_example   = "30"
         minutes_note       = "each session 20-45 min"
 
+    # NOTE: this used to be an f-string, which is invalid because the JSON
+    # example below contains literal `{` / `}` / `:` characters that Python's
+    # f-string parser tried to interpret as replacement fields / format specs
+    # (that's what caused the ValueError). It's now built with plain string
+    # concatenation, and only `duration_example` is substituted in.
+    example_json = (
+        '{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":'
+        + duration_example
+        + ',"method":"e.g. Listen to a 10-min podcast and note 5 new words"}'
+    )
+
     return (
         "You are an English learning coach. The user wants a study schedule.\n\n"
         f"{tracker_ctx}\n\n"
@@ -968,7 +979,7 @@ def _build_schedule_ai_prompt(
         f"{duration_rule}\n\n"
         "Respond ONLY with valid JSON (no markdown fences, no text outside JSON):\n"
         '{"message":"2-sentence motivating intro","schedule":[' +
-        f'{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":{duration_example},"method":"e.g. Listen to a 10-min podcast and note 5 new words"}' +
+        example_json +
         "]}\n"
         f"Rules:\n"
         f"- Pick 5 active study days from Mon-Sun (skip 2 rest days)\n"
