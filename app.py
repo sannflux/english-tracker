@@ -116,7 +116,6 @@ def set_background(png_file: str, light_mode: bool = False):
     alert_bg     = "rgba(255,255,255,0.5)" if light_mode else "rgba(0,0,0,0.40)"
     alert_border = "rgba(0,0,0,0.15)"      if light_mode else "rgba(255,255,255,0.20)"
 
-    # Light-mode specific overrides — fixes buttons, chat bubbles, inputs
     light_extra = """
     /* ── Buttons: dark text on light bg ── */
     .stButton > button {
@@ -128,18 +127,15 @@ def set_background(png_file: str, light_mode: bool = False):
         background-color: rgba(220,220,230,0.95) !important;
         border-color: rgba(0,0,0,0.30) !important;
     }
-    /* Primary buttons keep accent colour but stay readable */
     .stButton > button[kind="primary"] {
         color: #ffffff !important;
     }
-    /* ── Chat input ── */
     [data-testid="stChatInput"] textarea,
     [data-testid="stChatInput"] {
         background-color: rgba(255,255,255,0.92) !important;
         color: #0d0d0d !important;
         border: 1px solid rgba(0,0,0,0.20) !important;
     }
-    /* ── Chat messages ── */
     [data-testid="stChatMessage"] {
         background-color: rgba(255,255,255,0.88) !important;
         border: 1px solid rgba(0,0,0,0.10) !important;
@@ -150,31 +146,26 @@ def set_background(png_file: str, light_mode: bool = False):
     [data-testid="stChatMessage"] div {
         color: #0d0d0d !important;
     }
-    /* ── Suggestion chips / all secondary buttons in chat ── */
     [data-testid="stHorizontalBlock"] .stButton > button,
     .stColumn .stButton > button {
         color: #0d0d0d !important;
         background-color: rgba(255,255,255,0.92) !important;
         border: 1px solid rgba(0,0,0,0.20) !important;
     }
-    /* ── Selectbox / dropdowns ── */
     [data-testid="stSelectbox"] > div > div {
         background-color: rgba(255,255,255,0.92) !important;
         color: #0d0d0d !important;
         border: 1px solid rgba(0,0,0,0.20) !important;
     }
-    /* ── Number inputs ── */
     [data-testid="stNumberInput"] input {
         background-color: rgba(255,255,255,0.92) !important;
         color: #0d0d0d !important;
     }
-    /* ── Text inputs ── */
     [data-testid="stTextInput"] input {
         background-color: rgba(255,255,255,0.92) !important;
         color: #0d0d0d !important;
         border: 1px solid rgba(0,0,0,0.20) !important;
     }
-    /* ── Expanders ── */
     [data-testid="stExpander"] {
         background-color: rgba(255,255,255,0.80) !important;
         border: 1px solid rgba(0,0,0,0.12) !important;
@@ -183,26 +174,21 @@ def set_background(png_file: str, light_mode: bool = False):
     [data-testid="stExpander"] p {
         color: #0d0d0d !important;
     }
-    /* ── Metrics ── */
     [data-testid="stMetric"] {
         background-color: rgba(255,255,255,0.75) !important;
         border-radius: 10px !important;
         padding: 8px !important;
     }
-    /* ── Tab labels ── */
     .stTabs [data-baseweb="tab"] span {
         color: #0d0d0d !important;
     }
-    /* ── Caption / small text ── */
     .stCaption, small, caption {
         color: #444444 !important;
     }
-    /* ── ai-card in light mode ── */
     .ai-card {
         background: rgba(0,0,0,0.05) !important;
         color: #0d0d0d !important;
     }
-    /* ── XP bar track ── */
     .xp-bar-outer {
         background: rgba(0,0,0,0.10) !important;
         border: 1px solid rgba(0,0,0,0.15) !important;
@@ -868,6 +854,10 @@ def _extract_sessions_per_day(text: str) -> tuple:
     Parse how many sessions per day the user wants.
     Returns (count: int, was_explicit: bool).
     was_explicit=False when not stated — caller decides the default.
+
+    FIX: Default changed from 3 → 1.
+    When the user says "30m a day" without specifying a session count,
+    they mean ONE 30-minute session per day, not three.
     """
     lower = text.lower()
     pattern = (
@@ -879,7 +869,30 @@ def _extract_sessions_per_day(text: str) -> tuple:
     m = re.search(pattern, lower)
     if m:
         return max(1, min(6, int(m.group(1)))), True
-    return 3, False  # default 3, NOT explicit
+    # ── FIX: was `return 3, False` — caused "30m" → 3×30 = 90 min ──
+    return 1, False
+
+
+def _enforce_sessions_per_day(schedule: list, max_per_day: int) -> list:
+    """
+    Post-processing guard: trim AI-generated schedule so each day has
+    at most `max_per_day` sessions.  Keeps the first N sessions per day
+    in the order the AI returned them (AI usually puts the most
+    important ones first).
+
+    This is the second line of defence after the prompt instruction —
+    Gemini sometimes ignores session-count constraints even when they
+    are clearly stated, so we enforce the limit here unconditionally.
+    """
+    from collections import defaultdict
+    day_counts: dict = defaultdict(int)
+    result = []
+    for item in schedule:
+        day = int(item.get("day", 0)) % 7
+        if day_counts[day] < max_per_day:
+            result.append(item)
+            day_counts[day] += 1
+    return result
 
 
 def _build_schedule_ai_prompt(
@@ -887,14 +900,18 @@ def _build_schedule_ai_prompt(
     tracker_ctx: str,
     history_str: str,
     all_skills: list,
-) -> str:
+) -> tuple:
     """
     Build the Gemini prompt that returns structured schedule JSON.
+
+    Returns (prompt_str, max_sessions_per_day) so the caller can pass
+    max_sessions_per_day to _enforce_sessions_per_day() after parsing.
+
     Key logic:
-      - "1 jam"                   → 1 session × 60 min/day  (no explicit sessions = default 1)
-      - "1 jam per hari"          → 1 session × 60 min/day  (daily total)
+      - "1 jam"                   → 1 session × 60 min/day
+      - "1 jam per hari"          → 1 session × 60 min/day (daily total)
       - "3 sesi per hari, 30 min" → 3 sessions × 30 min/day (both explicit)
-      - "3 sesi per hari"         → 3 sessions × 30 min/day (sessions explicit, duration default)
+      - "3 sesi per hari"         → 3 sessions × 30 min/day (sessions explicit)
     """
     skills_json                          = json.dumps(all_skills)
     raw_mins, is_daily_total             = _extract_requested_minutes(user_input)
@@ -902,7 +919,6 @@ def _build_schedule_ai_prompt(
 
     # ── Resolve sessions count and per-session minutes ────────
     if raw_mins and is_daily_total and _sessions_explicit:
-        # "X jam per hari, N sesi" — divide total across explicit session count
         requested_sessions = _sessions_count
         session_mins       = max(10, raw_mins // requested_sessions)
         requested_mins     = session_mins
@@ -917,26 +933,27 @@ def _build_schedule_ai_prompt(
             f"({requested_sessions} × {session_mins} = {raw_mins} min/day total)"
         )
     elif raw_mins and is_daily_total and not _sessions_explicit:
-        # "1 jam per hari" without session count → 1 session of that duration
+        # "30m per day" with no session count → 1 session of that duration
         requested_sessions = 1
         requested_mins     = raw_mins
         duration_rule = (
             f"CRITICAL RULE: The user wants {raw_mins} minutes per day (1 session). "
-            f"Every session MUST have \"minutes\": {raw_mins}. Do NOT change this."
+            f"Every session MUST have \"minutes\": {raw_mins}. Do NOT change this. "
+            f"Do NOT create more than 1 session per day."
         )
         duration_example = str(raw_mins)
-        minutes_note     = f"each session MUST be exactly {raw_mins} minutes"
+        minutes_note     = f"each session MUST be exactly {raw_mins} minutes — 1 session per day only"
     elif raw_mins and not _sessions_explicit:
-        # "1 jam" with NO sessions count → 1 session of that duration per day
+        # "30m" with NO sessions count → 1 session of that duration per day
         requested_sessions = 1
         requested_mins     = raw_mins
         duration_rule = (
             f"CRITICAL RULE: The user wants 1 session of {raw_mins} minutes per day. "
             f"Every session MUST have \"minutes\": {raw_mins}. "
-            "Do NOT add extra sessions beyond what the Rules say."
+            "Do NOT add extra sessions. Each day gets EXACTLY 1 session."
         )
         duration_example = str(raw_mins)
-        minutes_note     = f"each session MUST be exactly {raw_mins} minutes"
+        minutes_note     = f"each session MUST be exactly {raw_mins} minutes — 1 session per day only"
     elif raw_mins and _sessions_explicit:
         # User gave BOTH sessions count AND duration per session
         requested_sessions = _sessions_count
@@ -955,18 +972,13 @@ def _build_schedule_ai_prompt(
         duration_example   = "30"
         minutes_note       = "each session 20-45 min"
 
-    # NOTE: this used to be an f-string, which is invalid because the JSON
-    # example below contains literal `{` / `}` / `:` characters that Python's
-    # f-string parser tried to interpret as replacement fields / format specs
-    # (that's what caused the ValueError). It's now built with plain string
-    # concatenation, and only `duration_example` is substituted in.
     example_json = (
         '{"name":"e.g. Morning Listening","day":0,"skill":"Listening","minutes":'
         + duration_example
         + ',"method":"e.g. Listen to a 10-min podcast and note 5 new words"}'
     )
 
-    return (
+    prompt = (
         "You are an English learning coach. The user wants a study schedule.\n\n"
         f"{tracker_ctx}\n\n"
         f"VALID SKILL NAMES — the \"skill\" field MUST be one of these exact strings: {skills_json}\n"
@@ -983,7 +995,7 @@ def _build_schedule_ai_prompt(
         "]}\n"
         f"Rules:\n"
         f"- Pick 5 active study days from Mon-Sun (skip 2 rest days)\n"
-        f"- Each active day gets exactly {requested_sessions} session(s), each with a DIFFERENT skill\n"
+        f"- Each active day gets EXACTLY {requested_sessions} session(s) — no more, no fewer\n"
         f"- Do NOT put the same skill twice on the same day\n"
         f"- Prioritise the weakest skill overall but spread all skills across the week\n"
         f"- {minutes_note}\n"
@@ -994,6 +1006,7 @@ def _build_schedule_ai_prompt(
         "Make it practical and specific to the skill."
     )
 
+    return prompt, requested_sessions
 
 
 def _parse_ai_schedule(text: str) -> tuple:
@@ -1117,7 +1130,6 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
         day_name  = SCHEDULE_DAYS[day_idx]
         day_mins  = sum(it["minutes"] for it in day_items)
 
-        # All sessions for this day, rendered inside ONE card
         session_blocks = []
         for i, item in enumerate(day_items):
             skill   = item["skill"]
@@ -1164,7 +1176,6 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
             unsafe_allow_html=True,
         )
 
-        # One ➕ button per day — adds every session in that day at once
         day_addable = [
             item for item in day_items
             if (item["skill"], day_idx, item["minutes"]) not in existing_keys
@@ -1189,11 +1200,9 @@ def _render_schedule_cards(schedule_items: list, all_skills: list, msg_idx: int)
                 st.toast(f"✅ {day_name} sessions added!", icon="📅")
                 st.rerun()
 
-
     # ── Add All button ────────────────────────────────────────
     addable = [
-        {**item, "method": schedule_items[idx].get("method", "").strip()}
-        for idx, item in enumerate(normalised)
+        item for item in normalised
         if (item["skill"], item["day"], item["minutes"]) not in existing_keys
     ]
     if len(addable) > 1:
@@ -1251,7 +1260,6 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
         with st.chat_message(msg["role"],
                              avatar="🧑" if msg["role"] == "user" else "🤖"):
             st.markdown(msg["content"])
-            # Re-render schedule cards so they survive page refreshes
             if msg["role"] == "assistant" and msg.get("schedule_data"):
                 _render_schedule_cards(msg["schedule_data"], _all_skills, msg_idx)
 
@@ -1310,8 +1318,11 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
     # ── Route to schedule prompt or standard prompt ───────────
     is_sched_req = _is_schedule_request(user_input)
 
+    # max_sessions_per_day is computed alongside the prompt so we can
+    # enforce it after parsing — Gemini sometimes ignores the instruction.
+    max_sessions_per_day = 1
     if is_sched_req:
-        full_prompt = _build_schedule_ai_prompt(
+        full_prompt, max_sessions_per_day = _build_schedule_ai_prompt(
             user_input, tracker_ctx, history_str, _all_skills
         )
     else:
@@ -1338,10 +1349,14 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
 
                 if is_sched_req:
                     reply, schedule_data = _parse_ai_schedule(raw_text)
-                    # If parse completely fails, fall back to raw text
                     if not reply and not schedule_data:
                         reply         = raw_text
                         schedule_data = []
+                    elif schedule_data:
+                        # ── FIX: enforce session limit per day ──────────
+                        schedule_data = _enforce_sessions_per_day(
+                            schedule_data, max_sessions_per_day
+                        )
                 else:
                     reply         = raw_text
                     schedule_data = []
@@ -1351,20 +1366,18 @@ def render_ai_chat(diet_dict: dict, streak: int = 0, level: int = 1,
                 schedule_data = []
 
         st.markdown(reply)
-        # Render cards for the brand-new assistant message
         if schedule_data:
             _render_schedule_cards(
                 schedule_data,
                 _all_skills,
-                len(st.session_state.ai_chat_history),  # unique per-message index
+                len(st.session_state.ai_chat_history),
             )
 
     st.session_state.ai_chat_history.append({
         "role":          "assistant",
         "content":       reply,
-        "schedule_data": schedule_data,  # persisted so cards survive refresh
+        "schedule_data": schedule_data,
     })
-    # Keep history window bounded
     st.session_state.ai_chat_history = st.session_state.ai_chat_history[-20:]
     st.rerun()
 
@@ -2013,7 +2026,6 @@ def render_tab_trophies(total_hrs, streak, unique_skills, level, accent_color):
 # ═══════════════════════════════════════════════════════════════
 @st.fragment
 def render_tab_settings(all_skills: list):
-    # ── AI Budget ─────────────────────────────────────────────
     st.subheader("🤖 AI Budget")
     st.slider(
         "Daily AI Call Limit", min_value=1, max_value=AI_DAILY_CAP,
@@ -2030,7 +2042,6 @@ def render_tab_settings(all_skills: list):
 
     st.divider()
 
-    # ── Layout ────────────────────────────────────────────────
     st.subheader("📱 Layout")
     st.toggle(
         "📱 Mobile-Friendly Layout (single column)",
@@ -2039,7 +2050,6 @@ def render_tab_settings(all_skills: list):
 
     st.divider()
 
-    # ── Custom Skills ─────────────────────────────────────────
     st.subheader("⚙️ Custom Skills Manager")
     st.caption("Add skills beyond the default six. Saved to your GitHub config.json.")
 
@@ -2088,7 +2098,6 @@ def render_tab_settings(all_skills: list):
         "✍️ Writing, 📝 Grammar, 💬 Vocabulary."
     )
 
-    # ── Study Schedule Manager ────────────────────────────────
     st.divider()
     st.subheader("📅 Study Schedule")
     st.caption(
@@ -2101,7 +2110,6 @@ def render_tab_settings(all_skills: list):
     accent    = st.session_state.accent_color
     today_day = today_wib().weekday()
 
-    # ── Add new session form ──────────────────────────────────
     st.markdown("**➕ Add new session:**")
     na, nb, nc, nd, ne = st.columns([2, 2, 2, 1, 1])
     with na:
@@ -2148,7 +2156,6 @@ def render_tab_settings(all_skills: list):
 
     st.markdown("---")
 
-    # ── Schedule grouped by day ───────────────────────────────
     if schedule:
         st.markdown("**Your weekly schedule:**")
 
@@ -2191,7 +2198,6 @@ def render_tab_settings(all_skills: list):
                         sync_config_to_github()
                         st.rerun()
 
-            # ── Copy day to another day ───────────────────────
             with st.expander(f"📋 Copy all {day_name} sessions to another day…",
                              expanded=False):
                 copy_targets = [d for d in SCHEDULE_DAYS if d != day_name]
@@ -2249,12 +2255,11 @@ def render_tab_settings(all_skills: list):
                             st.info("All sessions already exist on that day — nothing copied.")
                         st.rerun()
 
-            st.markdown("")  # spacer between days
+            st.markdown("")
 
     else:
         st.info("No schedule yet. Add your first session above ↑")
 
-    # ── Week overview summary ─────────────────────────────────
     if schedule:
         st.markdown("**Week at a glance:**")
         week_data = []
@@ -2336,7 +2341,6 @@ if st.session_state.df is not None:
     dates_norm = _naive_dates(df["Date"])
     today_mins = float(df.loc[dates_norm >= today_ts, "Time Spent"].sum())
 
-    # ── Title row ─────────────────────────────────────────────
     c_title, c_btn = st.columns([3, 1])
     with c_title:
         st.title("🇬🇧 English Pro Elite")
@@ -2385,7 +2389,7 @@ if st.session_state.df is not None:
                 level=level,
                 this_week=this_week,
                 today_mins=today_mins,
-                all_skills=all_skills,   # ← required for schedule card validation
+                all_skills=all_skills,
             )
 
     perf_log("full_main_render", t_main)
