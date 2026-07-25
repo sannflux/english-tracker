@@ -840,22 +840,34 @@ def _extract_requested_minutes(text: str) -> tuple:
 
     "1 jam per hari" / "1 hour per day"  → (60, True)   ← daily total
     "1 jam"          / "1 hour"           → (60, False)  ← per-session
+    "30m a day"      / "30m"              → (30, True/False) ← FIXED: 'm' now recognized
     no match                              → (None, False)
+
+    BUGFIX: the previous version of `time_pat` only matched full/partial unit
+    words ("jam", "hour", "hours", "hr", "hrs", "menit", "minutes", "minute",
+    "mins", "min") — it never matched the bare abbreviation "m" (e.g. "30m").
+    When a user typed something like "Create me 30m a day schedule", this
+    regex found NO match, so `raw_mins` came back `None`. That silently fell
+    through to the "no duration specified" branch in
+    `_build_schedule_ai_prompt`, which defaults to 3 sessions/day at ~30 min
+    each — producing a 90-minute/day schedule instead of the requested 30.
+    Adding `|m` (with a trailing `\\b` word boundary so it doesn't swallow
+    "month", "miles", etc.) fixes this: "30m" is now parsed as 30 minutes.
     """
     lower = text.lower()
-    time_pat = r'(\d+(?:[.,]\d+)?)\s*(jam|hour|hours|hr|hrs|menit|minutes|minute|mins|min)'
+    time_pat = r'(\d+(?:[.,]\d+)?)\s*(jam|hour|hours|hr|hrs|menit|minutes|minute|mins|min|m)\b'
     daily_pat = time_pat + r'\s*(?:per|a|setiap|tiap|each)\s*(?:hari|day)\b'
 
     def _to_mins(val_str, unit):
         v = float(val_str.replace(",", "."))
         return int(round(v * 60)) if unit in ("jam","hour","hours","hr","hrs") else int(round(v))
 
-    # Check daily-total pattern first ("1 jam per hari")
+    # Check daily-total pattern first ("1 jam per hari", "30m a day")
     m = re.search(daily_pat, lower)
     if m:
         return _to_mins(m.group(1), m.group(2)), True
 
-    # Fallback: plain duration ("1 jam", "60 menit")
+    # Fallback: plain duration ("1 jam", "60 menit", "30m")
     m = re.search(time_pat, lower)
     if m:
         return _to_mins(m.group(1), m.group(2)), False
@@ -893,6 +905,7 @@ def _build_schedule_ai_prompt(
     Key logic:
       - "1 jam"                   → 1 session × 60 min/day  (no explicit sessions = default 1)
       - "1 jam per hari"          → 1 session × 60 min/day  (daily total)
+      - "30m a day"                → 1 session × 30 min/day  (daily total, now correctly parsed)
       - "3 sesi per hari, 30 min" → 3 sessions × 30 min/day (both explicit)
       - "3 sesi per hari"         → 3 sessions × 30 min/day (sessions explicit, duration default)
     """
@@ -917,7 +930,7 @@ def _build_schedule_ai_prompt(
             f"({requested_sessions} × {session_mins} = {raw_mins} min/day total)"
         )
     elif raw_mins and is_daily_total and not _sessions_explicit:
-        # "1 jam per hari" without session count → 1 session of that duration
+        # "1 jam per hari" / "30m a day" without session count → 1 session of that duration
         requested_sessions = 1
         requested_mins     = raw_mins
         duration_rule = (
@@ -927,7 +940,7 @@ def _build_schedule_ai_prompt(
         duration_example = str(raw_mins)
         minutes_note     = f"each session MUST be exactly {raw_mins} minutes"
     elif raw_mins and not _sessions_explicit:
-        # "1 jam" with NO sessions count → 1 session of that duration per day
+        # "1 jam" / "30m" with NO sessions count → 1 session of that duration per day
         requested_sessions = 1
         requested_mins     = raw_mins
         duration_rule = (
@@ -2371,24 +2384,3 @@ if st.session_state.df is not None:
             )
         with tab_history:
             render_tab_history(all_skills)
-        with tab_trophy:
-            render_tab_trophies(
-                total_hrs, streak, unique_skills,
-                level, st.session_state.accent_color,
-            )
-        with tab_settings:
-            render_tab_settings(all_skills)
-        with tab_chat:
-            render_ai_chat(
-                diet_dict=diet.to_dict(),
-                streak=streak,
-                level=level,
-                this_week=this_week,
-                today_mins=today_mins,
-                all_skills=all_skills,   # ← required for schedule card validation
-            )
-
-    perf_log("full_main_render", t_main)
-
-else:
-    render_onboarding()
